@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M8** Picker model | `domain/picker.js`: reference window (23 or 25 hours on DST days), segments, day-off colour, marker moves. | opus | high | open |
 | **M9** Controller: page workflows | `controller.js` with fakes: open, tick, refresh, marker, month, notices, selected holiday. | opus | high | open |
 | **M10** Controller: settings workflows | Add, remove, move and edit places; hours; display switches; save and restore. | sonnet | high | open |
 | **M11** Page shell, theme, empty page | `main.js` wiring, `index.html`, theme tokens, header, Refresh, empty page; installs Playwright (Chromium first). | sonnet | high | open |
@@ -26,21 +25,6 @@ history is the record. Template: `docs/workflow.md`.
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M8 — Picker model
-
-- **Refs:** PCK-001, PCK-002, PCK-003, PCK-005, PCK-006, PCK-007, SET-005, EX-003, EX-008, EX-009,
-  DEC-009 (day kinds).
-- **Owner:** `src/domain/picker.js`.
-- **Tests first:** `test_pck_001_one_row_per_place`, `test_pck_002_local_time_at_marker_ex_003`,
-  `test_pck_003_working_and_non_working_segments_ex_008`,
-  `test_pck_005_weekend_or_holiday_is_day_off_ex_009`,
-  `test_pck_006_window_midnight_to_midnight_of_first_place_23_and_25_hour_days`,
-  `test_pck_007_shift_day_keeps_time_of_day_in_first_place`.
-- **Build:** `buildPicker(settings, marker, holidays)` gives the window, one row per place with
-  segments that cover it exactly, and each local date and time. Add the marker-day shift logic.
-  Day kinds `working`, `nonWorking`, `dayOff` are a frozen object in this module.
-- **Gate:** tests cover a window that crosses midnight for another place and a DST change day.
 
 ### M9 — Controller: page workflows
 

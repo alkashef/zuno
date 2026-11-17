@@ -136,7 +136,7 @@ at implementation.
 | `api.js` | The only user of `fetch`. Gets one country-year of holidays and returns a `HolidayResult`. | `config.js`, `log.js` | HOL-001, HOL-002, DEC-006 |
 | `storage.js` | The only user of `localStorage`. Reads and writes the settings record. | `config.js`, `log.js` | SET-004, DEC-008 |
 | `clock.js` | The only reader of the current time and of the colour-scheme query. | none | CLK-001, CLK-003 |
-| `domain/zones.js` | Local date and time of an instant in a time zone, with DST. | none | CLK-002, EX-001 |
+| `domain/zones.js` | Local date and time of an instant in a time zone, with DST, and the reverse: the first instant a zone's clock shows a local date and time (`instantAtLocal`; a skipped time gives the instant the clock jumps, a repeated time its first occurrence), and the instant a zone's offset changes (`offsetChange`). | none | CLK-002, EX-001, PCK-006, PCK-007 |
 | `domain/format.js` | Formats dates, times and Hijri dates. | `domain/hijri.js` types | DSP-001 to DSP-003 |
 | `domain/hijri.js` | Hijri date of a local date for a variant and an adjustment. | none | HIJ-001 to HIJ-003, EX-010 |
 | `domain/weekends.js` | Weekend days of a country. | none | CAL-002 |
@@ -284,7 +284,11 @@ is 1; an unknown version is invalid (DEC-008).
   Actions: `open`, `refresh`, `tick`, `setMarker`, `shiftMarkerDay`, `showMonth`, `addPlace`,
   `removePlace`, `movePlace`, `editPlace`, `setWorkingHours`, `setShowCountry`, `setShowHijri`,
   `selectHoliday`, `toggleNotices`, `openSettings`, `closeSettings`.
-- `domain/picker.buildPicker(settings, marker, holidays) -> PickerRow[]` and
+- `domain/picker.buildPicker(settings, marker, holidays) -> PickerRow[]`,
+  `domain/picker.pickerWindow(settings, marker) -> { from, to } | null` (the window of PCK-006),
+  `domain/picker.shiftMarkerDay(settings, marker, days) -> Marker` and
+  `domain/picker.markerOnDate(settings, marker, date) -> Marker` (PCK-007; with no places the
+  marker is returned unchanged), and
   `domain/calendar.buildMonth(settings, monthRef, holidays, nowInstant) -> DayFacts[][]`, where
   `monthRef` is `{ year, month }` (one object, because of the 4-parameter limit) and `holidays` is a
   record of `Holiday[]` by country code.

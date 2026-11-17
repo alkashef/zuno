@@ -1,9 +1,9 @@
 // @ts-check
-/** @module zones.test Unit tests for src/domain/zones.js (CLK-001, CLK-002, EX-001). */
+/** @module zones.test Unit tests for src/domain/zones.js (CLK-001, CLK-002, PCK-006, PCK-007, EX-001). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { localDateTime } from "../../src/domain/zones.js";
+import { instantAtLocal, localDateTime, offsetChange } from "../../src/domain/zones.js";
 
 /**
  * @param {number} year
@@ -79,4 +79,33 @@ test("test_clk_002_offsets_follow_the_rules_for_any_date", () => {
   assert.equal(localDateTime(utc(2035, 7, 1, 12, 0), "Europe/London").hour, 13);
   assert.equal(localDateTime(utc(2035, 12, 1, 12, 0), "Europe/London").hour, 12);
   assert.equal(localDateTime(utc(1999, 7, 1, 12, 0), "Europe/London").hour, 13);
+});
+
+test("test_pck_006_instant_at_local_time_with_and_without_clock_change", () => {
+  const midnight = { year: 2026, month: 11, day: 17, hour: 0, minute: 0 };
+  assert.equal(instantAtLocal("Asia/Tokyo", midnight), utc(2026, 11, 16, 15, 0));
+  assert.equal(instantAtLocal("Europe/London", midnight), utc(2026, 11, 17, 0, 0));
+  const summer = { year: 2026, month: 7, day: 1, hour: 9, minute: 30 };
+  assert.equal(instantAtLocal("America/New_York", summer), utc(2026, 7, 1, 13, 30));
+});
+
+test("test_pck_007_missing_local_time_gives_first_instant_after_the_gap", () => {
+  const inGap = { year: 2026, month: 3, day: 29, hour: 1, minute: 30 };
+  assert.equal(instantAtLocal("Europe/London", inGap), utc(2026, 3, 29, 1, 0));
+  const afterGap = { year: 2026, month: 3, day: 29, hour: 2, minute: 30 };
+  assert.equal(instantAtLocal("Europe/London", afterGap), utc(2026, 3, 29, 1, 30));
+});
+
+test("test_pck_007_repeated_local_time_gives_first_occurrence", () => {
+  const repeated = { year: 2026, month: 10, day: 25, hour: 1, minute: 30 };
+  assert.equal(instantAtLocal("Europe/London", repeated), utc(2026, 10, 25, 0, 30));
+  const afterRepeat = { year: 2026, month: 10, day: 25, hour: 2, minute: 0 };
+  assert.equal(instantAtLocal("Europe/London", afterRepeat), utc(2026, 10, 25, 2, 0));
+});
+
+test("test_pck_006_offset_change_found_between_two_instants", () => {
+  const from = utc(2026, 3, 28, 12, 0);
+  const to = utc(2026, 3, 29, 12, 0);
+  assert.equal(offsetChange("Europe/London", from, to), utc(2026, 3, 29, 1, 0));
+  assert.equal(offsetChange("Asia/Tokyo", from, to), null);
 });
