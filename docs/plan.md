@@ -9,7 +9,7 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M1** Build the one-file page | `scripts/build.mjs` (esbuild) bundles `src/` into `dist/zuno.html` with the CSP tag. | sonnet | high | open |
+| **M1** Build the one-file page | `scripts/build.mjs` (esbuild) bundles `src/` into `dist/zuno.html` with the CSP tag. | sonnet | high | blocked |
 | **M2** Holiday service and facts | `api.js` returns `HolidayResult`; `domain/holidays.js` keeps `Public` holidays and handles regions and missing data. | sonnet | high | open |
 | **M3** Time zones and formats | Local date and time with DST; dd-mmm-yy and 12-hour formats; the import-rule test. | sonnet | high | open |
 | **M4** Country table | `data/countries.js` and `domain/countries.js`: capital default and other zones. | sonnet | medium | open |
@@ -47,6 +47,13 @@ Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
   and Prettier ignores, and an `npm run build` script. Update the README build line.
 - **Gate:** `npm run build` writes `dist/zuno.html`; `dist/` is not tracked. If the ESLint or
   Prettier config edits need approval, block with that exact question.
+- **Blocked:** The milestone must install esbuild and edit `package.json` and `eslint.config.js`, and `.claude/settings.json` makes each of these ask the user, who cannot answer in an unattended run.
+  - `npm install --save-dev --save-exact esbuild@0.28.2` was refused: `.claude/settings.json` lists `Bash(npm install *)` under `ask`; CLAUDE.md "Dependencies" says to ask before adding any dependency. The plan block and DEC-002 name esbuild, but no **Approval** entry permits the install. Checked at npm: esbuild 0.28.2, licence MIT, one install script (`postinstall: node install.js`).
+  - The build also needs edits to `package.json` (the `build` script, the `esbuild` dev dependency) and `eslint.config.js` (ignore `dist/`; Node globals for `scripts/*.mjs`, which ESLint lints with browser-less defaults). Both are under `ask` in `.claude/settings.json`; this is the question the Gate names.
+  - Nothing else was changed; the failing tests were written, seen to fail, and removed again so that only this plan edit is committed.
+  - To continue, approve one of these:
+    1. Permit exactly: install `esbuild@0.28.2` as a dev dependency (with its install script); add the `build` script to `package.json`; in `eslint.config.js` add `dist/**` to `ignores` and a block giving `scripts/**/*.mjs` the Node globals. (Prettier needs no edit: `format:check` checks only `src/` and `tests/`.)
+    2. Run `npm install --save-dev --save-exact esbuild@0.28.2` yourself and commit it, then approve only the `package.json` script and `eslint.config.js` edits.
 
 ### M2 — Holiday service and facts
 
