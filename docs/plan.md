@@ -9,7 +9,7 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M2** Holiday service and facts | `api.js` returns `HolidayResult`; `domain/holidays.js` keeps `Public` holidays and handles regions and missing data. | sonnet | high | open |
+| **M2** Holiday service and facts | `api.js` returns `HolidayResult`; `domain/holidays.js` keeps `Public` holidays and handles regions and missing data. | sonnet | high | blocked |
 | **M3** Time zones and formats | Local date and time with DST; dd-mmm-yy and 12-hour formats; the import-rule test. | sonnet | high | open |
 | **M4** Country table | `data/countries.js` and `domain/countries.js`: capital default and other zones. | sonnet | medium | open |
 | **M5** Places, settings, storage | Place and settings logic with validation; `storage.js`. | sonnet | medium | open |
@@ -52,6 +52,14 @@ Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
   country and year (no user data) and record the result in `design.md` section 5.
 - **Gate:** the tests use a fake `fetch`; no test calls a live server. Spec section 7 holiday-service
   item is updated.
+- **Blocked:** The gate needs an edit to `docs/spec.md` section 7 (the holiday-service item), and this block has no Approval entry for a spec edit.
+  - `docs/plan.md` M2 Gate: "Spec section 7 holiday-service item is updated."
+  - `CLAUDE.md` and `docs/workflow.md` rules: never edit `spec.md` without the user's approval, given in chat or in an **Approval** entry. `.claude/settings.json` also asks before edits to `/docs/spec.md`.
+  - The item today (`docs/spec.md` section 7, row "Which free holiday service, and its regional coverage") says the file-page check is unverified and blocks HOL-001 and HOL-003. `docs/design.md` section 5 records that the CORS check ran on 2026-11-17.
+  - Nothing else was changed. No code or tests were written.
+  - To continue, approve one of these:
+    1. Permit exactly: edit only that row of `docs/spec.md` section 7 (the "Consequence" and "Resolution" cells) to record the live-response check made in this milestone and mark the item resolved. Nothing else in the spec.
+    2. Drop the spec edit from the Gate: change the Gate to say that the result is recorded only in `docs/design.md` section 5 (the spec item then stays as it is).
 
 ### M3 — Time zones and formats
 
