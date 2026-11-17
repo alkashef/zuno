@@ -257,7 +257,7 @@ All types are JSDoc `@typedef`s in the module that owns them.
 | `Holiday` | `date` (`YYYY-MM-DD`), `name`, `regions` (list of codes, or empty for national) | `domain/holidays.js`, made from the service record. Only type `Public` is kept. |
 | `HolidayResult` | `status` (`loaded` or `unavailable`), `holidays` or `reason` | `api.js`. Kept in memory per country and year. |
 | `Marker` | `instant` (UTC milliseconds) | State in `main.js`. Starts at the current instant. |
-| `DayFacts` | `date`, `isWeekend`, `holidayName` or none, `isToday`, `hijri` (day, month, year, or none) | `domain/calendar.js`. Today is the place's own local date (CAL-004). |
+| `DayFacts` | `date` (`YYYY-MM-DD`), `isWeekend`, `holidayName` or `null`, `isToday`, `hijri` (day, month, year, or `null` while Hijri is off) | `domain/calendar.js`. Today is the place's own local date (CAL-004). |
 | `PickerRow` | `placeId`, `localDateTime` of the marker, `segments` (list of `{ from, to, kind }`) | `domain/picker.js`. Segments cover the window exactly. Weekend and holiday time is `dayOff` (PCK-005). |
 
 Integrity: a `Place` whose `zone` is not valid for `Intl` or whose `countryCode` is not in the
@@ -285,7 +285,9 @@ is 1; an unknown version is invalid (DEC-008).
   `removePlace`, `movePlace`, `editPlace`, `setWorkingHours`, `setShowCountry`, `setShowHijri`,
   `selectHoliday`, `toggleNotices`, `openSettings`, `closeSettings`.
 - `domain/picker.buildPicker(settings, marker, holidays) -> PickerRow[]` and
-  `domain/calendar.buildMonth(settings, year, month, holidays, nowInstant) -> DayFacts[][]`.
+  `domain/calendar.buildMonth(settings, monthRef, holidays, nowInstant) -> DayFacts[][]`, where
+  `monthRef` is `{ year, month }` (one object, because of the 4-parameter limit) and `holidays` is a
+  record of `Holiday[]` by country code.
 
 **Screen parts and interaction states** (the canvas shows each; sizes and colours are in DEC-009):
 

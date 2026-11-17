@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M7** Month-grid model | `domain/calendar.js`: weekend, holiday, split cell, today, Hijri day. | sonnet | high | open |
 | **M8** Picker model | `domain/picker.js`: reference window (23 or 25 hours on DST days), segments, day-off colour, marker moves. | opus | high | open |
 | **M9** Controller: page workflows | `controller.js` with fakes: open, tick, refresh, marker, month, notices, selected holiday. | opus | high | open |
 | **M10** Controller: settings workflows | Add, remove, move and edit places; hours; display switches; save and restore. | sonnet | high | open |
@@ -27,17 +26,6 @@ history is the record. Template: `docs/workflow.md`.
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M7 — Month-grid model
-
-- **Refs:** CAL-001, CAL-002, CAL-003, CAL-004, CAL-007, HIJ-001 (data), EX-002, EX-004, EX-007.
-- **Owner:** `src/domain/calendar.js`.
-- **Tests first:** `test_cal_001_one_row_per_place_one_cell_per_day`,
-  `test_cal_002_weekend_cells_by_country`, `test_cal_003_holiday_cell_has_holiday_kind`,
-  `test_cal_004_today_uses_place_local_date`, `test_cal_007_holiday_on_weekend_is_split_ex_007`.
-- **Build:** `buildMonth(settings, year, month, holidays, nowInstant)` returns `DayFacts[][]` using
-  `zones`, `weekends`, `holidays` and `hijri`.
-- **Gate:** none beyond the common gate.
 
 ### M8 — Picker model
 
