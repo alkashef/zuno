@@ -1,4 +1,7 @@
-body {
-  margin: 0;
-  font-family: ui-rounded, system-ui, sans-serif;
-}
+/**
+ * The single style entry point: it only imports the sheets, in order. The build bundles them into
+ * the one-file page. It holds no rule of its own.
+ */
+@import url("./theme.css");
+@import url("./base.css");
+@import url("./layout.css");

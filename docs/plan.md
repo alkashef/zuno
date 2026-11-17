@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M11** Page shell, theme, empty page | `main.js` wiring, `index.html`, theme tokens, header, Refresh, empty page; installs Playwright (Chromium first). | sonnet | high | approved |
 | **M12** Settings panel: places | Add, remove, reorder and edit places in the panel; saved and restored. | sonnet | medium | open |
 | **M13** Settings panel: hours and display | Working hours, country names, Hijri switch, region, Hijri variant and adjustment. | sonnet | medium | open |
 | **M14** Picker view | Day selector, hour axis, rows, draggable marker, scroll. | sonnet | high | open |
@@ -23,50 +22,6 @@ history is the record. Template: `docs/workflow.md`.
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M11 — Page shell, theme, empty page
-
-- **Refs:** THM-001, SET-007, REF-001, DEC-007, DEC-009, DEC-011.
-- **Owner:** `src/main.js`, `src/index.html`, `src/theme.css`, `src/base.css`, `src/layout.css`,
-  `src/views/header.js`, `src/views/empty.js`.
-- **Tests first:** `ui_thm_001_follows_light_and_dark_color_scheme`,
-  `ui_set_007_empty_page_prompts_to_add_a_place`, `ui_ref_001_refresh_button_refetches_holidays`.
-- **Build:** install Playwright pinned (dev-only; record version and licence check in `design.md`
-  section 5) and run these tests against `dist/zuno.html` in Chromium, with the holiday service
-  faked by request routing. `main.js` creates the state, controller and views and starts the clock
-  tick; it holds no logic. `theme.css` has the tokens of DEC-009. Add the header (logo, title,
-  "Updated" time, Refresh, Settings) and the empty page. The logo is `src/assets/zuno-logo.jpg`
-  (already shrunk), inlined by `build.mjs` as a data URI, so the file stays one file. Add the browsers to the README setup.
-- **Gate:** the page opens as a file. The title stays "Global Timer" until the user locks the UI.
-- **Blocked:** M11 needs `npm install` of Playwright, and the run may not install packages on its own.
-  - The Build line says to install Playwright pinned; DEC-011 approves it as a dev dependency.
-  - `.claude/settings.json` lists `Bash(npm install *)` and `Edit(/package.json)` under `ask`.
-    `CLAUDE.md` (Git and destructive actions) says the run stops on an approval it cannot get. This
-    run is unattended, and the call `npm install --save-dev --save-exact playwright@1.65.1` was refused.
-  - `node_modules` has no `playwright` package, so the three `ui_*` tests cannot be written or run.
-  - Latest version checked at npm: `playwright` 1.65.1, licence Apache-2.0.
-  - Nothing else was changed. To continue, approve one of these:
-    1. Run `npm install --save-dev --save-exact playwright@1.65.1` yourself (this updates
-       `package.json` and `package-lock.json`), commit them, and set Status to `approved`. M11 then
-       uses `playwright` as a library inside `node --test`, with Chromium from the local cache or
-       `npx playwright install chromium`.
-    2. Approve M11 to run `npm install --save-dev --save-exact playwright@1.65.1`, edit
-       `package.json`, and run `npx playwright install chromium`, and nothing else.
-- **Approval:** Option 1. `playwright@1.65.1` is installed and committed (`package.json`,
-  `package-lock.json`). Chromium (revision 1255) is installed by the user from a terminal with
-  `npx playwright install chromium`. Nothing more.
-- **Blocked:** M11 needs Chromium revision 1255 for `playwright@1.65.1`, and it is not installed. The run may not install it.
-  - The Approval above says the user installs Chromium 1255. `playwright` 1.65.1 expects revision 1255
-    (`node_modules/playwright-core/browsers.json`).
-  - `chromium.launch()` fails with "Executable doesn't exist at
-    `...\ms-playwright\chromium_headless_shell-1255\chrome-headless-shell-win64\chrome-headless-shell.exe`".
-    The cache `%LOCALAPPDATA%\ms-playwright` holds only revisions 1181 and 1228 (and Firefox 1489, WebKit 2191).
-  - The Approval permits nothing more, and `CLAUDE.md` asks before installs. Pointing the tests at the
-    revision 1228 binary with a fixed `executablePath` would tie the tests to one machine, so it was not done.
-  - Nothing else was changed. To continue, approve one of these:
-    1. Run `npx playwright install chromium` yourself, check that `chromium_headless_shell-1255` exists, and set Status to `approved`.
-    2. Approve M11 to run `npx playwright install chromium`, and nothing else.
-- **Approval:** Option 2. M11 may run `npx playwright install chromium` (revision 1255), and nothing else.
 
 ### M12 — Settings panel: places
 

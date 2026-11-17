@@ -1,0 +1,77 @@
+/**
+ * The design tokens of the page (DEC-009): every colour, line, corner, spacing and type value, as
+ * CSS custom properties. The light theme is the default and the dark theme replaces the colours
+ * while the operating system asks for it (THM-001); there is no toggle on the page. It styles no
+ * element: base.css and layout.css use these tokens, and no other sheet writes a colour value.
+ */
+:root {
+  color-scheme: light dark;
+
+  /* Colours: light theme (Lagoon). */
+  --color-page: #eaf6f6;
+  --color-card: #fff;
+  --color-text: #0e2a33;
+  --color-text-muted: #4f6f78;
+  --color-text-secondary: #1f4450;
+  --color-line-card: #d5eaea;
+  --color-line-hairline: #e3f1f1;
+  --color-line-control: #b6d4d6;
+  --color-line-input: #6b979d;
+  --color-working: #12b886;
+  --color-non-working: #e4f1f1;
+  --color-day-off: #0f4c5c;
+  --color-weekend: #ffd166;
+  --color-holiday: #ff6b6b;
+  --color-today: #6c5ce7;
+  --color-hijri: #c0267c;
+  --color-reference: #dff3f3;
+  --color-map-sea: #bfe9f2;
+  --color-map-land: #ffe6b8;
+  --color-danger: #c9344a;
+
+  /* Shapes and sizes: square corners, 1 px lines, 44 px controls. */
+  --line-width: 1px;
+  --radius: 0;
+  --control-height: 44px;
+  --logo-size: 40px;
+
+  /* Spacing. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 40px;
+
+  /* Type: a rounded system stack, no web fonts (NFR-001). */
+  --font-family: ui-rounded, system-ui, sans-serif;
+  --font-family-code: ui-monospace, monospace;
+  --font-size-small: 0.875rem;
+  --font-size-body: 1rem;
+  --font-size-title: 1.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Colours: dark theme (Midnight). */
+    --color-page: #07090d;
+    --color-card: #10131a;
+    --color-text: #eaeef5;
+    --color-text-muted: #9ba4b5;
+    --color-text-secondary: #c3cbd8;
+    --color-line-card: #1e2433;
+    --color-line-hairline: #1b2030;
+    --color-line-control: #363e52;
+    --color-line-input: #5a647c;
+    --color-working: #1fd1a5;
+    --color-non-working: #1a2030;
+    --color-day-off: #6e5be6;
+    --color-weekend: #f2b63d;
+    --color-holiday: #ff4f8b;
+    --color-today: #5bc8ff;
+    --color-hijri: #c7aeff;
+    --color-reference: #161b2a;
+    --color-map-sea: #0b0f18;
+    --color-map-land: #222b40;
+    --color-danger: #ff7a9e;
+  }
+}

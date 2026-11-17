@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { formatDate, formatHijri, formatTime } from "../../src/domain/format.js";
+import { formatClock, formatDate, formatHijri, formatTime } from "../../src/domain/format.js";
 
 /**
  * @param {number} year
@@ -42,4 +42,10 @@ test("test_dsp_002_midnight_and_noon_show_12", () => {
 test("test_dsp_003_hijri_date_format_dd_month_yyyy", () => {
   assert.equal(formatHijri({ day: 6, month: "Jumada II", year: 1448 }), "06-Jumada II-1448");
   assert.equal(formatHijri({ day: 21, month: "Rajab", year: 1448 }), "21-Rajab-1448");
+});
+
+test("test_dsp_002_clock_shows_the_instant_in_the_browsers_zone_as_12_hour_text", () => {
+  // Built from local-time parts, so the result does not depend on the machine's zone.
+  assert.equal(formatClock(new Date(2026, 10, 16, 9, 25).getTime()), "9:25 AM");
+  assert.equal(formatClock(new Date(2026, 10, 16, 23, 5).getTime()), "11:05 PM");
 });

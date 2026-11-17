@@ -46,3 +46,19 @@ export function formatTime(local) {
 export function formatHijri(hijri) {
   return `${twoDigits(hijri.day)}-${hijri.month}-${hijri.year}`;
 }
+
+/**
+ * @param {number} instant UTC milliseconds.
+ * @returns {string} The time of day in the browser's own time zone as 12-hour text, for example
+ * `9:25 AM` (the "Updated" time, DSP-002).
+ */
+export function formatClock(instant) {
+  const date = new Date(instant);
+  return formatTime({
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+    hour: date.getHours(),
+    minute: date.getMinutes(),
+  });
+}

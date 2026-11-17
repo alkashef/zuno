@@ -1,0 +1,69 @@
+/**
+ * The layout of the page shell: the header row, the page area, the empty page and the error
+ * screen. It does not style the views of later screens (each has its own sheet), and it holds no
+ * colour or size value of its own (theme.css does).
+ */
+body {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--line-width) solid var(--color-line-card);
+  background: var(--color-card);
+}
+
+.header-logo {
+  width: var(--logo-size);
+  height: var(--logo-size);
+  background: url("./assets/zuno-logo.jpg") center / contain no-repeat;
+}
+
+.header-title {
+  margin-right: auto;
+  font-size: var(--font-size-title);
+}
+
+.header-updated {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+.page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: var(--space-4);
+}
+
+.empty {
+  display: flex;
+  max-width: 28rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin: var(--space-5) auto;
+  padding: var(--space-4);
+  border: var(--line-width) solid var(--color-line-card);
+  background: var(--color-card);
+}
+
+.crash {
+  padding: var(--space-3) var(--space-4);
+  border: var(--line-width) solid var(--color-danger);
+  background: var(--color-card);
+  color: var(--color-danger);
+}
+
+.crash-details {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-family-code);
+  font-size: var(--font-size-small);
+  white-space: pre-wrap;
+}

@@ -6,7 +6,7 @@ A timer app that tracks time across time zones.
 
 ## Stack
 
-TBD
+Plain JavaScript, HTML and CSS, bundled into one file by esbuild 0.28.2. Browser tests use Playwright 1.65.1 (dev-only). Versions of every tool are in `package.json`.
 
 ## File structure
 
@@ -24,7 +24,13 @@ TBD
 
 ## Setup
 
-TBD
+```bash
+npm install
+npx playwright install chromium
+```
+
+The second command downloads the browser that the browser tests drive. The page needs no
+configuration and no server.
 
 After a fresh clone, turn on the pre-commit hook, which refuses a commit unless the checks pass:
 
@@ -44,5 +50,13 @@ npm run build
 ## How to test
 
 ```bash
-TBD
+npm test
+npm run typecheck
+npm run lint
+npm run lint:css
+npm run format:check
 ```
+
+`npm test` also runs the headless-browser tests in `tests/e2e/ui/`. They build the page into a
+scratch folder, open it as a file in Chromium, and answer the holiday service by request routing,
+so they need no network.

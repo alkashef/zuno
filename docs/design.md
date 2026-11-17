@@ -99,7 +99,7 @@ data. If the stored record is missing or fails validation, the page treats it as
 settings" and shows the empty page (SET-007) and logs a warning. Revisit when settings need to be
 shared between browsers (a spec exclusion today).
 
-**DEC-009.** Square corners everywhere, 1 px lines, 44 px minimum height for buttons and inputs.
+**DEC-009.** (Token names in `theme.css`: `--color-<name>` for each palette row, for example `--color-page`, `--color-text-muted`, `--color-day-off`.) Square corners everywhere, 1 px lines, 44 px minimum height for buttons and inputs.
 Type is a rounded system stack (`ui-rounded`, then `system-ui`); no web fonts (NFR-001). The
 semantic colours differ in lightness as well as hue (the accepted colour-blind risk in spec
 section 7 stays). Palette (hex) until `theme.css` exists:
@@ -148,6 +148,8 @@ at implementation.
 | `domain/picker.js` | The picker model: the reference window, one row of segments per place, and local times at the marker. | `zones`, `weekends`, `holidays` | PCK-001 to PCK-006, PCK-007 |
 | `controller.js` | The workflows. Applies an action to the state, asks `api.js` for holidays, saves settings. Pure apart from its injected `api`, `storage` and `clock`. | `domain/*` | all workflows |
 | `views/*.js` | One view per screen part (header, notices, map, picker, day selector, month grid, legend, settings, empty page). Each owns its own DOM, clones `<template>` elements, and sends events up. | `domain/format.js` types | |
+| `views/actions.js` | One delegated click listener: turns `data-action` of a plain action (`refresh`, `openSettings`) into a controller action. Only `main.js` imports it. | none | REF-001, SET-007 |
+| `views/error-screen.js` | Shows the message and stack of an unexpected error on the page; `main.js` calls it from the `error` and `unhandledrejection` handlers. | none | project rule (top-level handler) |
 
 Import rules: `domain/*` imports only other `domain/*` modules and `data/*`. `controller.js`
 imports `domain/*` only. Views import `domain/format.js` and receive everything else as arguments.
@@ -160,8 +162,8 @@ Create a folder only when it is listed here.
 
 | Path | Purpose and owner |
 | --- | --- |
-| `src/` | Source. Holds `index.html`, `main.js`, `config.js`, `log.js`, `api.js`, `storage.js`, `clock.js`, `controller.js` and the sheets `theme.css`, `base.css`, `layout.css` plus one sheet per view. |
-| `src/assets/` | Images the page uses. Holds `zuno-logo.jpg`, the app logo (290 by 292 pixels, 24 KB; the user shrank it by hand on 2026-11-17, so the one-file page stays small). |
+| `src/` | Source. Holds `index.html`, `main.js`, `config.js`, `log.js`, `api.js`, `storage.js`, `clock.js`, `controller.js` and the sheets `styles.css` (imports the others), `theme.css`, `base.css`, `layout.css` plus one sheet per view. `layout.css` also styles the header, the empty page and the error screen. |
+| `src/assets/` | Images the page uses. Holds `zuno-logo.jpg`, the app logo (290 by 292 pixels, 24 KB; the user shrank it by hand on 2026-11-17, so the one-file page stays small). `layout.css` uses it as a CSS `url()`; the build inlines it as a data URI (esbuild `dataurl` loader) and the Content-Security-Policy allows `img-src data:`. |
 | `src/domain/` | Pure logic modules from section 2.1. |
 | `src/views/` | View modules, one per screen part. |
 | `data/` | `countries.js` (the country table). Input data, read by `domain/countries.js`. |
@@ -181,7 +183,7 @@ All values live in `config.js` as one frozen object. The page has no environment
 | --- | --- | --- |
 | `holidayServiceBaseUrl` | `https://nagerholidays.com/api/v4` | Base URL of the holiday service. Checked live in M2; see section 5. HOL-001 |
 | `holidayRequestTimeoutMs` | 10000 | Time to wait for one holiday request. A proposed value, not from the spec. |
-| `clockTickMs` | 60000 | How often the current times update. CLK-003 |
+| `clockTickMs` | 60000 | How often the current times update. CLK-003. Added to `config.js` in M11. |
 | `storageKey` | `zuno.settings` | Key of the saved settings record. SET-004 |
 | `defaultWorkStartMinutes`, `defaultWorkEndMinutes` | 540, 1020 | 9:00 AM and 5:00 PM. SET-005 |
 | `logLevel` | `warn` | Lowest level `log.js` prints. |
@@ -201,7 +203,7 @@ Exact versions of installed packages are in `package.json`.
 | TypeScript compiler, ESLint, Prettier, Stylelint | Checks | Existing in `package.json` | Existing | |
 | `node --test` | Unit and workflow tests | DEC-011 | Existing | |
 | esbuild | Bundles modules and CSS for the one-file build | DEC-002 | Installed 0.28.2, dev-only. Licence MIT; one install script (`postinstall: node install.js`), checked at npm on 2026-11-17. | esbuild.github.io/api, 2026-11-17 |
-| Playwright | Browser tests | DEC-011 | Proposed, dev-only. Needs approval. | playwright.dev/docs/browsers, 2026-11-17 |
+| Playwright | Browser tests | DEC-011 | Installed 1.65.1 in M11, dev-only, exact version. Licence Apache-2.0 (`node_modules/playwright/package.json`, checked 2026-11-17). Browsers are downloaded separately with `npx playwright install` (M11 installed Chromium; Firefox, WebKit and Edge come in M19). The tests build the page into a scratch folder, open it as a `file:` URL, fix the clock with `page.clock` and answer holiday requests by `context.route`. | playwright.dev/docs/browsers, 2026-11-17 |
 | Nager.Date | Public holidays | DEC-005 | Approved (DEC-005). Contract and CORS checked live in M2 (section 5). | nagerholidays.com/Api, 2026-11-17 |
 | IANA `zone.tab` | Zones and coordinates for `data/countries.js` | DEC-004 | Data source of the table (M4). | iana.org/time-zones |
 | Database, server, LLM, framework | none | | The page is local with one outside service. | |
@@ -310,8 +312,12 @@ is 1; an unknown version is invalid (DEC-008).
 
 **Screen parts and interaction states** (the canvas shows each; sizes and colours are in DEC-009):
 
-- Header: title, "Updated" time, a notices button with a count badge, Refresh, Settings. The notices
-  card opens and closes on the button; Escape closes it.
+- Header: logo, title, "Updated" time (the time of day in the browser's own zone, from `state.now`),
+  a notices button with a count badge, Refresh, Settings. The notices card opens and closes on the
+  button; Escape closes it. Until M12 the Settings button only sets `settingsOpen`, and the notices
+  button comes with M18. The page title and heading stay "Global Timer" until the user locks the
+  UI. CSS class names are kebab-case (`header-title`), because `stylelint-config-standard` rejects
+  the BEM `__` form that the HTML and CSS rules ask for (open question for the user).
 - Map: one pin per place with the place name, current time and date. Pins stay at their coordinates
   as the map grows and shrinks (the map stretches vertically; DEC-010).
 - Month grid: previous and next month buttons; a Hijri month band and Hijri day in each cell only
@@ -343,7 +349,6 @@ Everything else follows DEC-006 and the top-level handler.
 | Issue and references | Owner | Evidence needed | Blocks what? |
 | --- | --- | --- | --- |
 | Holiday service terms of service (use, availability, any limit on a hosted page). DEC-005. The CORS and contract check ran on 2026-11-17: `curl` with `Origin: null` to `/api/v4/Holidays/US/2026` and `/api/v3/PublicHolidays/2026/US` gave HTTP 200, `access-control-allow-origin: *`, and the documented fields for each version. Version 4 is the current one. The live-response check of M2 (2026-11-17, one request, `Holidays/US/2026`, no user data): HTTP 200, `access-control-allow-origin: *`, a JSON array of 17 records with the fields `date`, `name`, `countryCode`, `nationalHoliday`, `subdivisionCodes` (`null` or a list such as `US-CA`) and `holidayTypes` (`Public`, `Bank`, `Observance`, `Optional`, `School`, `Authorities`). Regional records exist (6 of 17), some of type `Public` (Good Friday) and some `Observance`. `api.js` checks `date`, `name`, `holidayTypes` and `subdivisionCodes`. | User | Read the service's terms page. | None until release. |
-| Installing Playwright: approved as a dev dependency (DEC-011), but the install itself waits for the milestone that first imports it (CLAUDE.md, Dependencies). The exact version is pinned then. (esbuild: installed in M1, see section 2.4.) | Implementation | Version and licence check at install time. | The browser-test milestone. |
 | Country table accuracy (capital zone choices). DEC-004 | Implementation | Unit test of every row; the user reviews the capital list. | Add-place milestone. |
 | Weekend data lags a recent country change. DEC-003 | Accepted risk | EX-002 in four browsers. | None. |
 | English Hijri month names (for example `Jumada II`) from `Intl` in all four browsers. EX-010 | Implementation | Browser test of EX-010 in four browsers. | HIJ milestone. |

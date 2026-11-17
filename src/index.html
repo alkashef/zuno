@@ -4,11 +4,33 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!--zuno:csp-->
-    <title>Zuno</title>
+    <title>Global Timer</title>
     <!--zuno:style-->
   </head>
   <body>
-    <main id="app"></main>
+    <header class="header" data-role="header">
+      <span class="header-logo" aria-hidden="true"></span>
+      <h1 class="header-title">Global Timer</h1>
+      <p class="header-updated" data-role="updated"></p>
+      <button type="button" class="button" data-action="refresh">Refresh</button>
+      <button type="button" class="button" data-action="openSettings">Settings</button>
+    </header>
+    <main class="page" data-role="page"></main>
+
+    <template id="empty-page-template">
+      <section class="empty" data-role="empty" aria-labelledby="empty-title">
+        <h2 id="empty-title">No places yet</h2>
+        <p>Add a place to see its local time, weekends and public holidays.</p>
+        <button type="button" class="button" data-action="openSettings">Add a place</button>
+      </section>
+    </template>
+
+    <template id="error-screen-template">
+      <section class="crash" role="alert">
+        <h2>Something went wrong</h2>
+        <pre class="crash-details" data-role="details"></pre>
+      </section>
+    </template>
     <!--zuno:script-->
   </body>
 </html>
