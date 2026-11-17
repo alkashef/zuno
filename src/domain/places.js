@@ -6,7 +6,7 @@
  * input unchanged. The list order is the display order (PCK-006).
  */
 import { capitalZone, countryName, listCountries, otherZones } from "./countries.js";
-import { formatTime } from "./format.js";
+import { formatDate, formatTime } from "./format.js";
 import { HijriVariant, isHijriAdjust, isHijriVariant } from "./hijri.js";
 import { localDateTime } from "./zones.js";
 
@@ -180,4 +180,30 @@ export function placeName(place, showCountry) {
  */
 export function placeClock(place, instant) {
   return formatTime(localDateTime(instant, place.zone));
+}
+
+/**
+ * @typedef {object} PlacePin Where a place sits on the world map, and what its label says.
+ * @property {number} left Percent of the map width (equirectangular projection).
+ * @property {number} top Percent of the map height.
+ * @property {string} time The local time of day, for example `9:25 AM`.
+ * @property {string} date The local date as dd-mmm-yy.
+ */
+
+/**
+ * @param {Place} place
+ * @param {number} instant UTC milliseconds.
+ * @returns {PlacePin} The position of the place's zone city on the map, and its local time and
+ *   date (MAP-001, CLK-001).
+ */
+export function placePin(place, instant) {
+  const city = zonesOf(place.countryCode).find((candidate) => candidate.zone === place.zone);
+  const { latitude, longitude } = city ?? capitalZone(place.countryCode);
+  const local = localDateTime(instant, place.zone);
+  return {
+    left: ((longitude + 180) / 360) * 100,
+    top: ((90 - latitude) / 180) * 100,
+    time: formatTime(local),
+    date: formatDate(local),
+  };
 }

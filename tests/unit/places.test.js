@@ -11,6 +11,7 @@ import {
   movePlace,
   placeClock,
   placeName,
+  placePin,
   removePlace,
   zonesOf,
 } from "../../src/domain/places.js";
@@ -89,4 +90,20 @@ test("test_set_003_zones_of_lists_capital_first_then_other_zones", () => {
 test("test_set_002_place_clock_shows_local_time_of_capital_zone", () => {
   const place = createPlace("a", "SA");
   assert.equal(placeClock(place, Date.UTC(2026, 10, 16, 9, 25)), "12:25 PM");
+});
+
+test("test_map_001_place_pin_gives_map_percentages_time_and_date", () => {
+  const place = createPlace("a", "SA");
+  const pin = placePin(place, Date.UTC(2026, 10, 16, 21, 30));
+  assert.equal(pin.time, "12:30 AM");
+  assert.equal(pin.date, "17-Nov-26");
+  assert.ok(pin.left > 50 && pin.left < 70, String(pin.left));
+  assert.ok(pin.top > 30 && pin.top < 40, String(pin.top));
+});
+
+test("test_map_001_place_pin_uses_the_chosen_zone_coordinates", () => {
+  const capital = createPlace("a", "US");
+  const west = { ...capital, zone: "America/Los_Angeles" };
+  const instant = Date.UTC(2026, 10, 16, 9, 25);
+  assert.ok(placePin(west, instant).left < placePin(capital, instant).left);
 });

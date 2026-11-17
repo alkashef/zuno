@@ -1,0 +1,61 @@
+/**
+ * The world map: the sea, the land outline, and the pins with their labels. It does not style the
+ * page shell (layout.css) or the other views, and it holds no colour or size value of its own
+ * (theme.css does).
+ */
+.map {
+  position: relative;
+  min-height: var(--map-min-height);
+  border: var(--line-width) solid var(--color-line-card);
+  background: var(--color-map-sea);
+}
+
+.map-outline {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.map-land {
+  fill: var(--color-map-land);
+}
+
+.map-pins {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.map-pin {
+  position: absolute;
+  top: var(--pin-top);
+  left: var(--pin-left);
+}
+
+.map-pin-dot {
+  display: block;
+  width: var(--map-pin-size);
+  height: var(--map-pin-size);
+  border: var(--line-width) solid var(--color-card);
+  background: var(--color-marker);
+  transform: translate(-50%, -50%);
+}
+
+.map-pin-label {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-1) var(--space-2);
+  border: var(--line-width) solid var(--color-line-card);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-size: var(--font-size-small);
+  transform: translate(var(--space-2), calc(-100% - var(--space-1)));
+  white-space: nowrap;
+}
+
+.map-pin-name {
+  font-weight: bold;
+}

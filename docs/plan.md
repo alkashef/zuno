@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M17** World map | SVG map with pins, names, times and dates, updated by the tick. | sonnet | medium | open |
 | **M18** Legend and notices | Bottom legend; notices card with a count badge for missing holiday data. | sonnet | medium | open |
 | **M19** Cross-browser and NFR checks | Playwright in four browsers: request check, English text, contrast, EX-002, EX-010; README; coverage floor. | sonnet | high | open |
 
@@ -17,16 +16,6 @@ history is the record. Template: `docs/workflow.md`.
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M17 — World map
-
-- **Refs:** MAP-001, CLK-001, CLK-003, DEC-010.
-- **Owner:** `src/views/map.js`, `src/map.css`, the map SVG in `src/index.html`.
-- **Tests first:** `ui_map_001_pin_per_place_with_name_time_and_date`,
-  `ui_clk_001_pin_shows_current_local_time_and_date`, `ui_clk_003_pin_time_updates_each_tick`.
-- **Build:** a static SVG of simplified outlines; each pin is placed by CSS custom properties from
-  the country table coordinates; the label follows the display name and country-name settings.
-- **Gate:** the tick test uses a fake clock, no real wait.
 
 ### M18 — Legend and notices
 

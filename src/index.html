@@ -25,6 +25,35 @@
       </section>
     </template>
 
+    <template id="map-template">
+      <section class="map" data-role="map" aria-label="World map">
+        <svg
+          class="map-outline"
+          viewBox="0 0 360 180"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path
+            class="map-land"
+            d="M12 24 L40 20 L85 18 L118 30 L125 40 L113 45 L104 52 L99 59 L100 65 L90 61 L83 63 L83 70 L93 69 L97 80 L102 82 L88 75 L75 70 L68 60 L62 57 L56 50 L55 41 L45 32 L30 30 L15 30 Z M107 12 L130 8 L160 8 L165 22 L145 32 L132 30 L118 28 Z M100 90 L103 82 L118 80 L130 90 L145 96 L141 105 L132 116 L122 128 L115 132 L112 145 L106 140 L108 120 L110 108 L99 96 Z M171 52 L171 47 L178 42 L184 38 L190 35 L185 28 L195 21 L210 19 L240 20 L280 12 L320 18 L360 22 L350 30 L340 35 L320 40 L310 48 L302 52 L302 60 L290 70 L286 80 L280 77 L280 88 L275 74 L268 68 L260 80 L253 70 L248 66 L237 65 L238 67 L232 74 L223 77 L215 62 L215 55 L208 53 L206 50 L192 48 L183 47 L175 54 Z M163 69 L170 60 L174 54 L190 53 L212 59 L215 62 L223 78 L231 78 L220 93 L220 105 L213 116 L200 125 L195 118 L192 107 L189 91 L189 86 L172 86 L163 76 Z M294 112 L310 102 L322 101 L333 116 L326 129 L315 125 L295 124 Z M176 38 L181 34 L182 40 L177 42 Z M322 52 L326 48 L330 52 L326 60 Z M280 88 L300 92 L296 94 L282 92 Z M352 130 L356 126 L358 134 Z M0 160 L360 160 L360 180 L0 180 Z"
+          />
+        </svg>
+        <ol class="map-pins" data-role="pins"></ol>
+      </section>
+    </template>
+
+    <template id="map-pin-template">
+      <li class="map-pin" data-role="pin">
+        <span class="map-pin-dot" aria-hidden="true"></span>
+        <span class="map-pin-label">
+          <span class="map-pin-name" data-role="pin-name"></span>
+          <span class="map-pin-time" data-role="pin-time"></span>
+          <span class="map-pin-date" data-role="pin-date"></span>
+        </span>
+      </li>
+    </template>
+
     <template id="month-grid-template">
       <section class="month-grid" data-role="month-grid" aria-labelledby="month-grid-title">
         <div class="month-grid-header">

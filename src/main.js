@@ -10,7 +10,7 @@ import { config } from "./config.js";
 import { createController } from "./controller.js";
 import { monthWeeks } from "./domain/calendar.js";
 import { listCountries } from "./domain/countries.js";
-import { placeClock, placeName, zonesOf } from "./domain/places.js";
+import { placeClock, placeName, placePin, zonesOf } from "./domain/places.js";
 import { parseSettings } from "./domain/settings.js";
 import { localDateTime } from "./domain/zones.js";
 import { log } from "./log.js";
@@ -21,6 +21,7 @@ import { createDaySelector } from "./views/day-selector.js";
 import { createErrorScreen } from "./views/error-screen.js";
 import { createHeader } from "./views/header.js";
 import { createHijriNote } from "./views/hijri-note.js";
+import { createMap } from "./views/map.js";
 import { createMonthGrid } from "./views/month-grid.js";
 import { createPicker } from "./views/picker.js";
 import { createPlaceList } from "./views/settings-places.js";
@@ -47,6 +48,7 @@ const lookup = { countries: listCountries(), zonesOf, placeName, clockOf: placeC
 const views = [
   createHeader(document),
   createEmptyPage(document),
+  createMap(document, { placeName, pinOf: placePin }),
   createMonthGrid(document, {
     dispatch: controller.dispatch,
     placeName,
