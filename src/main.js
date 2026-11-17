@@ -8,6 +8,8 @@ import { getHolidays } from "./api.js";
 import * as clock from "./clock.js";
 import { config } from "./config.js";
 import { createController } from "./controller.js";
+import { listCountries } from "./domain/countries.js";
+import { placeClock, placeName, zonesOf } from "./domain/places.js";
 import { parseSettings } from "./domain/settings.js";
 import { log } from "./log.js";
 import { createStorage } from "./storage.js";
@@ -15,6 +17,8 @@ import { bindActions } from "./views/actions.js";
 import { createEmptyPage } from "./views/empty.js";
 import { createErrorScreen } from "./views/error-screen.js";
 import { createHeader } from "./views/header.js";
+import { createPlaceList } from "./views/settings-places.js";
+import { createSettingsPanel } from "./views/settings.js";
 
 const errorScreen = createErrorScreen(document);
 
@@ -33,7 +37,16 @@ const controller = createController({
   clock,
   defaultHours: { start: config.defaultWorkStartMinutes, end: config.defaultWorkEndMinutes },
 });
-const views = [createHeader(document), createEmptyPage(document)];
+const lookup = { countries: listCountries(), zonesOf, placeName, clockOf: placeClock };
+const views = [
+  createHeader(document),
+  createEmptyPage(document),
+  createSettingsPanel(document, {
+    dispatch: controller.dispatch,
+    lookup,
+    makeList: (list) => createPlaceList(document, list, { dispatch: controller.dispatch, lookup }),
+  }),
+];
 
 controller.subscribe((view) => views.forEach((part) => part.render(view)));
 bindActions(document, controller.dispatch);

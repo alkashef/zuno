@@ -142,12 +142,13 @@ at implementation.
 | `domain/weekends.js` | Weekend days of a country. | none | CAL-002 |
 | `domain/countries.js` | Country list, names, capital zone and other zones. | `data/countries.js` | SET-002, SET-003 |
 | `domain/holidays.js` | Turns a `HolidayResult` into per-day facts for a place; lists regions; reports missing data. | none | HOL-003, HOL-004, REF-002 |
-| `domain/places.js` | Adds, removes, moves, relabels and edits places; applies defaults. | `domain/countries.js`, `domain/hijri.js` | SET-001 to SET-003, SET-006, SET-008, SET-009 |
+| `domain/places.js` | Adds, removes, moves, relabels and edits places; applies defaults; lists a country's city zones (`zonesOf`) and a place's local time (`placeClock`). | `domain/countries.js`, `domain/hijri.js`, `domain/zones.js`, `domain/format.js` | SET-001 to SET-003, SET-006, SET-008, SET-009 |
 | `domain/settings.js` | Settings shape, defaults and validation. | `domain/places.js` | SET-005, SET-007, SET-010, SET-011 |
 | `domain/calendar.js` | The month-grid model: one row per place, one cell per day. | `zones`, `hijri`, `weekends`, `holidays` | CAL-001 to CAL-007 |
 | `domain/picker.js` | The picker model: the reference window, one row of segments per place, and local times at the marker. | `zones`, `weekends`, `holidays` | PCK-001 to PCK-006, PCK-007 |
 | `controller.js` | The workflows. Applies an action to the state, asks `api.js` for holidays, saves settings. Pure apart from its injected `api`, `storage` and `clock`. | `domain/*` | all workflows |
 | `views/*.js` | One view per screen part (header, notices, map, picker, day selector, month grid, legend, settings, empty page). Each owns its own DOM, clones `<template>` elements, and sends events up. | `domain/format.js` types | |
+| `views/settings.js`, `views/settings-places.js` | The settings panel (M12: places). `settings.js` owns the panel, the add-by-country form, Escape and the focus return; `settings-places.js` owns the list of places and their editors. `main.js` passes both the country lookup (`countries`, `zonesOf`, `placeName`, `clockOf`) and the list factory, because a view imports no other view and no domain module besides `format.js`. | `domain/format.js` types | SET-001 to SET-004, SET-008, SET-009 |
 | `views/actions.js` | One delegated click listener: turns `data-action` of a plain action (`refresh`, `openSettings`) into a controller action. Only `main.js` imports it. | none | REF-001, SET-007 |
 | `views/error-screen.js` | Shows the message and stack of an unexpected error on the page; `main.js` calls it from the `error` and `unhandledrejection` handlers. | none | project rule (top-level handler) |
 
@@ -314,7 +315,7 @@ is 1; an unknown version is invalid (DEC-008).
 
 - Header: logo, title, "Updated" time (the time of day in the browser's own zone, from `state.now`),
   a notices button with a count badge, Refresh, Settings. The notices card opens and closes on the
-  button; Escape closes it. Until M12 the Settings button only sets `settingsOpen`, and the notices
+  button; Escape closes it. The Settings button opens the settings panel (M12), and the notices
   button comes with M18. The page title and heading stay "Global Timer" until the user locks the
   UI. CSS class names are kebab-case (`header-title`), because `stylelint-config-standard` rejects
   the BEM `__` form that the HTML and CSS rules ask for (open question for the user).

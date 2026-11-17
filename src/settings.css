@@ -1,0 +1,92 @@
+/**
+ * The settings panel: a fixed side panel with the add form and the list of places and their
+ * editors. It holds no colour or size value of its own (theme.css does).
+ */
+.settings {
+  position: fixed;
+  z-index: 10;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(26rem, 100vw);
+  padding: var(--space-3);
+  overflow-y: auto;
+  border-left: var(--line-width) solid var(--color-line-card);
+  background: var(--color-card);
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.settings-places {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.settings-place {
+  padding: var(--space-2);
+  border: var(--line-width) solid var(--color-line-card);
+}
+
+.settings-place-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.settings-place-name {
+  margin-right: auto;
+  font-weight: bold;
+}
+
+.settings-place-time {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+.settings-place-edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.settings-place-edit[hidden],
+.settings-field[hidden] {
+  display: none;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.settings-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.settings-input {
+  min-height: var(--control-height);
+  padding: 0 var(--space-2);
+  border: var(--line-width) solid var(--color-line-input);
+  background: var(--color-card);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.settings-input[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}

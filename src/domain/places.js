@@ -6,7 +6,9 @@
  * input unchanged. The list order is the display order (PCK-006).
  */
 import { capitalZone, countryName, listCountries, otherZones } from "./countries.js";
+import { formatTime } from "./format.js";
 import { HijriVariant, isHijriAdjust, isHijriVariant } from "./hijri.js";
+import { localDateTime } from "./zones.js";
 
 /** @typedef {import("./hijri.js").HijriVariantName} HijriVariantName */
 
@@ -23,9 +25,10 @@ import { HijriVariant, isHijriAdjust, isHijriVariant } from "./hijri.js";
 
 /**
  * @param {string} countryCode
- * @returns {import("../../data/countries.js").CityZone[]} The capital and the other zones.
+ * @returns {import("../../data/countries.js").CityZone[]} The capital first, then the other zones
+ *   of the country: the cities a place can use (SET-002, SET-003).
  */
-function zonesOf(countryCode) {
+export function zonesOf(countryCode) {
   return [capitalZone(countryCode), ...otherZones(countryCode)];
 }
 
@@ -168,4 +171,13 @@ function cityName(place) {
 export function placeName(place, showCountry) {
   const name = place.label === "" ? cityName(place) : place.label;
   return showCountry ? `${name}, ${countryName(place.countryCode)}` : name;
+}
+
+/**
+ * @param {Place} place
+ * @param {number} instant UTC milliseconds.
+ * @returns {string} The place's local time of day, for example `9:25 AM` (SET-002).
+ */
+export function placeClock(place, instant) {
+  return formatTime(localDateTime(instant, place.zone));
 }

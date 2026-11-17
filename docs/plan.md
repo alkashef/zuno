@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M12** Settings panel: places | Add, remove, reorder and edit places in the panel; saved and restored. | sonnet | medium | open |
 | **M13** Settings panel: hours and display | Working hours, country names, Hijri switch, region, Hijri variant and adjustment. | sonnet | medium | open |
 | **M14** Picker view | Day selector, hour axis, rows, draggable marker, scroll. | sonnet | high | open |
 | **M15** Month-grid view | Grid, month buttons, weekend, holiday, split and today cells, holiday card, scroll. | sonnet | medium | open |
@@ -22,18 +21,6 @@ history is the record. Template: `docs/workflow.md`.
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M12 — Settings panel: places
-
-- **Refs:** SET-001, SET-002, SET-003, SET-004, SET-008, SET-009.
-- **Owner:** `src/views/settings.js`, `src/settings.css`.
-- **Tests first:** `ui_set_001_add_and_remove_a_place`, `ui_set_002_new_place_shows_capital_time`,
-  `ui_set_003_choose_another_city_zone`, `ui_set_004_places_survive_reload`,
-  `ui_set_008_move_arrows_reorder_places`, `ui_set_009_display_name_shown_instead_of_city`.
-- **Build:** the settings panel with the place list, add by country, expand to edit, reorder with
-  arrows, remove. Every control is a real element; icon-only buttons have an `aria-label`; Escape
-  closes the panel and focus returns to its button.
-- **Gate:** none beyond the common gate.
 
 ### M13 — Settings panel: hours and display
 

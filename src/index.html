@@ -25,6 +25,53 @@
       </section>
     </template>
 
+    <template id="settings-panel-template">
+      <aside class="settings" data-role="settings" role="dialog" aria-labelledby="settings-title">
+        <div class="settings-header">
+          <h2 id="settings-title">Settings</h2>
+          <button type="button" class="button" data-role="close" aria-label="Close settings">
+            &#x2715;
+          </button>
+        </div>
+        <h3>Places</h3>
+        <ul class="settings-places" data-role="places"></ul>
+        <form class="settings-add" data-role="add-form">
+          <label class="settings-field">
+            Country
+            <select class="settings-input" data-role="country">
+              <option value="">Choose a country</option>
+            </select>
+          </label>
+          <button type="submit" class="button">Add place</button>
+        </form>
+      </aside>
+    </template>
+
+    <template id="settings-place-template">
+      <li class="settings-place">
+        <div class="settings-place-row">
+          <span class="settings-place-name" data-role="name"></span>
+          <span class="settings-place-time" data-role="time"></span>
+          <button type="button" class="button" data-role="up">&#x2191;</button>
+          <button type="button" class="button" data-role="down">&#x2193;</button>
+          <button type="button" class="button" data-role="toggle" aria-expanded="false">
+            &#x270E;
+          </button>
+          <button type="button" class="button" data-role="remove">&#x2715;</button>
+        </div>
+        <div class="settings-place-edit" data-role="edit" hidden>
+          <label class="settings-field">
+            Display name
+            <input type="text" class="settings-input" data-role="label" />
+          </label>
+          <label class="settings-field" data-role="zone-field">
+            City time zone
+            <select class="settings-input" data-role="zone"></select>
+          </label>
+        </div>
+      </li>
+    </template>
+
     <template id="error-screen-template">
       <section class="crash" role="alert">
         <h2>Something went wrong</h2>

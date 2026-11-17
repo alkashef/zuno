@@ -9,8 +9,10 @@ import {
   editPlace,
   isPlace,
   movePlace,
+  placeClock,
   placeName,
   removePlace,
+  zonesOf,
 } from "../../src/domain/places.js";
 
 test("test_set_001_add_and_remove_places", () => {
@@ -72,4 +74,19 @@ test("test_set_003_edit_zone_must_belong_to_country", () => {
   const place = createPlace("a", "GB");
   assert.deepEqual(editPlace([place], "a", { zone: "Asia/Tokyo" }), [place]);
   assert.deepEqual(editPlace([place], "a", { region: "GB-SCT" })[0].region, "GB-SCT");
+});
+
+test("test_set_003_zones_of_lists_capital_first_then_other_zones", () => {
+  const zones = zonesOf("US").map((city) => city.zone);
+  assert.equal(zones[0], "America/New_York");
+  assert.ok(zones.length > 1);
+  assert.deepEqual(
+    zonesOf("SA").map((city) => city.zone),
+    ["Asia/Riyadh"],
+  );
+});
+
+test("test_set_002_place_clock_shows_local_time_of_capital_zone", () => {
+  const place = createPlace("a", "SA");
+  assert.equal(placeClock(place, Date.UTC(2026, 10, 16, 9, 25)), "12:25 PM");
 });
