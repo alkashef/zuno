@@ -8,7 +8,7 @@
   display: flex;
   width: min(var(--picker-width), 100%);
   flex-direction: column;
-  align-self: flex-end;
+  margin-left: auto;
   border: var(--line-width) solid var(--color-line-card);
   background: var(--color-card);
 }

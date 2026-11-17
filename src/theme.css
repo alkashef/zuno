@@ -40,6 +40,9 @@
   --picker-track-height: 24px;
   --marker-width: 2px;
   --handle-size: 20px;
+  --grid-max-height: 50vh;
+  --grid-cell-size: 32px;
+  --today-outline-width: 2px;
 
   /* Spacing. */
   --space-1: 4px;

@@ -25,6 +25,36 @@
       </section>
     </template>
 
+    <template id="month-grid-template">
+      <section class="month-grid" data-role="month-grid" aria-labelledby="month-grid-title">
+        <div class="month-grid-header">
+          <button type="button" class="button" data-role="earlier" aria-label="Previous month">
+            &#x2039;
+          </button>
+          <h2 id="month-grid-title" class="month-grid-title" data-role="title"></h2>
+          <button type="button" class="button" data-role="later" aria-label="Next month">
+            &#x203A;
+          </button>
+        </div>
+        <div class="month-grid-scroll" data-role="grid-scroll">
+          <table class="month-grid-table">
+            <thead data-role="head"></thead>
+            <tbody data-role="body"></tbody>
+          </table>
+        </div>
+      </section>
+    </template>
+
+    <template id="month-grid-card-template">
+      <div class="month-grid-card" role="dialog" aria-label="Holiday">
+        <p class="month-grid-card-name" data-role="card-name"></p>
+        <p data-role="card-date"></p>
+        <button type="button" class="button" data-role="card-close" aria-label="Close holiday">
+          &#x2715;
+        </button>
+      </div>
+    </template>
+
     <template id="picker-template">
       <section class="picker" data-role="picker" aria-labelledby="picker-title">
         <h2 id="picker-title" class="picker-title">Time picker</h2>

@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M15** Month-grid view | Grid, month buttons, weekend, holiday, split and today cells, holiday card, scroll. | sonnet | medium | open |
 | **M16** Hijri in the views | Hijri band, cell days, picker dates, information button. | sonnet | medium | open |
 | **M17** World map | SVG map with pins, names, times and dates, updated by the tick. | sonnet | medium | open |
 | **M18** Legend and notices | Bottom legend; notices card with a count badge for missing holiday data. | sonnet | medium | open |
@@ -19,19 +18,6 @@ history is the record. Template: `docs/workflow.md`.
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M15 — Month-grid view
-
-- **Refs:** CAL-001 to CAL-007, LAY-001, EX-007.
-- **Owner:** `src/views/month-grid.js`, `src/month-grid.css`.
-- **Tests first:** `ui_cal_001_grid_has_row_per_place_and_cell_per_day`,
-  `ui_cal_002_weekend_cells_marked`, `ui_cal_003_holiday_cells_use_other_colour`,
-  `ui_cal_004_today_column_highlighted`, `ui_cal_005_previous_and_next_month_buttons`,
-  `ui_cal_006_holiday_card_opens_and_closes`, `ui_cal_007_weekend_holiday_cell_is_split`,
-  `ui_lay_001_grid_rows_scroll_headers_stay_in_view`.
-- **Build:** the month grid with month buttons, cell kinds and the holiday card beside the place
-  name. Colours come only from `theme.css`.
-- **Gate:** none beyond the common gate.
 
 ### M16 — Hijri in the views
 
