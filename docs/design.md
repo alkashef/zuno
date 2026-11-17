@@ -150,7 +150,7 @@ at implementation.
 Import rules: `domain/*` imports only other `domain/*` modules and `data/*`. `controller.js`
 imports `domain/*` only. Views import `domain/format.js` and receive everything else as arguments.
 `api.js`, `storage.js` and `clock.js` import `config.js` and `log.js` only. Only `main.js` imports
-across layers. A unit test (planned) walks the imports and fails on a broken rule.
+across layers. `tests/unit/import-rules.test.js` walks the imports under `src/` and fails on a broken rule.
 
 ### 2.2 Directory structure
 

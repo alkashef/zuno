@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M3** Time zones and formats | Local date and time with DST; dd-mmm-yy and 12-hour formats; the import-rule test. | sonnet | high | open |
 | **M4** Country table | `data/countries.js` and `domain/countries.js`: capital default and other zones. | sonnet | medium | open |
 | **M5** Places, settings, storage | Place and settings logic with validation; `storage.js`. | sonnet | medium | open |
 | **M6** Weekends and Hijri | `weekends.js`, `hijri.js` (variants, ±1 adjustment) and the Hijri date format. | sonnet | high | open |
@@ -31,21 +30,6 @@ history is the record. Template: `docs/workflow.md`.
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M3 — Time zones and formats
-
-- **Refs:** CLK-001 (domain part), CLK-002, DSP-001, DSP-002, EX-001, EX-005, EX-006, DEC-001,
-  DEC-007.
-- **Owner:** `src/domain/zones.js`, `src/domain/format.js`, `src/clock.js`.
-- **Tests first:** `test_clk_001_local_date_and_time_for_zone`,
-  `test_clk_002_london_dst_offsets_ex_001`, `test_dsp_001_date_is_dd_mmm_yy_ex_005`,
-  `test_dsp_002_time_is_12_hour_uppercase_ex_006`,
-  `test_import_rules_domain_imports_only_domain_and_data`.
-- **Build:** `zones.js` gives the local date and time of an instant in a zone through `Intl`, for any
-  date. `format.js` formats dates and times as the spec says. `clock.js` is the only reader of the
-  current time and the colour-scheme query. Add the unit test that walks the imports and fails on a
-  broken rule of `design.md` section 2.1.
-- **Gate:** tests cover DST change days in at least two zones.
 
 ### M4 — Country table
 
