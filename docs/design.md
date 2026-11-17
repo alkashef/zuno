@@ -323,8 +323,8 @@ is 1; an unknown version is invalid (DEC-008).
 
 - Header: logo, title, "Updated" time (the time of day in the browser's own zone, from `state.now`),
   a notices button with a count badge, Refresh, Settings. The notices card opens and closes on the
-  button; Escape closes it. The Settings button opens the settings panel (M12), and the notices
-  button comes with M18. The page title and heading stay "Global Timer" until the user locks the
+  button; Escape closes it. The Settings button opens the settings panel (M12). `views/notices.js`
+  owns the badge and card; `views/legend.js` owns the legend banner (sticky at the page bottom). The page title and heading stay "Global Timer" until the user locks the
   UI. CSS class names are kebab-case (`header-title`), because `stylelint-config-standard` rejects
   the BEM `__` form that the HTML and CSS rules ask for (open question for the user).
 - Map: one pin per place with the place name, current time and date. Pins stay at their coordinates

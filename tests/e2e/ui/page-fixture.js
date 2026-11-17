@@ -50,6 +50,7 @@ export function launchBrowser() {
  * @typedef {object} OpenOptions
  * @property {"light" | "dark"} [colorScheme] The operating-system colour scheme; light by default.
  * @property {Settings | null} [saved] The settings already saved in the browser, if any.
+ * @property {string[]} [failingCountries] Country codes whose holiday requests fail (no answer).
  */
 
 /**
@@ -66,7 +67,11 @@ export function launchBrowser() {
  * @param {OpenOptions} [options]
  * @returns {Promise<OpenedPage>}
  */
-export async function openPage(browser, url, { colorScheme = "light", saved = null } = {}) {
+export async function openPage(
+  browser,
+  url,
+  { colorScheme = "light", saved = null, failingCountries = [] } = {},
+) {
   const context = await browser.newContext({ colorScheme, timezoneId: "UTC", locale: "en-US" });
   if (saved !== null) {
     const record = { key: config.storageKey, value: JSON.stringify(saved) };
@@ -78,6 +83,7 @@ export async function openPage(browser, url, { colorScheme = "light", saved = nu
     const [, countryCode, year] =
       new URL(route.request().url()).pathname.match(/(\w+)\/(\d+)$/) ?? [];
     holidayRequests.push(`${countryCode}-${year}`);
+    if (failingCountries.includes(countryCode ?? "")) return route.abort();
     return route.fulfill({
       contentType: "application/json",
       headers: { "access-control-allow-origin": "*" },

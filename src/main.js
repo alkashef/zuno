@@ -9,7 +9,7 @@ import * as clock from "./clock.js";
 import { config } from "./config.js";
 import { createController } from "./controller.js";
 import { monthWeeks } from "./domain/calendar.js";
-import { listCountries } from "./domain/countries.js";
+import { countryName, listCountries } from "./domain/countries.js";
 import { placeClock, placeName, placePin, zonesOf } from "./domain/places.js";
 import { parseSettings } from "./domain/settings.js";
 import { localDateTime } from "./domain/zones.js";
@@ -21,8 +21,10 @@ import { createDaySelector } from "./views/day-selector.js";
 import { createErrorScreen } from "./views/error-screen.js";
 import { createHeader } from "./views/header.js";
 import { createHijriNote } from "./views/hijri-note.js";
+import { createLegend } from "./views/legend.js";
 import { createMap } from "./views/map.js";
 import { createMonthGrid } from "./views/month-grid.js";
+import { createNotices } from "./views/notices.js";
 import { createPicker } from "./views/picker.js";
 import { createPlaceList } from "./views/settings-places.js";
 import { createSettingsPanel } from "./views/settings.js";
@@ -48,6 +50,8 @@ const lookup = { countries: listCountries(), zonesOf, placeName, clockOf: placeC
 const views = [
   createHeader(document),
   createEmptyPage(document),
+  createLegend(document),
+  createNotices(document, { dispatch: controller.dispatch, placeName, countryName }),
   createMap(document, { placeName, pinOf: placePin }),
   createMonthGrid(document, {
     dispatch: controller.dispatch,

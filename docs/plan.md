@@ -9,24 +9,12 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M18** Legend and notices | Bottom legend; notices card with a count badge for missing holiday data. | sonnet | medium | open |
 | **M19** Cross-browser and NFR checks | Playwright in four browsers: request check, English text, contrast, EX-002, EX-010; README; coverage floor. | sonnet | high | open |
 
 ## Milestones
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M18 — Legend and notices
-
-- **Refs:** LEG-001, REF-002, HOL-004.
-- **Owner:** `src/views/legend.js`, `src/views/notices.js`.
-- **Tests first:** `ui_leg_001_legend_names_every_colour`,
-  `ui_ref_002_failed_service_lists_countries_with_no_data_and_keeps_times`,
-  `ui_hol_004_missing_region_listed_with_national_shown`.
-- **Build:** the full-width legend banner fixed at the bottom; the notices card behind the header
-  button with a count badge; Escape closes it.
-- **Gate:** none beyond the common gate.
 
 ### M19 — Cross-browser and NFR checks
 

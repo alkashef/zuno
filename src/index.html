@@ -12,10 +12,63 @@
       <span class="header-logo" aria-hidden="true"></span>
       <h1 class="header-title">Global Timer</h1>
       <p class="header-updated" data-role="updated"></p>
+      <span class="notices" data-role="notices">
+        <button
+          type="button"
+          class="button notices-button"
+          data-action="toggleNotices"
+          aria-label="Notices"
+          aria-haspopup="dialog"
+          aria-expanded="false"
+        >
+          i
+          <span class="notices-badge" data-role="notices-badge" hidden></span>
+        </button>
+        <div
+          class="notices-card"
+          data-role="notices-card"
+          role="dialog"
+          aria-label="Notices"
+          hidden
+        >
+          <ul class="notices-list" data-role="notices-list"></ul>
+        </div>
+      </span>
       <button type="button" class="button" data-action="refresh">Refresh</button>
       <button type="button" class="button" data-action="openSettings">Settings</button>
     </header>
     <main class="page" data-role="page"></main>
+
+    <template id="legend-template">
+      <footer class="legend" data-role="legend" aria-label="Legend">
+        <ul class="legend-list">
+          <li class="legend-item">
+            <span class="legend-swatch legend-swatch-weekend" data-role="legend-swatch"></span>
+            <span data-role="legend-name">Weekend</span>
+          </li>
+          <li class="legend-item">
+            <span class="legend-swatch legend-swatch-holiday" data-role="legend-swatch"></span>
+            <span data-role="legend-name">Public holiday</span>
+          </li>
+          <li class="legend-item">
+            <span class="legend-swatch legend-swatch-working" data-role="legend-swatch"></span>
+            <span data-role="legend-name">Working hours</span>
+          </li>
+          <li class="legend-item">
+            <span class="legend-swatch legend-swatch-non-working" data-role="legend-swatch"></span>
+            <span data-role="legend-name">Non-working hours</span>
+          </li>
+          <li class="legend-item">
+            <span class="legend-swatch legend-swatch-day-off" data-role="legend-swatch"></span>
+            <span data-role="legend-name">Day off</span>
+          </li>
+        </ul>
+      </footer>
+    </template>
+
+    <template id="notice-item-template">
+      <li class="notices-item" data-role="notice-item"></li>
+    </template>
 
     <template id="empty-page-template">
       <section class="empty" data-role="empty" aria-labelledby="empty-title">
