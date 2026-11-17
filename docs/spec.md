@@ -157,7 +157,7 @@ missing (HOL-004).
 | Item | Evidence or assumption | Consequence if wrong | Owner | Resolution or revisit condition |
 | --- | --- | --- | --- | --- |
 | How the page knows each country's weekend days | Decided in the design: the browser's own data (DEC-003). | A recent weekend change may lag in a browser. | Design | Accepted risk. Test EX-002 in the four browsers. |
-| Which free holiday service, and its regional coverage | Decided in the design: Nager.Date, approved by the user 2026-11-17 (DEC-005). Whether it works from a page opened as a file is unverified. | Coverage and reliability vary; some regions may show national holidays only (HOL-004). | Design | Check the service from a file page (design section 5) before the holiday milestone. Blocks HOL-001, HOL-003. |
+| Which free holiday service, and its regional coverage | Decided in the design: Nager.Date, approved by the user 2026-11-17 (DEC-005). Whether it works from a page opened as a file is unverified. | Coverage and reliability vary; some regions may show national holidays only (HOL-004). | Design | Resolved on 2026-11-17: a live request for one country and year returned HTTP 200 with `access-control-allow-origin: *` and the documented fields; the result is in design section 5. |
 | Accepted risk: no non-colour cue for colour-blind users | User chose colour plus a legend (LEG-001, 2026-11-16). | Some users cannot tell some states apart. | User | Revisit if a colour-blind user needs the page. |
 | Example where the Umm al-Qura and tabular variants differ | EX-010 gives the same date in both variants. | Tests might not catch a wrong variant. | Design | Add a differing-variant example in the milestone tests. |
 

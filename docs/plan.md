@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M2** Holiday service and facts | `api.js` returns `HolidayResult`; `domain/holidays.js` keeps `Public` holidays and handles regions and missing data. | sonnet | high | blocked |
 | **M3** Time zones and formats | Local date and time with DST; dd-mmm-yy and 12-hour formats; the import-rule test. | sonnet | high | open |
 | **M4** Country table | `data/countries.js` and `domain/countries.js`: capital default and other zones. | sonnet | medium | open |
 | **M5** Places, settings, storage | Place and settings logic with validation; `storage.js`. | sonnet | medium | open |
@@ -32,34 +31,6 @@ history is the record. Template: `docs/workflow.md`.
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M2 — Holiday service and facts
-
-- **Refs:** HOL-001, HOL-002, HOL-003, HOL-004, SET-006, REF-002, EX-004, DEC-005, DEC-006.
-- **Owner:** `src/api.js`, `src/log.js`, `src/config.js`, `src/domain/holidays.js`.
-- **Tests first:** `test_hol_001_gets_holidays_for_country_and_year`,
-  `test_hol_002_request_has_only_country_code_and_year`,
-  `test_hol_003_only_public_type_kept_and_region_added_when_chosen`,
-  `test_hol_004_missing_regional_data_reports_place_and_shows_national`,
-  `test_set_006_no_region_uses_national_holidays_only`,
-  `test_ref_002_network_failure_returns_unavailable_with_reason`,
-  `test_ex_004_us_christmas_2026_is_public_holiday`.
-- **Build:** add `log.js`, and `config.js` settings `holidayRequestTimeoutMs` and `logLevel`
-  (`design.md` section 2.3). `api.getHolidays(countryCode, year, fetchFn?)` returns `loaded` or
-  `unavailable` (DEC-006) for a network failure, a non-success status, a timeout or a wrong shape.
-  `domain/holidays.js` makes `Holiday` records, per-day facts for a place, region lists, and the
-  lists of countries and places with missing data. Check the live response shape once with one
-  country and year (no user data) and record the result in `design.md` section 5.
-- **Gate:** the tests use a fake `fetch`; no test calls a live server. Spec section 7 holiday-service
-  item is updated.
-- **Blocked:** The gate needs an edit to `docs/spec.md` section 7 (the holiday-service item), and this block has no Approval entry for a spec edit.
-  - `docs/plan.md` M2 Gate: "Spec section 7 holiday-service item is updated."
-  - `CLAUDE.md` and `docs/workflow.md` rules: never edit `spec.md` without the user's approval, given in chat or in an **Approval** entry. `.claude/settings.json` also asks before edits to `/docs/spec.md`.
-  - The item today (`docs/spec.md` section 7, row "Which free holiday service, and its regional coverage") says the file-page check is unverified and blocks HOL-001 and HOL-003. `docs/design.md` section 5 records that the CORS check ran on 2026-11-17.
-  - Nothing else was changed. No code or tests were written.
-  - To continue, approve one of these:
-    1. Permit exactly: edit only that row of `docs/spec.md` section 7 (the "Consequence" and "Resolution" cells) to record the live-response check made in this milestone and mark the item resolved. Nothing else in the spec.
-    2. Drop the spec edit from the Gate: change the Gate to say that the result is recorded only in `docs/design.md` section 5 (the spec item then stays as it is).
 
 ### M3 — Time zones and formats
 

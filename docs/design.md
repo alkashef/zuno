@@ -78,15 +78,18 @@ countries. The site moved from `date.nager.at` to `nagerholidays.com`; the curre
 `GET /api/v4/Holidays/{CountryCode}/{Year}` returning `date`, `name`, `countryCode`,
 `subdivisionCodes`, `nationalHoliday` and `holidayTypes` (`Public`, `Bank`, `School`,
 `Authorities`, `Optional`, `Observance`). Older sources describe `/api/v3/PublicHolidays/{year}/{code}`
-with `counties`, `global` and `types`. One third-party directory reports a browser CORS error. So
-the contract and CORS are unverified (section 5). Holidays of type `Public` count; the other types
+with `counties`, `global` and `types`. One third-party directory reports a browser CORS error. The
+contract and CORS were checked against the live service in M2 (section 5). Holidays of type `Public` count; the other types
 do not (HOL-003). The page sends nothing else: no user data, no settings (HOL-002).
 
 **DEC-006.** `HolidayResult` is `{ status: "loaded", holidays }` or `{ status: "unavailable",
 reason }`. A network failure, a non-success HTTP status, or a body that is not the documented shape
 all give `unavailable` with the reason. A call with a bad argument (a programming error) throws.
-Consequence: the controller can show REF-002 without a `try/catch`. Validation: unit tests for
-`api.js` with a fake `fetch`.
+Consequence: the controller can show REF-002 without a `try/catch`. In `HolidayResult`, `holidays`
+holds the validated service records; `domain/holidays.js` keeps the `Public` ones. A timeout
+(`holidayRequestTimeoutMs`) counts as a network failure; `api.js` logs each `unavailable` result as
+a warning. `api.js` sends `credentials: "omit"` and no header or body (HOL-002). Validation: unit
+tests for `api.js` with a fake `fetch`.
 
 **DEC-008.** Alternatives: cookies (rejected: sent to servers), IndexedDB (rejected: more code for
 one small record). The record holds places, working hours, and the display switches, never holiday
@@ -174,7 +177,7 @@ All values live in `config.js` as one frozen object. The page has no environment
 
 | Setting | Default | Meaning and references |
 | --- | --- | --- |
-| `holidayServiceBaseUrl` | `https://nagerholidays.com/api/v4` | Base URL of the holiday service. Unverified; see section 5. HOL-001 |
+| `holidayServiceBaseUrl` | `https://nagerholidays.com/api/v4` | Base URL of the holiday service. Checked live in M2; see section 5. HOL-001 |
 | `holidayRequestTimeoutMs` | 10000 | Time to wait for one holiday request. A proposed value, not from the spec. |
 | `clockTickMs` | 60000 | How often the current times update. CLK-003 |
 | `storageKey` | `zuno.settings` | Key of the saved settings record. SET-004 |
@@ -197,7 +200,7 @@ Exact versions of installed packages are in `package.json`.
 | `node --test` | Unit and workflow tests | DEC-011 | Existing | |
 | esbuild | Bundles modules and CSS for the one-file build | DEC-002 | Installed 0.28.2, dev-only. Licence MIT; one install script (`postinstall: node install.js`), checked at npm on 2026-11-17. | esbuild.github.io/api, 2026-11-17 |
 | Playwright | Browser tests | DEC-011 | Proposed, dev-only. Needs approval. | playwright.dev/docs/browsers, 2026-11-17 |
-| Nager.Date | Public holidays | DEC-005 | Proposed. Needs approval. Contract and CORS unverified. | nagerholidays.com/Api, 2026-11-17 |
+| Nager.Date | Public holidays | DEC-005 | Approved (DEC-005). Contract and CORS checked live in M2 (section 5). | nagerholidays.com/Api, 2026-11-17 |
 | IANA `zone.tab` | Zones and coordinates for `data/countries.js` | DEC-004 | Proposed data source. | iana.org/time-zones |
 | Database, server, LLM, framework | none | | The page is local with one outside service. | |
 
@@ -265,6 +268,11 @@ is 1; an unknown version is invalid (DEC-008).
 
 - `api.getHolidays(countryCode, year, fetchFn?) -> Promise<HolidayResult>`. Sends only the code and
   the year. Throws only for a bad argument.
+- `domain/holidays`: `toHolidays(records) -> Holiday[]` (type `Public` only),
+  `holidayOn(holidays, region, date) -> Holiday | null` (national, plus the chosen region),
+  `listRegions(holidays) -> string[]`, `unavailableCountries(resultsByCountry) -> string[]` and
+  `placesMissingRegionalData(places, resultsByCountry) -> places`. `log.createLog(level, sink?)`
+  makes a logger; `log.log` is the one for the page.
 - `storage.load() -> Settings | null`, `storage.save(settings) -> void`. `load` returns `null` when
   nothing valid is stored.
 - `clock.now() -> number`, `clock.prefersDark() -> boolean`.
@@ -309,7 +317,7 @@ Everything else follows DEC-006 and the top-level handler.
 
 | Issue and references | Owner | Evidence needed | Blocks what? |
 | --- | --- | --- | --- |
-| Holiday service terms of service (use, availability, any limit on a hosted page). DEC-005. The CORS and contract check ran on 2026-11-17: `curl` with `Origin: null` to `/api/v4/Holidays/US/2026` and `/api/v3/PublicHolidays/2026/US` gave HTTP 200, `access-control-allow-origin: *`, and the documented fields for each version. Version 4 is the current one. | User | Read the service's terms page. | None until release. |
+| Holiday service terms of service (use, availability, any limit on a hosted page). DEC-005. The CORS and contract check ran on 2026-11-17: `curl` with `Origin: null` to `/api/v4/Holidays/US/2026` and `/api/v3/PublicHolidays/2026/US` gave HTTP 200, `access-control-allow-origin: *`, and the documented fields for each version. Version 4 is the current one. The live-response check of M2 (2026-11-17, one request, `Holidays/US/2026`, no user data): HTTP 200, `access-control-allow-origin: *`, a JSON array of 17 records with the fields `date`, `name`, `countryCode`, `nationalHoliday`, `subdivisionCodes` (`null` or a list such as `US-CA`) and `holidayTypes` (`Public`, `Bank`, `Observance`, `Optional`, `School`, `Authorities`). Regional records exist (6 of 17), some of type `Public` (Good Friday) and some `Observance`. `api.js` checks `date`, `name`, `holidayTypes` and `subdivisionCodes`. | User | Read the service's terms page. | None until release. |
 | Installing Playwright: approved as a dev dependency (DEC-011), but the install itself waits for the milestone that first imports it (CLAUDE.md, Dependencies). The exact version is pinned then. (esbuild: installed in M1, see section 2.4.) | Implementation | Version and licence check at install time. | The browser-test milestone. |
 | Country table accuracy (capital zone choices). DEC-004 | Implementation | Unit test of every row; the user reviews the capital list. | Add-place milestone. |
 | Weekend data lags a recent country change. DEC-003 | Accepted risk | EX-002 in four browsers. | None. |

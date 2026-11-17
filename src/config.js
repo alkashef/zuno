@@ -5,4 +5,6 @@
  */
 export const config = Object.freeze({
   holidayServiceBaseUrl: "https://nagerholidays.com/api/v4",
+  holidayRequestTimeoutMs: 10000,
+  logLevel: "warn",
 });
