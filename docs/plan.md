@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M5** Places, settings, storage | Place and settings logic with validation; `storage.js`. | sonnet | medium | open |
 | **M6** Weekends and Hijri | `weekends.js`, `hijri.js` (variants, ±1 adjustment) and the Hijri date format. | sonnet | high | open |
 | **M7** Month-grid model | `domain/calendar.js`: weekend, holiday, split cell, today, Hijri day. | sonnet | high | open |
 | **M8** Picker model | `domain/picker.js`: reference window (23 or 25 hours on DST days), segments, day-off colour, marker moves. | opus | high | open |
@@ -29,21 +28,6 @@ history is the record. Template: `docs/workflow.md`.
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M5 — Places, settings, storage
-
-- **Refs:** SET-001, SET-004, SET-005, SET-007 (data), SET-008, SET-009, SET-010, SET-011, DEC-008.
-- **Owner:** `src/domain/places.js`, `src/domain/settings.js`, `src/storage.js`, `src/config.js`.
-- **Tests first:** `test_set_001_add_and_remove_places`, `test_set_004_settings_round_trip_in_storage`,
-  `test_set_004_invalid_record_loads_as_null_and_logs_warning`,
-  `test_set_005_default_hours_9am_to_5pm_and_start_before_end`,
-  `test_set_007_no_saved_places_means_empty_state`, `test_set_008_move_place_changes_order`,
-  `test_set_009_display_name_overrides_city_name`, `test_set_010_country_names_off_by_default`,
-  `test_set_011_hijri_off_by_default`.
-- **Build:** `Place` and `Settings` types, defaults and validation as in `design.md` section 3;
-  `storage.js` reads and writes one versioned `localStorage` record under `storageKey`. Add
-  `storageKey`, `defaultWorkStartMinutes` and `defaultWorkEndMinutes` to `config.js`.
-- **Gate:** the storage tests use a fake store.
 
 ### M6 — Weekends and Hijri
 

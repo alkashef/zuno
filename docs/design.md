@@ -142,7 +142,7 @@ at implementation.
 | `domain/weekends.js` | Weekend days of a country. | none | CAL-002 |
 | `domain/countries.js` | Country list, names, capital zone and other zones. | `data/countries.js` | SET-002, SET-003 |
 | `domain/holidays.js` | Turns a `HolidayResult` into per-day facts for a place; lists regions; reports missing data. | none | HOL-003, HOL-004, REF-002 |
-| `domain/places.js` | Adds, removes, moves, relabels and edits places; applies defaults. | `domain/countries.js` | SET-001 to SET-003, SET-006, SET-008, SET-009 |
+| `domain/places.js` | Adds, removes, moves, relabels and edits places; applies defaults. | `domain/countries.js`, `domain/hijri.js` | SET-001 to SET-003, SET-006, SET-008, SET-009 |
 | `domain/settings.js` | Settings shape, defaults and validation. | `domain/places.js` | SET-005, SET-007, SET-010, SET-011 |
 | `domain/calendar.js` | The month-grid model: one row per place, one cell per day. | `zones`, `hijri`, `weekends`, `holidays` | CAL-001 to CAL-007 |
 | `domain/picker.js` | The picker model: the reference window, one row of segments per place, and local times at the marker. | `zones`, `weekends`, `holidays` | PCK-001 to PCK-006, PCK-007 |
@@ -275,8 +275,10 @@ is 1; an unknown version is invalid (DEC-008).
   `listRegions(holidays) -> string[]`, `unavailableCountries(resultsByCountry) -> string[]` and
   `placesMissingRegionalData(places, resultsByCountry) -> places`. `log.createLog(level, sink?)`
   makes a logger; `log.log` is the one for the page.
-- `storage.load() -> Settings | null`, `storage.save(settings) -> void`. `load` returns `null` when
-  nothing valid is stored.
+- `storage.createStorage({ store, parse, key?, log? }) -> { load, save }`; `main.js` passes
+  `localStorage` and `domain/settings.parseSettings`, so `storage.js` imports no domain module.
+  `load() -> Settings | null` returns `null` (and logs a warning for a bad record) when nothing
+  valid is stored; `save(settings) -> void`.
 - `clock.now() -> number`, `clock.prefersDark() -> boolean`.
 - `controller.createController({ api, storage, clock }) -> { getState, dispatch, subscribe }`.
   Actions: `open`, `refresh`, `tick`, `setMarker`, `shiftMarkerDay`, `showMonth`, `addPlace`,
