@@ -298,6 +298,8 @@ is 1; an unknown version is invalid (DEC-008).
   `changes` (zone, label, region, Hijri variant or adjustment); `setWorkingHours` a `start` and an
   `end`; `setShowCountry` and `setShowHijri` a `value`. A refused change saves nothing.
   `selectHoliday` takes a `cell` (`{ placeId, date }`, or `null` to close the card).
+  The page view also carries `regions` (region codes of each country's loaded holidays, from
+  `listRegions`), which the settings panel lists per place (SET-006).
   `dispatch` returns a promise that settles when the action's holiday requests are answered.
   `getState()` returns the state (settings or `null`, `now`, marker, month, holiday results, the
   selected holiday, the open panels) plus the models the views draw: `isEmpty`, `picker`, `grid`
@@ -335,6 +337,8 @@ is 1; an unknown version is invalid (DEC-008).
   expand to edit display name, time zone, region, Hijri variant and adjustment, remove); add a
   place by country. Regions are listed by the service's code (for example `BR-SP`), as the user
   decided 2026-11-17; the canvas shows names only as a mock-up.
+  The Hijri variant and adjustment fields appear only while Hijri is on. The panel gets the default
+  working hours (`defaultHours`) from `main.js`, to show before any settings are saved.
 - Empty page: prompt to add a place (SET-007).
 
 Keyboard and accessibility: every control is a real `<button>`, `<a>`, `<input>` or `<select>`;

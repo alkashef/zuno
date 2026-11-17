@@ -2,8 +2,9 @@
 /**
  * @module views/settings-places
  * Owns the list of places inside the settings panel: one row per place with move arrows, an edit
- * button, a remove button and an editor for the display name and time zone (SET-001, SET-003,
- * SET-008, SET-009). It does not own the panel, the add form or Escape (views/settings.js does) and
+ * button, a remove button and an editor for the display name, time zone, region and, while Hijri is
+ * on, the Hijri variant and adjustment (SET-001, SET-003, SET-006, SET-008, SET-009, HIJ-002,
+ * HIJ-003). It does not own the panel, the add form or Escape (views/settings.js does) and
  * it computes no names or times (the `lookup` it receives does).
  */
 
@@ -22,8 +23,9 @@
 
 /**
  * @typedef {object} PlaceListView The part of the page view the list draws.
- * @property {{ places: Place[], showCountry: boolean } | null} settings
+ * @property {{ places: Place[], showCountry: boolean, showHijri: boolean } | null} settings
  * @property {number} now
+ * @property {Record<string, string[]>} regions The region codes of each country's holidays.
  */
 
 /**
@@ -101,18 +103,54 @@ function fillEditor(ctx, item, place) {
 }
 
 /**
+ * @param {HTMLElement} item
+ * @param {Place} place
+ * @param {string[]} codes The region codes known for the place's country.
+ * @returns {void} Lists "National holidays only" and each region by code (SET-006). The chosen
+ *   region stays listed even when its holiday data is not loaded.
+ */
+function fillRegion(item, place, codes) {
+  const region = /** @type {HTMLSelectElement} */ (part(item, "region"));
+  region.append(new Option("National holidays only", ""));
+  const listed =
+    place.region === "" || codes.includes(place.region) ? codes : [...codes, place.region];
+  for (const code of listed) {
+    region.append(new Option(code, code));
+  }
+  region.value = place.region;
+}
+
+/**
+ * @param {HTMLElement} item
+ * @param {Place} place
+ * @param {boolean} showHijri
+ * @returns {void} Shows the Hijri variant and adjustment only while Hijri is on (HIJ-002, HIJ-003).
+ */
+function fillHijri(item, place, showHijri) {
+  if (!showHijri) {
+    part(item, "variant-field").remove();
+    part(item, "adjust-field").remove();
+    return;
+  }
+  /** @type {HTMLSelectElement} */ (part(item, "variant")).value = place.hijriVariant;
+  /** @type {HTMLSelectElement} */ (part(item, "adjust")).value = String(place.hijriAdjust);
+}
+
+/**
  * @param {ListContext} ctx
  * @param {Place} place
- * @param {boolean} showCountry
+ * @param {PlaceListView} view
  * @returns {HTMLElement} A new row for the place.
  */
-function buildItem(ctx, place, showCountry) {
+function buildItem(ctx, place, view) {
   const item = /** @type {HTMLElement} */ (ctx.template.content.firstElementChild?.cloneNode(true));
-  const name = ctx.lookup.placeName(place, showCountry);
+  const name = ctx.lookup.placeName(place, view.settings?.showCountry ?? false);
   item.dataset.id = place.id;
   part(item, "name").textContent = name;
   labelButtons(item, place, name);
   fillEditor(ctx, item, place);
+  fillRegion(item, place, view.regions[place.countryCode] ?? []);
+  fillHijri(item, place, view.settings?.showHijri ?? false);
   setExpanded(item, ctx.expanded.has(place.id));
   return item;
 }
@@ -169,21 +207,34 @@ function onClick(ctx, event) {
   if (action !== null) void ctx.dispatch(action);
 }
 
+/** What each editor field changes in its place, by the field's role. */
+const fieldChanges = Object.freeze({
+  /** @param {string} value @returns {Partial<Place>} */
+  label: (value) => ({ label: value.trim() }),
+  /** @param {string} value @returns {Partial<Place>} */
+  zone: (value) => ({ zone: value }),
+  /** @param {string} value @returns {Partial<Place>} */
+  region: (value) => ({ region: value }),
+  /** @param {string} value @returns {Partial<Place>} */
+  variant: (value) => ({ hijriVariant: /** @type {Place["hijriVariant"]} */ (value) }),
+  /** @param {string} value @returns {Partial<Place>} */
+  adjust: (value) => ({ hijriAdjust: Number(value) }),
+});
+
 /**
  * @param {ListContext} ctx
- * @param {Event} event A change of the display name or the zone.
+ * @param {Event} event A change of an editor field.
  * @returns {void}
  */
 function onChange(ctx, event) {
   const field = event.target;
   const item = field instanceof Element ? field.closest("[data-id]") : null;
   if (!(item instanceof HTMLElement)) return;
-  const placeId = item.dataset.id ?? "";
-  if (field instanceof HTMLInputElement) {
-    void ctx.dispatch({ type: "editPlace", placeId, changes: { label: field.value.trim() } });
-  } else if (field instanceof HTMLSelectElement) {
-    void ctx.dispatch({ type: "editPlace", placeId, changes: { zone: field.value } });
-  }
+  if (!(field instanceof HTMLInputElement || field instanceof HTMLSelectElement)) return;
+  const role = field.dataset.role ?? "";
+  if (!Object.hasOwn(fieldChanges, role)) return;
+  const changes = fieldChanges[/** @type {keyof typeof fieldChanges} */ (role)](field.value);
+  void ctx.dispatch({ type: "editPlace", placeId: item.dataset.id ?? "", changes });
 }
 
 /**
@@ -202,11 +253,10 @@ function focusedKey(ctx) {
  */
 function rebuild(ctx, view) {
   const key = focusedKey(ctx);
-  const showCountry = view.settings?.showCountry ?? false;
   const places = view.settings?.places ?? [];
   const ids = new Set(places.map((place) => place.id));
   ctx.expanded.forEach((id) => ids.has(id) || ctx.expanded.delete(id));
-  ctx.list.replaceChildren(...places.map((place) => buildItem(ctx, place, showCountry)));
+  ctx.list.replaceChildren(...places.map((place) => buildItem(ctx, place, view)));
   const again = ctx.list.querySelector(`[data-focus-key="${key}"]`);
   if (again instanceof HTMLElement) again.focus();
 }
@@ -221,6 +271,15 @@ function showTimes(ctx, view) {
     const item = ctx.list.querySelector(`[data-id="${place.id}"]`);
     if (item !== null) part(item, "time").textContent = ctx.lookup.clockOf(place, view.now);
   }
+}
+
+/**
+ * @param {PlaceListView} view
+ * @returns {string} Everything the rows show except the times; the rows are redrawn when it changes.
+ */
+function drawnState(view) {
+  const { settings, regions } = view;
+  return JSON.stringify([settings?.places, settings?.showCountry, settings?.showHijri, regions]);
 }
 
 /**
@@ -242,7 +301,7 @@ export function createPlaceList(doc, list, deps) {
   list.addEventListener("change", (event) => onChange(ctx, event));
   return {
     render(view) {
-      const signature = JSON.stringify([view.settings?.places, view.settings?.showCountry]);
+      const signature = drawnState(view);
       if (signature !== ctx.memo.signature) rebuild(ctx, view);
       ctx.memo.signature = signature;
       showTimes(ctx, view);

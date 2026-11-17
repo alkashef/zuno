@@ -33,6 +33,28 @@
             &#x2715;
           </button>
         </div>
+        <h3>Working hours</h3>
+        <div class="settings-hours">
+          <label class="settings-field">
+            Working hours start
+            <input type="time" class="settings-input" data-role="work-start" required />
+          </label>
+          <label class="settings-field">
+            Working hours end
+            <input type="time" class="settings-input" data-role="work-end" required />
+          </label>
+        </div>
+        <h3>Display</h3>
+        <div class="settings-display">
+          <label class="settings-check">
+            <input type="checkbox" data-role="show-country" />
+            Show names of countries
+          </label>
+          <label class="settings-check">
+            <input type="checkbox" data-role="show-hijri" />
+            Show Hijri calendar
+          </label>
+        </div>
         <h3>Places</h3>
         <ul class="settings-places" data-role="places"></ul>
         <form class="settings-add" data-role="add-form">
@@ -67,6 +89,25 @@
           <label class="settings-field" data-role="zone-field">
             City time zone
             <select class="settings-input" data-role="zone"></select>
+          </label>
+          <label class="settings-field">
+            Region
+            <select class="settings-input" data-role="region"></select>
+          </label>
+          <label class="settings-field" data-role="variant-field">
+            Hijri variant
+            <select class="settings-input" data-role="variant">
+              <option value="umalqura">Umm al-Qura</option>
+              <option value="tabular">Tabular</option>
+            </select>
+          </label>
+          <label class="settings-field" data-role="adjust-field">
+            Hijri adjustment
+            <select class="settings-input" data-role="adjust">
+              <option value="-1">-1</option>
+              <option value="0">0</option>
+              <option value="1">+1</option>
+            </select>
           </label>
         </div>
       </li>

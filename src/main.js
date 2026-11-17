@@ -42,6 +42,7 @@ const views = [
   createHeader(document),
   createEmptyPage(document),
   createSettingsPanel(document, {
+    defaultHours: { start: config.defaultWorkStartMinutes, end: config.defaultWorkEndMinutes },
     dispatch: controller.dispatch,
     lookup,
     makeList: (list) => createPlaceList(document, list, { dispatch: controller.dispatch, lookup }),

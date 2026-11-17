@@ -1,9 +1,10 @@
 // @ts-check
 /**
  * @module views/settings
- * Owns the settings panel: opens and closes it with `settingsOpen`, the add-by-country form, the
- * close button, and Escape, and returns the keyboard focus to the button that opened it (SET-001,
- * SET-002, SET-004). It clones its markup from templates in index.html. It does not draw the list
+ * Owns the settings panel: opens and closes it with `settingsOpen`, the working-hours inputs, the
+ * country-name and Hijri switches, the add-by-country form, the close button, and Escape, and
+ * returns the keyboard focus to the button that opened it (SET-001, SET-002, SET-004, SET-005,
+ * SET-010, SET-011). It clones its markup from templates in index.html. It does not draw the list
  * of places (views/settings-places.js does, built by `deps.makeList`) and it saves nothing (the controller does).
  */
 /** @typedef {import("./settings-places.js").Lookup} Lookup */
@@ -18,7 +19,14 @@
  */
 
 /**
+ * @typedef {PlaceListView & { settingsOpen: boolean, settings: (NonNullable<PlaceListView["settings"]> & { workStartMinutes: number, workEndMinutes: number }) | null }} SettingsView
+ *   The part of the page view the panel draws.
+ */
+
+/**
  * @typedef {object} Deps
+ * @property {{ start: number, end: number }} defaultHours Working hours (minutes after midnight)
+ *   shown when none are saved (SET-005; main.js passes them from config).
  * @property {(action: Action) => Promise<void>} dispatch The controller's `dispatch`.
  * @property {Lookup} lookup
  * @property {(list: HTMLElement) => { render: (view: PlaceListView) => void }} makeList Builds the
@@ -74,16 +82,102 @@ function submitAdd(ctx, panel) {
 }
 
 /**
+ * @param {string} text A time as `HH:MM`.
+ * @returns {number} Minutes after midnight; `NaN` when the text is not a time.
+ */
+function minutesOf(text) {
+  const [hours, minutes] = text.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+/**
+ * @param {number} minutes After midnight.
+ * @returns {string} The time as `HH:MM`, the value of a time input.
+ */
+function timeText(minutes) {
+  const pad = (/** @type {number} */ value) => String(value).padStart(2, "0");
+  return `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
+}
+
+/**
  * @param {PanelContext} ctx
+ * @param {HTMLElement} panel
+ * @returns {void} Sets the working hours when both times are set and the start is before the end;
+ *   otherwise marks the end time as invalid and changes nothing (SET-005).
+ */
+function submitHours(ctx, panel) {
+  const start = minutesOf(/** @type {HTMLInputElement} */ (part(panel, "work-start")).value);
+  const end = minutesOf(/** @type {HTMLInputElement} */ (part(panel, "work-end")).value);
+  const valid = !Number.isNaN(start) && !Number.isNaN(end) && start < end;
+  part(panel, "work-end").setAttribute("aria-invalid", String(!valid));
+  if (valid) void ctx.deps.dispatch({ type: "setWorkingHours", start, end });
+}
+
+/**
+ * @param {PanelContext} ctx
+ * @param {HTMLElement} panel
+ * @param {{ workStartMinutes: number, workEndMinutes: number }} hours
+ * @returns {void} Shows the working hours and wires the two inputs (SET-005).
+ */
+function setUpHours(ctx, panel, hours) {
+  /** @type {HTMLInputElement} */ (part(panel, "work-start")).value = timeText(
+    hours.workStartMinutes,
+  );
+  /** @type {HTMLInputElement} */ (part(panel, "work-end")).value = timeText(hours.workEndMinutes);
+  for (const role of ["work-start", "work-end"]) {
+    part(panel, role).addEventListener("change", () => submitHours(ctx, panel));
+  }
+}
+
+/**
+ * @param {PanelContext} ctx
+ * @param {HTMLElement} panel
+ * @param {{ showCountry: boolean, showHijri: boolean }} shown
+ * @returns {void} Shows the two display switches and wires them (SET-010, SET-011).
+ */
+function setUpSwitches(ctx, panel, shown) {
+  const switches = /** @type {const} */ ([
+    ["show-country", "setShowCountry", shown.showCountry],
+    ["show-hijri", "setShowHijri", shown.showHijri],
+  ]);
+  for (const [role, type, on] of switches) {
+    const box = /** @type {HTMLInputElement} */ (part(panel, role));
+    box.checked = on;
+    box.addEventListener("change", () => void ctx.deps.dispatch({ type, value: box.checked }));
+  }
+}
+
+/**
+ * @param {PanelContext} ctx
+ * @param {HTMLElement} panel
+ * @param {SettingsView} view
+ * @returns {void} Shows the saved hours and switches, or the defaults when nothing is saved.
+ */
+function setUpDisplay(ctx, panel, view) {
+  const { start, end } = ctx.deps.defaultHours;
+  const saved = view.settings ?? {
+    workStartMinutes: start,
+    workEndMinutes: end,
+    showCountry: false,
+    showHijri: false,
+  };
+  setUpHours(ctx, panel, saved);
+  setUpSwitches(ctx, panel, saved);
+}
+
+/**
+ * @param {PanelContext} ctx
+ * @param {SettingsView} view
  * @returns {void} Builds the panel, wires it and puts it on the page.
  */
-function openPanel(ctx) {
+function openPanel(ctx, view) {
   const { doc, session } = ctx;
   const panel = /** @type {HTMLElement} */ (
     ctx.template.content.firstElementChild?.cloneNode(true)
   );
   session.opener = doc.activeElement;
   fillCountries(ctx, panel);
+  setUpDisplay(ctx, panel, view);
   part(panel, "close").addEventListener("click", () => {
     void ctx.deps.dispatch({ type: "closeSettings" });
   });
@@ -114,7 +208,7 @@ function closePanel(ctx) {
 /**
  * @param {Document} doc The page.
  * @param {Deps} deps The controller's `dispatch` and the lookup from main.js.
- * @returns {{ render: (view: PlaceListView & { settingsOpen: boolean }) => void }} The panel;
+ * @returns {{ render: (view: SettingsView) => void }} The panel;
  *   `render` opens, updates or closes it to match `view.settingsOpen`.
  * @throws {Error} When the page has no panel template.
  */
@@ -132,7 +226,7 @@ export function createSettingsPanel(doc, deps) {
   });
   return {
     render(view) {
-      if (view.settingsOpen && ctx.session.panel === null) openPanel(ctx);
+      if (view.settingsOpen && ctx.session.panel === null) openPanel(ctx, view);
       if (!view.settingsOpen && ctx.session.panel !== null) closePanel(ctx);
       ctx.session.places?.render(view);
     },

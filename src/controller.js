@@ -10,6 +10,7 @@
 import { buildMonth } from "./domain/calendar.js";
 import {
   holidayOn,
+  listRegions,
   placesMissingRegionalData,
   toHolidays,
   unavailableCountries,
@@ -70,6 +71,8 @@ import { localDateTime } from "./domain/zones.js";
  * @property {PickerRow[]} picker
  * @property {DayFacts[][]} grid
  * @property {Notices} notices
+ * @property {Record<string, string[]>} regions The region codes of each country's loaded holidays
+ *   (SET-006).
  */
 
 /** @typedef {PageState & PageModels} PageView */
@@ -166,6 +169,16 @@ function holidaysByCountry(results) {
 }
 
 /**
+ * @param {Record<string, Holiday[]>} holidays Every loaded holiday by country code.
+ * @returns {Record<string, string[]>} The region codes of each country (SET-006).
+ */
+function regionsByCountry(holidays) {
+  return Object.fromEntries(
+    Object.entries(holidays).map(([countryCode, list]) => [countryCode, listRegions(list)]),
+  );
+}
+
+/**
  * @param {Record<string, HolidayResult>} byYear
  * @returns {HolidayResult} `unavailable` when any year failed, else every year's records together.
  */
@@ -208,23 +221,25 @@ function noticesOf(state, settings) {
 
 /**
  * @param {PageState} state
+ * @returns {PageView} The state with empty models (SET-007).
+ */
+function emptyView(state) {
+  const notices = { countries: [], placeIds: [] };
+  return { ...state, isEmpty: true, picker: [], grid: [], notices, regions: {} };
+}
+
+/**
+ * @param {PageState} state
  * @returns {PageView} The state with the models the views draw.
  */
 function derive(state) {
   const { settings } = state;
-  if (settings === null || settings.places.length === 0) {
-    return {
-      ...state,
-      isEmpty: true,
-      picker: [],
-      grid: [],
-      notices: { countries: [], placeIds: [] },
-    };
-  }
+  if (settings === null || settings.places.length === 0) return emptyView(state);
   const holidays = holidaysByCountry(state.holidayResults);
   return {
     ...state,
     isEmpty: false,
+    regions: regionsByCountry(holidays),
     picker: buildPicker(settings, state.marker, holidays),
     grid: buildMonth(settings, state.month, holidays, state.now),
     notices: noticesOf(state, settings),

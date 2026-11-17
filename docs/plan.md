@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M13** Settings panel: hours and display | Working hours, country names, Hijri switch, region, Hijri variant and adjustment. | sonnet | medium | open |
 | **M14** Picker view | Day selector, hour axis, rows, draggable marker, scroll. | sonnet | high | open |
 | **M15** Month-grid view | Grid, month buttons, weekend, holiday, split and today cells, holiday card, scroll. | sonnet | medium | open |
 | **M16** Hijri in the views | Hijri band, cell days, picker dates, information button. | sonnet | medium | open |
@@ -21,18 +20,6 @@ history is the record. Template: `docs/workflow.md`.
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M13 — Settings panel: hours and display
-
-- **Refs:** SET-005, SET-006, SET-010, SET-011, HIJ-002, HIJ-003.
-- **Owner:** `src/views/settings.js`.
-- **Tests first:** `ui_set_005_working_hours_default_and_invalid_end_refused`,
-  `ui_set_006_region_listed_by_code_and_empty_means_national`,
-  `ui_set_010_country_names_toggle`, `ui_set_011_hijri_toggle_off_by_default`,
-  `ui_hij_002_variant_choice_per_place`, `ui_hij_003_adjustment_range_minus_one_to_plus_one`.
-- **Build:** working-hours inputs, the Display section (country names, Hijri), and per-place region,
-  Hijri variant and Hijri adjustment (shown only while Hijri is on).
-- **Gate:** none beyond the common gate.
 
 ### M14 — Picker view
 
