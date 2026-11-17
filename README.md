@@ -1,4 +1,4 @@
-# global-timer
+# Zuno
 
 ## What it does
 

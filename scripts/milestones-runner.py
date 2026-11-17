@@ -13,7 +13,7 @@ live status line, logs each session to .claude/logs/M<n>.log, appends a timing t
 Does NOT edit the plan, the code or git: the claude session does that. The git pre-commit hook
 still runs every check and test on each milestone's commit.
 
-Run, after `conda activate global-timer`:
+Run, after `conda activate zuno`:
     python scripts/milestones-runner.py [--start N] [--end N]
 """
 
@@ -34,7 +34,7 @@ from types import TracebackType
 from typing import Final, NoReturn, Self
 
 # The rules of a run (docs/workflow.md).
-ENV_NAME: Final = "global-timer"
+ENV_NAME: Final = "zuno"
 VALID_MODELS: Final = ("haiku", "sonnet", "opus")  # aliases: the latest model of the family
 MODEL_ID: Final = re.compile(r"claude-(haiku|sonnet|opus)-\d[a-z0-9-]*")  # a pinned version
 VALID_EFFORTS: Final = ("low", "medium", "high", "xhigh", "max")

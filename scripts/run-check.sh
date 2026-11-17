@@ -1,10 +1,10 @@
 #!/bin/sh
-# Runs scripts/check.py with the Python of this project's conda environment, global-timer.
+# Runs scripts/check.py with the Python of this project's conda environment, zuno.
 # The git pre-commit hook (.githooks/pre-commit) and the Claude Code hook in
 # .claude/settings.json call it. Its arguments go to check.py.
 
 root=$(cd "$(dirname "$0")/.." && pwd)
-name="global-timer"
+name="zuno"
 
 # Print a path in this shell's form (Git Bash on Windows turns C:\x into /c/x).
 shell_path() {

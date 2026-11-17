@@ -22,13 +22,13 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "terminal.integrated.profiles.windows": {
-    "cmd (global-timer)": {
+    "cmd (zuno)": {
       "path": "${env:windir}\\System32\\cmd.exe",
-      "args": ["/K", "conda activate global-timer"],
+      "args": ["/K", "conda activate zuno"],
       "icon": "terminal-cmd"
     }
   },
-  "terminal.integrated.defaultProfile.windows": "cmd (global-timer)",
+  "terminal.integrated.defaultProfile.windows": "cmd (zuno)",
   "mypy-type-checker.args": ["--config-file=mypy.ini"],
   "python.testing.pytestEnabled": true,
   "python.testing.pytestArgs": ["tests"],
@@ -41,5 +41,7 @@
     "**/models/**": true,
     "**/data/**": true,
     "**/node_modules/**": true
-  }
+  },
+  "python-envs.defaultEnvManager": "ms-python.python:conda",
+  "python-envs.defaultPackageManager": "ms-python.python:conda"
 }
