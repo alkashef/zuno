@@ -63,6 +63,7 @@ function setup(saved, start, answer = invented) {
     },
     storage: { load: () => saved, save: () => {} },
     clock: { now: () => clock.time },
+    defaultHours: { start: 540, end: 1020 },
   });
   return { controller, calls, clock };
 }

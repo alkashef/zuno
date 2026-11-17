@@ -3,8 +3,8 @@
  * @module controller
  * The page workflows: applies an action to the page state, asks the injected `api` for the holidays
  * the shown month and the marker's window need, and tells subscribers about every new state
- * (PCK-004, PCK-007, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-007,
- * DEC-007). Pure apart from its injected `api`, `storage` and `clock`. It touches no DOM (the views
+ * (PCK-004, PCK-007, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-001 to
+ * SET-011, HIJ-002, HIJ-003, DEC-007, DEC-008). Pure apart from its injected `api`, `storage` and `clock`. It touches no DOM (the views
  * do) and builds no picker, grid or notices logic itself (domain/* does).
  */
 import { buildMonth } from "./domain/calendar.js";
@@ -15,6 +15,8 @@ import {
   unavailableCountries,
 } from "./domain/holidays.js";
 import { buildPicker, markerOnDate, pickerWindow, shiftMarkerDay } from "./domain/picker.js";
+import * as placeList from "./domain/places.js";
+import { defaultSettings, withDisplaySwitch, withWorkingHours } from "./domain/settings.js";
 import { localDateTime } from "./domain/zones.js";
 
 /** @typedef {import("./domain/calendar.js").DayFacts} DayFacts */
@@ -23,6 +25,7 @@ import { localDateTime } from "./domain/zones.js";
 /** @typedef {import("./domain/holidays.js").HolidayResult} HolidayResult */
 /** @typedef {import("./domain/picker.js").Marker} Marker */
 /** @typedef {import("./domain/picker.js").PickerRow} PickerRow */
+/** @typedef {import("./domain/places.js").Place} Place */
 /** @typedef {import("./domain/settings.js").Settings} Settings */
 /** @typedef {import("./domain/weekends.js").CalendarDate} CalendarDate */
 /** @typedef {Record<string, Record<string, HolidayResult>>} ResultsByCountryYear Keyed by country code, then year. */
@@ -32,6 +35,8 @@ import { localDateTime } from "./domain/zones.js";
  * @property {{ getHolidays: (countryCode: string, year: number) => Promise<HolidayResult> }} api
  * @property {{ load: () => Settings | null, save: (settings: Settings) => void }} storage
  * @property {{ now: () => number }} clock
+ * @property {{ start: number, end: number }} defaultHours Working hours (minutes after midnight)
+ *   for settings that are not saved yet (SET-005).
  */
 
 /**
@@ -74,7 +79,12 @@ import { localDateTime } from "./domain/zones.js";
  *   | { type: "setMarker", instant: number } | { type: "setMarker", date: CalendarDate }
  *   | { type: "shiftMarkerDay", days: number } | { type: "showMonth", offset: number }
  *   | { type: "selectHoliday", cell: { placeId: string, date: string } | null }
- *   | { type: "toggleNotices" } | { type: "openSettings" } | { type: "closeSettings" }} Action
+ *   | { type: "toggleNotices" } | { type: "openSettings" } | { type: "closeSettings" }
+ *   | { type: "addPlace", countryCode: string } | { type: "removePlace", placeId: string }
+ *   | { type: "movePlace", placeId: string, offset: number }
+ *   | { type: "editPlace", placeId: string, changes: Partial<Omit<Place, "id" | "countryCode">> }
+ *   | { type: "setWorkingHours", start: number, end: number }
+ *   | { type: "setShowCountry", value: boolean } | { type: "setShowHijri", value: boolean }} Action
  */
 
 /** @typedef {{ countryCode: string, year: number }} CountryYear */
@@ -374,6 +384,147 @@ function selectHoliday(ctx, { cell }) {
 }
 
 /**
+ * @param {Place[]} places
+ * @returns {string} An id such as `place-3` that no place in the list has.
+ */
+function nextPlaceId(places) {
+  const taken = new Set(places.map((place) => place.id));
+  let number = places.length + 1;
+  while (taken.has(`place-${number}`)) number += 1;
+  return `place-${number}`;
+}
+
+/**
+ * @param {Context} ctx
+ * @returns {Settings} The saved settings, or the defaults when none are saved (SET-005, SET-007).
+ */
+function currentSettings(ctx) {
+  const { start, end } = ctx.deps.defaultHours;
+  return ctx.read().settings ?? defaultSettings(start, end);
+}
+
+/**
+ * @param {ResultsByCountryYear} results
+ * @param {Place[]} places
+ * @returns {ResultsByCountryYear} The answers of the countries some place still uses.
+ */
+function keepUsedCountries(results, places) {
+  const used = new Set(places.map((place) => place.countryCode));
+  return Object.fromEntries(Object.entries(results).filter(([code]) => used.has(code)));
+}
+
+/**
+ * Saves new settings, shows them, and asks for the holidays they need (SET-004). `null` is a
+ * refused change: nothing is saved or shown.
+ * @param {Context} ctx
+ * @param {Settings | null} next
+ * @returns {Promise<void>}
+ */
+function commitSettings(ctx, next) {
+  if (next === null) return Promise.resolve();
+  const { holidayResults, selectedHoliday } = ctx.read();
+  ctx.deps.storage.save(next);
+  const shown = next.places.some((place) => place.id === selectedHoliday?.placeId);
+  ctx.update({
+    settings: next,
+    holidayResults: keepUsedCountries(holidayResults, next.places),
+    selectedHoliday: shown ? selectedHoliday : null,
+  });
+  return requestMissing(ctx);
+}
+
+/**
+ * @param {Context} ctx
+ * @param {(places: Place[]) => Place[]} change
+ * @returns {Promise<void>} Commits the settings with the changed place list.
+ */
+function changePlaces(ctx, change) {
+  const settings = currentSettings(ctx);
+  return commitSettings(ctx, { ...settings, places: change(settings.places) });
+}
+
+/**
+ * Adds a place for a country with the capital's zone (SET-001, SET-002).
+ * @param {Context} ctx
+ * @param {Extract<Action, { type: "addPlace" }>} action
+ * @returns {Promise<void>}
+ */
+function addPlace(ctx, { countryCode }) {
+  return changePlaces(ctx, (places) =>
+    placeList.addPlace(places, placeList.createPlace(nextPlaceId(places), countryCode)),
+  );
+}
+
+/**
+ * @param {Context} ctx
+ * @param {Extract<Action, { type: "removePlace" }>} action
+ * @returns {Promise<void>} Removes a place (SET-001).
+ */
+function removePlace(ctx, { placeId }) {
+  return changePlaces(ctx, (places) => placeList.removePlace(places, placeId));
+}
+
+/**
+ * @param {Context} ctx
+ * @param {Extract<Action, { type: "movePlace" }>} action
+ * @returns {Promise<void>} Moves a place up or down in both views (SET-008).
+ */
+function movePlace(ctx, { placeId, offset }) {
+  return changePlaces(ctx, (places) => placeList.movePlace(places, placeId, offset));
+}
+
+/**
+ * Changes the zone, display name, region or Hijri choices of a place (SET-003, SET-006, SET-009,
+ * HIJ-002, HIJ-003).
+ * @param {Context} ctx
+ * @param {Extract<Action, { type: "editPlace" }>} action
+ * @returns {Promise<void>}
+ */
+function editPlace(ctx, { placeId, changes }) {
+  return changePlaces(ctx, (places) => placeList.editPlace(places, placeId, changes));
+}
+
+/**
+ * @param {Context} ctx
+ * @param {Extract<Action, { type: "setWorkingHours" }>} action
+ * @returns {Promise<void>} Sets the working hours; a start not before the end is refused (SET-005).
+ */
+function setWorkingHours(ctx, { start, end }) {
+  return commitSettings(ctx, withWorkingHours(currentSettings(ctx), start, end));
+}
+
+/**
+ * @param {"showCountry" | "showHijri"} name The display switch.
+ * @returns {Handler} The handler that turns the switch on or off (SET-010, SET-011).
+ */
+function displaySwitch(name) {
+  return (ctx, action) =>
+    commitSettings(
+      ctx,
+      withDisplaySwitch(
+        currentSettings(ctx),
+        name,
+        /** @type {{ value: unknown }} */ (action).value,
+      ),
+    );
+}
+
+/**
+ * @returns {Partial<Record<Action["type"], Handler>>} The handlers of the settings workflows.
+ */
+function settingsHandlers() {
+  return /** @type {Partial<Record<Action["type"], Handler>>} */ ({
+    addPlace,
+    removePlace,
+    movePlace,
+    editPlace,
+    setWorkingHours,
+    setShowCountry: displaySwitch("showCountry"),
+    setShowHijri: displaySwitch("showHijri"),
+  });
+}
+
+/**
  * @returns {Record<Action["type"], Handler>} The handler of each action type.
  */
 function handlers() {
@@ -385,6 +536,7 @@ function handlers() {
     shiftMarkerDay: shiftDay,
     showMonth,
     selectHoliday,
+    ...settingsHandlers(),
     toggleNotices: (ctx) => ctx.update({ noticesOpen: !ctx.read().noticesOpen }),
     openSettings: (ctx) => ctx.update({ settingsOpen: true }),
     closeSettings: (ctx) => ctx.update({ settingsOpen: false }),

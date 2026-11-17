@@ -232,7 +232,8 @@ instant; only the map labels and the "Updated" time change. The marker does not 
 
 **Change settings (SET-001 to SET-011).** The controller validates the change through
 `domain/settings.js`, saves it through `storage.js`, and redraws. A new place asks for holidays for
-its country if they are missing. A removed place drops no data that another place still uses.
+its country if they are missing. A removed place drops the holiday answers of its country only
+when no other place uses it.
 
 **Notices (REF-002, HOL-004).** `domain/holidays.js` lists the countries whose result is
 `unavailable` and the places whose chosen region cannot be served because the country's loaded
@@ -282,12 +283,18 @@ is 1; an unknown version is invalid (DEC-008).
   `load() -> Settings | null` returns `null` (and logs a warning for a bad record) when nothing
   valid is stored; `save(settings) -> void`.
 - `clock.now() -> number`, `clock.prefersDark() -> boolean`.
-- `controller.createController({ api, storage, clock }) -> { getState, dispatch, subscribe }`.
+- `controller.createController({ api, storage, clock, defaultHours }) -> { getState, dispatch, subscribe }`.
+  `defaultHours` (`{ start, end }`, minutes after midnight, from `config.js` through `main.js`) are the
+  working hours for settings not saved yet.
   Actions: `open`, `refresh`, `tick`, `setMarker`, `shiftMarkerDay`, `showMonth`, `addPlace`,
   `removePlace`, `movePlace`, `editPlace`, `setWorkingHours`, `setShowCountry`, `setShowHijri`,
   `selectHoliday`, `toggleNotices`, `openSettings`, `closeSettings`. `setMarker` takes an
   `instant` (drag) or a `date` (a day picked in the calendar, PCK-007); `showMonth` takes an
-  `offset`; `selectHoliday` takes a `cell` (`{ placeId, date }`, or `null` to close the card).
+  `offset`; `addPlace` takes a `countryCode` (the controller makes the id, `place-N`); `removePlace`
+  a `placeId`; `movePlace` a `placeId` and an `offset` (-1 or 1); `editPlace` a `placeId` and
+  `changes` (zone, label, region, Hijri variant or adjustment); `setWorkingHours` a `start` and an
+  `end`; `setShowCountry` and `setShowHijri` a `value`. A refused change saves nothing.
+  `selectHoliday` takes a `cell` (`{ placeId, date }`, or `null` to close the card).
   `dispatch` returns a promise that settles when the action's holiday requests are answered.
   `getState()` returns the state (settings or `null`, `now`, marker, month, holiday results, the
   selected holiday, the open panels) plus the models the views draw: `isEmpty`, `picker`, `grid`

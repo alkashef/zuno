@@ -5,7 +5,12 @@ import { test } from "node:test";
 
 import { config } from "../../src/config.js";
 import { createPlace } from "../../src/domain/places.js";
-import { defaultSettings, parseSettings, withWorkingHours } from "../../src/domain/settings.js";
+import {
+  defaultSettings,
+  parseSettings,
+  withDisplaySwitch,
+  withWorkingHours,
+} from "../../src/domain/settings.js";
 
 const fresh = () => defaultSettings(config.defaultWorkStartMinutes, config.defaultWorkEndMinutes);
 
@@ -39,4 +44,17 @@ test("test_set_004_parse_accepts_valid_and_refuses_invalid", () => {
   assert.equal(parseSettings({ ...valid, places: [valid.places[0], valid.places[0]] }), null);
   assert.equal(parseSettings({ ...valid, places: [{ id: "x" }] }), null);
   assert.equal(parseSettings("text"), null);
+});
+
+test("test_set_010_set_011_display_switch_changes_one_switch_and_refuses_non_booleans", () => {
+  const settings = fresh();
+  assert.deepEqual(withDisplaySwitch(settings, "showCountry", true), {
+    ...settings,
+    showCountry: true,
+  });
+  assert.deepEqual(withDisplaySwitch(settings, "showHijri", true), {
+    ...settings,
+    showHijri: true,
+  });
+  assert.equal(withDisplaySwitch(settings, "showHijri", "yes"), null);
 });

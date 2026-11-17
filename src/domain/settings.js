@@ -90,6 +90,17 @@ export function parseSettings(value) {
 }
 
 /**
+ * Turns one display switch on or off (SET-010, SET-011).
+ * @param {Settings} settings
+ * @param {"showCountry" | "showHijri"} name The switch.
+ * @param {unknown} value
+ * @returns {Settings | null} New settings, or `null` when the value is not `true` or `false`.
+ */
+export function withDisplaySwitch(settings, name, value) {
+  return typeof value === "boolean" ? { ...settings, [name]: value } : null;
+}
+
+/**
  * Sets the working hours (SET-005).
  * @param {Settings} settings
  * @param {number} start Minutes after midnight.

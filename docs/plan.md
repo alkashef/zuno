@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M10** Controller: settings workflows | Add, remove, move and edit places; hours; display switches; save and restore. | sonnet | high | open |
 | **M11** Page shell, theme, empty page | `main.js` wiring, `index.html`, theme tokens, header, Refresh, empty page; installs Playwright (Chromium first). | sonnet | high | open |
 | **M12** Settings panel: places | Add, remove, reorder and edit places in the panel; saved and restored. | sonnet | medium | open |
 | **M13** Settings panel: hours and display | Working hours, country names, Hijri switch, region, Hijri variant and adjustment. | sonnet | medium | open |
@@ -24,23 +23,6 @@ history is the record. Template: `docs/workflow.md`.
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M10 — Controller: settings workflows
-
-- **Refs:** SET-001 to SET-011, HIJ-002, HIJ-003, DEC-008.
-- **Owner:** `src/controller.js`.
-- **Tests first:** `test_set_001_add_and_remove_place_workflow`,
-  `test_set_002_add_country_sets_capital_zone`, `test_set_003_choose_other_city_zone`,
-  `test_set_004_change_is_saved_and_restored_on_next_open`, `test_set_005_set_working_hours`,
-  `test_set_006_choose_region`, `test_set_008_move_place_reorders_picker_and_grid`,
-  `test_set_009_set_display_name`, `test_set_010_turn_on_country_names`,
-  `test_set_011_turn_on_hijri`, `test_hij_002_choose_variant_per_place`,
-  `test_hij_003_adjust_hijri_per_place`.
-- **Build:** add the actions `addPlace`, `removePlace`, `movePlace`, `editPlace`,
-  `setWorkingHours`, `setShowCountry`, `setShowHijri`. Validate through `domain/settings.js`, save
-  through `storage`, request holidays for a new country. A removed place keeps data another place
-  still uses.
-- **Gate:** none beyond the common gate.
 
 ### M11 — Page shell, theme, empty page
 
