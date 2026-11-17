@@ -9,7 +9,7 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M1** Build the one-file page | `scripts/build.mjs` (esbuild) bundles `src/` into `dist/zuno.html` with the CSP tag. | sonnet | high | blocked |
+| **M1** Build the one-file page | `scripts/build.mjs` (esbuild) bundles `src/` into `dist/zuno.html` with the CSP tag. | sonnet | high | approved |
 | **M2** Holiday service and facts | `api.js` returns `HolidayResult`; `domain/holidays.js` keeps `Public` holidays and handles regions and missing data. | sonnet | high | open |
 | **M3** Time zones and formats | Local date and time with DST; dd-mmm-yy and 12-hour formats; the import-rule test. | sonnet | high | open |
 | **M4** Country table | `data/countries.js` and `domain/countries.js`: capital default and other zones. | sonnet | medium | open |
@@ -54,6 +54,7 @@ Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
   - To continue, approve one of these:
     1. Permit exactly: install `esbuild@0.28.2` as a dev dependency (with its install script); add the `build` script to `package.json`; in `eslint.config.js` add `dist/**` to `ignores` and a block giving `scripts/**/*.mjs` the Node globals. (Prettier needs no edit: `format:check` checks only `src/` and `tests/`.)
     2. Run `npm install --save-dev --save-exact esbuild@0.28.2` yourself and commit it, then approve only the `package.json` script and `eslint.config.js` edits.
+- **Approval:** Option 1. Install `esbuild@0.28.2` as a dev dependency (with its install script); add the `build` script to `package.json`; in `eslint.config.js` add `dist/**` to `ignores` and a block giving `scripts/**/*.mjs` the Node globals. Nothing more.
 
 ### M2 — Holiday service and facts
 
