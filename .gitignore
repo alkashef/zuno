@@ -24,6 +24,7 @@ htmlcov/
 
 # JavaScript
 node_modules/
+dist/
 
 # Editor and OS
 .vscode/*

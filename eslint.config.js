@@ -4,7 +4,7 @@ import js from "@eslint/js";
 import globals from "globals";
 
 export default [
-  { ignores: ["site/**", "node_modules/**"] },
+  { ignores: ["site/**", "node_modules/**", "dist/**"] },
   js.configs.recommended,
   {
     files: ["src/**/*.js"],
@@ -46,4 +46,5 @@ export default [
   { files: ["src/api.js"], rules: { "no-restricted-globals": "off" } },
   { files: ["src/log.js"], rules: { "no-console": "off" } },
   { files: ["tests/**/*.js"], languageOptions: { globals: { ...globals.node } } },
+  { files: ["scripts/**/*.mjs"], languageOptions: { globals: { ...globals.node } } },
 ];

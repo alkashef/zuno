@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Dev-only tooling for checks. The app has no runtime dependencies and no build step.",
   "scripts": {
+    "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:css": "stylelint \"src/**/*.css\" --allow-empty-input",
@@ -13,6 +14,7 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/node": "22.20.5",
+    "esbuild": "0.28.2",
     "eslint": "10.12.0",
     "globals": "17.13.0",
     "prettier": "3.9.9",

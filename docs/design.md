@@ -48,9 +48,10 @@ that joins modules, rejected: it would have to rewrite `import` lines and is eas
 and the JavaScript in one `<script>`. Consequences: one new dev dependency; `dist/` is generated and
 not committed; ESLint and Prettier must ignore `dist/` (editing their configs asks the user).
 Evidence: esbuild documents `build()` with `bundle` and `write: false` (esbuild.github.io/api,
-checked 2026-11-17). Not yet verified: licence, install-time scripts, CSS bundling details.
-Validation: a test builds the file and asserts it has no `src=`, `href=` or `import` to another
-file (PKG-001). Planned.
+checked 2026-11-17). Verified at install (2026-11-17): licence MIT, one install script. `styles.css` is a second esbuild
+entry point, so `main.js` imports no CSS.
+Validation: `tests/unit/build.test.js` builds the file and asserts it has no `src=`, `href=` or
+`import` to another file (PKG-001).
 
 **DEC-003.** `getWeekInfo()` returns the weekend days (1 = Monday to 7 = Sunday). MDN marks it
 Baseline 2026, newly available since July 2026, so the latest Chrome, Edge, Firefox and Safari have
@@ -194,7 +195,7 @@ Exact versions of installed packages are in `package.json`.
 | JavaScript, `Intl` | Time zones, weekends, Hijri, names | DEC-001, DEC-003 | Existing. Needs the latest desktop browsers (NFR-002). | MDN `getWeekInfo`, 2026-11-17 |
 | TypeScript compiler, ESLint, Prettier, Stylelint | Checks | Existing in `package.json` | Existing | |
 | `node --test` | Unit and workflow tests | DEC-011 | Existing | |
-| esbuild | Bundles modules and CSS for the one-file build | DEC-002 | Proposed, dev-only. Licence and install scripts unverified. | esbuild.github.io/api, 2026-11-17 |
+| esbuild | Bundles modules and CSS for the one-file build | DEC-002 | Installed 0.28.2, dev-only. Licence MIT; one install script (`postinstall: node install.js`), checked at npm on 2026-11-17. | esbuild.github.io/api, 2026-11-17 |
 | Playwright | Browser tests | DEC-011 | Proposed, dev-only. Needs approval. | playwright.dev/docs/browsers, 2026-11-17 |
 | Nager.Date | Public holidays | DEC-005 | Proposed. Needs approval. Contract and CORS unverified. | nagerholidays.com/Api, 2026-11-17 |
 | IANA `zone.tab` | Zones and coordinates for `data/countries.js` | DEC-004 | Proposed data source. | iana.org/time-zones |
@@ -309,7 +310,7 @@ Everything else follows DEC-006 and the top-level handler.
 | Issue and references | Owner | Evidence needed | Blocks what? |
 | --- | --- | --- | --- |
 | Holiday service terms of service (use, availability, any limit on a hosted page). DEC-005. The CORS and contract check ran on 2026-11-17: `curl` with `Origin: null` to `/api/v4/Holidays/US/2026` and `/api/v3/PublicHolidays/2026/US` gave HTTP 200, `access-control-allow-origin: *`, and the documented fields for each version. Version 4 is the current one. | User | Read the service's terms page. | None until release. |
-| Installing esbuild and Playwright: approved as dev dependencies (DEC-002, DEC-011), but the install itself waits for the milestone that first imports each (CLAUDE.md, Dependencies). Exact versions are pinned then. | Implementation | Version and licence check at install time. | The build and browser-test milestones. |
+| Installing Playwright: approved as a dev dependency (DEC-011), but the install itself waits for the milestone that first imports it (CLAUDE.md, Dependencies). The exact version is pinned then. (esbuild: installed in M1, see section 2.4.) | Implementation | Version and licence check at install time. | The browser-test milestone. |
 | Country table accuracy (capital zone choices). DEC-004 | Implementation | Unit test of every row; the user reviews the capital list. | Add-place milestone. |
 | Weekend data lags a recent country change. DEC-003 | Accepted risk | EX-002 in four browsers. | None. |
 | English Hijri month names (for example `Jumada II`) from `Intl` in all four browsers. EX-010 | Implementation | Browser test of EX-010 in four browsers. | HIJ milestone. |

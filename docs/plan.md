@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M1** Build the one-file page | `scripts/build.mjs` (esbuild) bundles `src/` into `dist/zuno.html` with the CSP tag. | sonnet | high | blocked |
 | **M2** Holiday service and facts | `api.js` returns `HolidayResult`; `domain/holidays.js` keeps `Public` holidays and handles regions and missing data. | sonnet | high | open |
 | **M3** Time zones and formats | Local date and time with DST; dd-mmm-yy and 12-hour formats; the import-rule test. | sonnet | high | open |
 | **M4** Country table | `data/countries.js` and `domain/countries.js`: capital default and other zones. | sonnet | medium | open |
@@ -33,35 +32,6 @@ history is the record. Template: `docs/workflow.md`.
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M1 — Build the one-file page
-
-- **Refs:** PKG-001, NFR-001 (CSP part), DEC-002, DEC-012, DEC-013.
-- **Owner:** `scripts/build.mjs`, `src/config.js`, `src/index.html`, `src/main.js`.
-- **Tests first:** `test_pkg_001_built_file_has_no_external_src_href_or_import`,
-  `test_nfr_001_csp_allows_only_holiday_host_and_inline_hashes`.
-- **Build:** install esbuild pinned (dev-only; record version and licence check in `design.md`
-  section 5). Add `build.mjs` to bundle modules and CSS and write `dist/zuno.html` with one `<style>`,
-  one `<script>` and the CSP `<meta>` with hashes. Add `config.js` with `holidayServiceBaseUrl` (the
-  CSP reads its host). Add a minimal `index.html` and `main.js`. Add `dist/` to `.gitignore`, ESLint
-  and Prettier ignores, and an `npm run build` script. Update the README build line.
-- **Gate:** `npm run build` writes `dist/zuno.html`; `dist/` is not tracked. If the ESLint or
-  Prettier config edits need approval, block with that exact question.
-- **Blocked:** The milestone must install esbuild and edit `package.json` and `eslint.config.js`, and `.claude/settings.json` makes each of these ask the user, who cannot answer in an unattended run.
-  - `npm install --save-dev --save-exact esbuild@0.28.2` was refused: `.claude/settings.json` lists `Bash(npm install *)` under `ask`; CLAUDE.md "Dependencies" says to ask before adding any dependency. The plan block and DEC-002 name esbuild, but no **Approval** entry permits the install. Checked at npm: esbuild 0.28.2, licence MIT, one install script (`postinstall: node install.js`).
-  - The build also needs edits to `package.json` (the `build` script, the `esbuild` dev dependency) and `eslint.config.js` (ignore `dist/`; Node globals for `scripts/*.mjs`, which ESLint lints with browser-less defaults). Both are under `ask` in `.claude/settings.json`; this is the question the Gate names.
-  - Nothing else was changed; the failing tests were written, seen to fail, and removed again so that only this plan edit is committed.
-  - To continue, approve one of these:
-    1. Permit exactly: install `esbuild@0.28.2` as a dev dependency (with its install script); add the `build` script to `package.json`; in `eslint.config.js` add `dist/**` to `ignores` and a block giving `scripts/**/*.mjs` the Node globals. (Prettier needs no edit: `format:check` checks only `src/` and `tests/`.)
-    2. Run `npm install --save-dev --save-exact esbuild@0.28.2` yourself and commit it, then approve only the `package.json` script and `eslint.config.js` edits.
-- **Approval:** Option 1. Install `esbuild@0.28.2` as a dev dependency (with its install script); add the `build` script to `package.json`; in `eslint.config.js` add `dist/**` to `ignores` and a block giving `scripts/**/*.mjs` the Node globals. Nothing more.
-- **Blocked:** The Approval above cannot take effect in an unattended run: `.claude/settings.json` still makes `npm install *` ask, and nobody can answer, so the install of esbuild was refused again.
-  - `npm install --save-dev --save-exact esbuild@0.28.2` was run twice (once inside a `cd ... && ... | tail` compound, once alone); the harness refused both: "Claude requested permissions to use Bash, but you haven't granted it yet." Source: `.claude/settings.json`, `permissions.ask`, entry `Bash(npm install *)`.
-  - An Approval entry in the plan does not change `.claude/settings.json`. Editing that file is itself under `ask` and was not approved, and CLAUDE.md forbids working around a block with a different command (so no `npx`, no PowerShell, no download of the package by hand).
-  - Nothing else was changed; the failing tests were written, seen to fail, and removed again, so only this plan edit is committed.
-  - To continue, do one of these:
-    1. Run `npm install --save-dev --save-exact esbuild@0.28.2` yourself in a terminal and commit `package.json` and `package-lock.json`. Then set Status to `approved` and rerun; the milestone will add only the `build` script and the `eslint.config.js` edits you already approved.
-    2. Add `Bash(npm install esbuild@0.28.2 *)` to `permissions.allow` in `.claude/settings.json` (an edit only you can approve), then rerun.
 
 ### M2 — Holiday service and facts
 
