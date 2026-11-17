@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M4** Country table | `data/countries.js` and `domain/countries.js`: capital default and other zones. | sonnet | medium | open |
 | **M5** Places, settings, storage | Place and settings logic with validation; `storage.js`. | sonnet | medium | open |
 | **M6** Weekends and Hijri | `weekends.js`, `hijri.js` (variants, ±1 adjustment) and the Hijri date format. | sonnet | high | open |
 | **M7** Month-grid model | `domain/calendar.js`: weekend, holiday, split cell, today, Hijri day. | sonnet | high | open |
@@ -30,18 +29,6 @@ history is the record. Template: `docs/workflow.md`.
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M4 — Country table
-
-- **Refs:** SET-002, SET-003, NFR-003 (country names), DEC-004.
-- **Owner:** `data/countries.js`, `src/domain/countries.js`.
-- **Tests first:** `test_set_002_adding_country_uses_capital_zone`,
-  `test_set_003_multi_zone_country_lists_other_city_zones`,
-  `test_dec_004_every_zone_valid_and_every_country_has_capital`.
-- **Build:** one row per country from IANA `zone.tab` with the capital zone chosen; English country
-  names from `Intl.DisplayNames`.
-- **Gate:** the report lists any country whose capital zone was a judgement call, for the user's
-  review (`design.md` section 5).
 
 ### M5 — Places, settings, storage
 

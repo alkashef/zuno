@@ -67,7 +67,9 @@ with city labels, and latitude and longitude for each zone. Source: the IANA tim
 `zone.tab` (zones, coordinates, public domain) with the capital chosen per country. Country names
 use `Intl.DisplayNames`; month and weekday names use `Intl` in English (NFR-003). Validation:
 a unit test checks every zone is valid for `Intl.DateTimeFormat` and every country has a capital
-row. Planned.
+row (`tests/unit/countries.test.js`). The table has 245 rows; Antarctica (AQ) and the US Minor
+Outlying Islands (UM) have no capital and are left out. `domain/countries.js` exposes
+`listCountries`, `countryName`, `capitalZone` and `otherZones`.
 
 **DEC-005.** Alternatives: (a) OpenHolidays, rejected: it lists 36 countries and has none of the
 United States, the United Kingdom, Saudi Arabia or Japan (openholidaysapi.org, checked 2026-11-17);
@@ -201,7 +203,7 @@ Exact versions of installed packages are in `package.json`.
 | esbuild | Bundles modules and CSS for the one-file build | DEC-002 | Installed 0.28.2, dev-only. Licence MIT; one install script (`postinstall: node install.js`), checked at npm on 2026-11-17. | esbuild.github.io/api, 2026-11-17 |
 | Playwright | Browser tests | DEC-011 | Proposed, dev-only. Needs approval. | playwright.dev/docs/browsers, 2026-11-17 |
 | Nager.Date | Public holidays | DEC-005 | Approved (DEC-005). Contract and CORS checked live in M2 (section 5). | nagerholidays.com/Api, 2026-11-17 |
-| IANA `zone.tab` | Zones and coordinates for `data/countries.js` | DEC-004 | Proposed data source. | iana.org/time-zones |
+| IANA `zone.tab` | Zones and coordinates for `data/countries.js` | DEC-004 | Data source of the table (M4). | iana.org/time-zones |
 | Database, server, LLM, framework | none | | The page is local with one outside service. | |
 
 ### 2.5 Critical flows and operations

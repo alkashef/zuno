@@ -7,6 +7,7 @@ config/.env
 # User data, generated data, models, logs
 data/*
 !data/.gitkeep
+!data/countries.js
 models/
 logs/
 *.before-*
