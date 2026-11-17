@@ -9,7 +9,7 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M11** Page shell, theme, empty page | `main.js` wiring, `index.html`, theme tokens, header, Refresh, empty page; installs Playwright (Chromium first). | sonnet | high | blocked |
+| **M11** Page shell, theme, empty page | `main.js` wiring, `index.html`, theme tokens, header, Refresh, empty page; installs Playwright (Chromium first). | sonnet | high | approved |
 | **M12** Settings panel: places | Add, remove, reorder and edit places in the panel; saved and restored. | sonnet | medium | open |
 | **M13** Settings panel: hours and display | Working hours, country names, Hijri switch, region, Hijri variant and adjustment. | sonnet | medium | open |
 | **M14** Picker view | Day selector, hour axis, rows, draggable marker, scroll. | sonnet | high | open |
@@ -52,6 +52,9 @@ Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
        `npx playwright install chromium`.
     2. Approve M11 to run `npm install --save-dev --save-exact playwright@1.65.1`, edit
        `package.json`, and run `npx playwright install chromium`, and nothing else.
+- **Approval:** Option 1. `playwright@1.65.1` is installed and committed (`package.json`,
+  `package-lock.json`). Chromium (revision 1255) is installed by the user from a terminal with
+  `npx playwright install chromium`. Nothing more.
 
 ### M12 — Settings panel: places
 
