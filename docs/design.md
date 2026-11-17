@@ -222,8 +222,10 @@ first place, one row per place, and each place's local date and time. If the new
 year not yet loaded, the controller requests it. The window is the real elapsed time, so on a
 daylight-saving change day it is 23 or 25 hours (user decision 2026-11-17; PCK-006).
 
-**Refresh (REF-001).** The controller clears every `HolidayResult`, requests all needed country-years
-again, and redraws. Times need no refresh, as the clock tick covers them.
+**Refresh (REF-001).** The controller recomputes the current time, requests all needed
+country-years again, and replaces each stored `HolidayResult` with its new answer as it arrives. An
+`unavailable` answer does not replace a `loaded` one, so holidays already loaded stay shown
+(REF-002); notices consider only the country-years the shown month and the marker's window need.
 
 **Clock tick (CLK-003).** Every `clockTickMs`, `main.js` calls the controller with the new current
 instant; only the map labels and the "Updated" time change. The marker does not move.
@@ -283,7 +285,13 @@ is 1; an unknown version is invalid (DEC-008).
 - `controller.createController({ api, storage, clock }) -> { getState, dispatch, subscribe }`.
   Actions: `open`, `refresh`, `tick`, `setMarker`, `shiftMarkerDay`, `showMonth`, `addPlace`,
   `removePlace`, `movePlace`, `editPlace`, `setWorkingHours`, `setShowCountry`, `setShowHijri`,
-  `selectHoliday`, `toggleNotices`, `openSettings`, `closeSettings`.
+  `selectHoliday`, `toggleNotices`, `openSettings`, `closeSettings`. `setMarker` takes an
+  `instant` (drag) or a `date` (a day picked in the calendar, PCK-007); `showMonth` takes an
+  `offset`; `selectHoliday` takes a `cell` (`{ placeId, date }`, or `null` to close the card).
+  `dispatch` returns a promise that settles when the action's holiday requests are answered.
+  `getState()` returns the state (settings or `null`, `now`, marker, month, holiday results, the
+  selected holiday, the open panels) plus the models the views draw: `isEmpty`, `picker`, `grid`
+  and `notices` (`countries`, `placeIds`).
 - `domain/picker.buildPicker(settings, marker, holidays) -> PickerRow[]`,
   `domain/picker.pickerWindow(settings, marker) -> { from, to } | null` (the window of PCK-006),
   `domain/picker.shiftMarkerDay(settings, marker, days) -> Marker` and

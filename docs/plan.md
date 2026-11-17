@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M9** Controller: page workflows | `controller.js` with fakes: open, tick, refresh, marker, month, notices, selected holiday. | opus | high | open |
 | **M10** Controller: settings workflows | Add, remove, move and edit places; hours; display switches; save and restore. | sonnet | high | open |
 | **M11** Page shell, theme, empty page | `main.js` wiring, `index.html`, theme tokens, header, Refresh, empty page; installs Playwright (Chromium first). | sonnet | high | open |
 | **M12** Settings panel: places | Add, remove, reorder and edit places in the panel; saved and restored. | sonnet | medium | open |
@@ -25,23 +24,6 @@ history is the record. Template: `docs/workflow.md`.
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M9 — Controller: page workflows
-
-- **Refs:** PCK-004, PCK-007, CAL-005, CAL-006 (state), CLK-003, REF-001, REF-002, HOL-001,
-  HOL-004, SET-007, DEC-007.
-- **Owner:** `src/controller.js`.
-- **Tests first:** `test_pck_004_open_puts_marker_at_now`,
-  `test_set_007_open_with_no_places_shows_empty_state`, `test_hol_001_open_requests_each_country_year_once`,
-  `test_clk_003_tick_updates_time_but_not_marker`, `test_ref_001_refresh_clears_and_refetches_holidays`,
-  `test_ref_002_failed_country_listed_and_times_still_shown`,
-  `test_hol_004_missing_region_listed_in_notices`, `test_pck_007_shift_day_and_pick_day`,
-  `test_cal_005_show_previous_and_next_month`, `test_cal_006_select_and_close_holiday_cell`.
-- **Build:** `createController({ api, storage, clock })` returns `{ getState, dispatch, subscribe }`
-  with the actions `open`, `refresh`, `tick`, `setMarker`, `shiftMarkerDay`, `showMonth`,
-  `selectHoliday`, `toggleNotices`, `openSettings`, `closeSettings`. Tests in `tests/e2e/` use
-  fakes for `api`, `storage` and `clock`.
-- **Gate:** the controller imports `domain/*` only.
 
 ### M10 — Controller: settings workflows
 
