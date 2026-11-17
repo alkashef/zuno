@@ -137,18 +137,19 @@ at implementation.
 | `storage.js` | The only user of `localStorage`. Reads and writes the settings record. | `config.js`, `log.js` | SET-004, DEC-008 |
 | `clock.js` | The only reader of the current time and of the colour-scheme query. | none | CLK-001, CLK-003 |
 | `domain/zones.js` | Local date and time of an instant in a time zone, with DST, and the reverse: the first instant a zone's clock shows a local date and time (`instantAtLocal`; a skipped time gives the instant the clock jumps, a repeated time its first occurrence), and the instant a zone's offset changes (`offsetChange`). | none | CLK-002, EX-001, PCK-006, PCK-007 |
-| `domain/format.js` | Formats dates, times and Hijri dates. | `domain/hijri.js` types | DSP-001 to DSP-003 |
+| `domain/format.js` | Formats dates, times, Hijri dates and month titles (`formatMonth`). | `domain/hijri.js` types | DSP-001 to DSP-003, PCK-007 |
 | `domain/hijri.js` | Hijri date of a local date for a variant and an adjustment. | none | HIJ-001 to HIJ-003, EX-010 |
 | `domain/weekends.js` | Weekend days of a country. | none | CAL-002 |
 | `domain/countries.js` | Country list, names, capital zone and other zones. | `data/countries.js` | SET-002, SET-003 |
 | `domain/holidays.js` | Turns a `HolidayResult` into per-day facts for a place; lists regions; reports missing data. | none | HOL-003, HOL-004, REF-002 |
 | `domain/places.js` | Adds, removes, moves, relabels and edits places; applies defaults; lists a country's city zones (`zonesOf`) and a place's local time (`placeClock`). | `domain/countries.js`, `domain/hijri.js`, `domain/zones.js`, `domain/format.js` | SET-001 to SET-003, SET-006, SET-008, SET-009 |
 | `domain/settings.js` | Settings shape, defaults and validation. | `domain/places.js` | SET-005, SET-007, SET-010, SET-011 |
-| `domain/calendar.js` | The month-grid model: one row per place, one cell per day. | `zones`, `hijri`, `weekends`, `holidays` | CAL-001 to CAL-007 |
+| `domain/calendar.js` | The month-grid model: one row per place, one cell per day; also `monthWeeks`, the days of a month in weeks (Monday first) for the day selector's calendar. | `zones`, `hijri`, `weekends`, `holidays` | CAL-001 to CAL-007, PCK-007 |
 | `domain/picker.js` | The picker model: the reference window, one row of segments per place, and local times at the marker. | `zones`, `weekends`, `holidays` | PCK-001 to PCK-006, PCK-007 |
 | `controller.js` | The workflows. Applies an action to the state, asks `api.js` for holidays, saves settings. Pure apart from its injected `api`, `storage` and `clock`. | `domain/*` | all workflows |
 | `views/*.js` | One view per screen part (header, notices, map, picker, day selector, month grid, legend, settings, empty page). Each owns its own DOM, clones `<template>` elements, and sends events up. | `domain/format.js` types | |
 | `views/settings.js`, `views/settings-places.js` | The settings panel (M12: places). `settings.js` owns the panel, the add-by-country form, Escape and the focus return; `settings-places.js` owns the list of places and their editors. `main.js` passes both the country lookup (`countries`, `zonesOf`, `placeName`, `clockOf`) and the list factory, because a view imports no other view and no domain module besides `format.js`. | `domain/format.js` types | SET-001 to SET-004, SET-008, SET-009 |
+| `views/picker.js`, `views/day-selector.js` | The picker panel (M14). `picker.js` owns the panel: the hour axis (labelled with the first place's local time every `pickerAxisLabelEveryHours`), one row per place with its local date and time and its coloured stretches, and the marker, moved by dragging or by arrow keys in steps of `pickerStepMinutes`. The axis is sticky inside the scrolling rows, so it shares their width and stays in view (LAY-001). `day-selector.js` owns the previous-day and next-day buttons, the date button and its month calendar (Escape closes it and returns the focus). `main.js` passes `picker.js` the lookups it may not import (`localDateTime`, `placeName`), the steps from `config.js` and the day-selector factory, and passes `day-selector.js` `monthWeeks`. | `domain/format.js` | PCK-001 to PCK-003, PCK-005 to PCK-007, LAY-001, DSP-001, DSP-002 |
 | `views/actions.js` | One delegated click listener: turns `data-action` of a plain action (`refresh`, `openSettings`) into a controller action. Only `main.js` imports it. | none | REF-001, SET-007 |
 | `views/error-screen.js` | Shows the message and stack of an unexpected error on the page; `main.js` calls it from the `error` and `unhandledrejection` handlers. | none | project rule (top-level handler) |
 
@@ -163,7 +164,7 @@ Create a folder only when it is listed here.
 
 | Path | Purpose and owner |
 | --- | --- |
-| `src/` | Source. Holds `index.html`, `main.js`, `config.js`, `log.js`, `api.js`, `storage.js`, `clock.js`, `controller.js` and the sheets `styles.css` (imports the others), `theme.css`, `base.css`, `layout.css` plus one sheet per view. `layout.css` also styles the header, the empty page and the error screen. |
+| `src/` | Source. Holds `index.html`, `main.js`, `config.js`, `log.js`, `api.js`, `storage.js`, `clock.js`, `controller.js` and the sheets `styles.css` (imports the others), `theme.css`, `base.css`, `layout.css` plus one sheet per view (`picker.css` styles the picker, the day selector and its calendar). `layout.css` also styles the header, the empty page and the error screen. |
 | `src/assets/` | Images the page uses. Holds `zuno-logo.jpg`, the app logo (290 by 292 pixels, 24 KB; the user shrank it by hand on 2026-11-17, so the one-file page stays small). `layout.css` uses it as a CSS `url()`; the build inlines it as a data URI (esbuild `dataurl` loader) and the Content-Security-Policy allows `img-src data:`. |
 | `src/domain/` | Pure logic modules from section 2.1. |
 | `src/views/` | View modules, one per screen part. |
@@ -185,6 +186,8 @@ All values live in `config.js` as one frozen object. The page has no environment
 | `holidayServiceBaseUrl` | `https://nagerholidays.com/api/v4` | Base URL of the holiday service. Checked live in M2; see section 5. HOL-001 |
 | `holidayRequestTimeoutMs` | 10000 | Time to wait for one holiday request. A proposed value, not from the spec. |
 | `clockTickMs` | 60000 | How often the current times update. CLK-003. Added to `config.js` in M11. |
+| `pickerStepMinutes` | 15 | How far the marker moves for one arrow key press, and the grid its drag snaps to. PCK-001. A proposed value, not from the spec. |
+| `pickerAxisLabelEveryHours` | 4 | Hours between two labels of the picker's hour axis. PCK-001. A proposed value, not from the spec. |
 | `storageKey` | `zuno.settings` | Key of the saved settings record. SET-004 |
 | `defaultWorkStartMinutes`, `defaultWorkEndMinutes` | 540, 1020 | 9:00 AM and 5:00 PM. SET-005 |
 | `logLevel` | `warn` | Lowest level `log.js` prints. |

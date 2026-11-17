@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M14** Picker view | Day selector, hour axis, rows, draggable marker, scroll. | sonnet | high | open |
 | **M15** Month-grid view | Grid, month buttons, weekend, holiday, split and today cells, holiday card, scroll. | sonnet | medium | open |
 | **M16** Hijri in the views | Hijri band, cell days, picker dates, information button. | sonnet | medium | open |
 | **M17** World map | SVG map with pins, names, times and dates, updated by the tick. | sonnet | medium | open |
@@ -20,19 +19,6 @@ history is the record. Template: `docs/workflow.md`.
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M14 — Picker view
-
-- **Refs:** PCK-001 to PCK-007, LAY-001, DSP-001, DSP-002, EX-003.
-- **Owner:** `src/views/picker.js`, `src/views/day-selector.js`, `src/picker.css`.
-- **Tests first:** `ui_pck_001_one_row_per_place`, `ui_pck_002_moving_marker_updates_row_times_ex_003`,
-  `ui_pck_003_row_colours_working_and_non_working`, `ui_pck_004_marker_starts_at_now`,
-  `ui_pck_005_day_off_colour`, `ui_pck_006_first_place_is_reference`,
-  `ui_pck_007_previous_next_and_calendar_day_keep_time`,
-  `ui_lay_001_picker_rows_scroll_axis_stays_in_view`.
-- **Build:** the day selector (previous, date button with month calendar, next), the hour axis, one
-  row per place with the reference background on the first, the marker moved by drag or arrow keys.
-- **Gate:** none beyond the common gate.
 
 ### M15 — Month-grid view
 

@@ -25,6 +25,85 @@
       </section>
     </template>
 
+    <template id="picker-template">
+      <section class="picker" data-role="picker" aria-labelledby="picker-title">
+        <h2 id="picker-title" class="picker-title">Time picker</h2>
+        <div data-role="day-selector-slot"></div>
+        <div class="picker-scroll" data-role="scroll">
+          <div class="picker-axis" data-role="axis">
+            <div
+              class="picker-handle"
+              data-role="handle"
+              role="slider"
+              tabindex="0"
+              aria-label="Chosen time"
+            ></div>
+          </div>
+          <div class="picker-content">
+            <ul class="picker-rows" data-role="rows"></ul>
+            <div class="picker-line"></div>
+          </div>
+        </div>
+      </section>
+    </template>
+
+    <template id="picker-row-template">
+      <li class="picker-row" data-role="row">
+        <div class="picker-info" data-role="info">
+          <span class="picker-name" data-role="name"></span>
+          <span data-role="local-date"></span>
+          <span data-role="local-time"></span>
+        </div>
+        <div class="picker-track" data-role="track"></div>
+      </li>
+    </template>
+
+    <template id="day-selector-template">
+      <div class="day-selector" data-role="day-selector">
+        <button type="button" class="button" data-role="previous" aria-label="Previous day">
+          &#x2039;
+        </button>
+        <button
+          type="button"
+          class="button day-selector-date"
+          data-role="date"
+          aria-haspopup="dialog"
+          aria-expanded="false"
+        ></button>
+        <button type="button" class="button" data-role="next" aria-label="Next day">
+          &#x203A;
+        </button>
+      </div>
+    </template>
+
+    <template id="calendar-template">
+      <div class="calendar" data-role="calendar" role="dialog" aria-label="Choose a day">
+        <div class="calendar-header">
+          <button type="button" class="button" data-role="earlier" aria-label="Earlier month">
+            &#x2039;
+          </button>
+          <h3 class="calendar-title" data-role="title"></h3>
+          <button type="button" class="button" data-role="later" aria-label="Later month">
+            &#x203A;
+          </button>
+        </div>
+        <table class="calendar-table">
+          <thead>
+            <tr>
+              <th scope="col">Mo</th>
+              <th scope="col">Tu</th>
+              <th scope="col">We</th>
+              <th scope="col">Th</th>
+              <th scope="col">Fr</th>
+              <th scope="col">Sa</th>
+              <th scope="col">Su</th>
+            </tr>
+          </thead>
+          <tbody data-role="weeks"></tbody>
+        </table>
+      </div>
+    </template>
+
     <template id="settings-panel-template">
       <aside class="settings" data-role="settings" role="dialog" aria-labelledby="settings-title">
         <div class="settings-header">

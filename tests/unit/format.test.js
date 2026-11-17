@@ -1,9 +1,15 @@
 // @ts-check
-/** @module format.test Unit tests for src/domain/format.js (DSP-001 to DSP-003, EX-005, EX-006). */
+/** @module format.test Unit tests for src/domain/format.js (DSP-001 to DSP-003, PCK-007, EX-005, EX-006). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { formatClock, formatDate, formatHijri, formatTime } from "../../src/domain/format.js";
+import {
+  formatClock,
+  formatDate,
+  formatHijri,
+  formatMonth,
+  formatTime,
+} from "../../src/domain/format.js";
 
 /**
  * @param {number} year
@@ -48,4 +54,9 @@ test("test_dsp_002_clock_shows_the_instant_in_the_browsers_zone_as_12_hour_text"
   // Built from local-time parts, so the result does not depend on the machine's zone.
   assert.equal(formatClock(new Date(2026, 10, 16, 9, 25).getTime()), "9:25 AM");
   assert.equal(formatClock(new Date(2026, 10, 16, 23, 5).getTime()), "11:05 PM");
+});
+
+test("test_pck_007_month_title_is_full_english_month_and_year", () => {
+  assert.equal(formatMonth({ year: 2026, month: 11 }), "November 2026");
+  assert.equal(formatMonth({ year: 2027, month: 1 }), "January 2027");
 });

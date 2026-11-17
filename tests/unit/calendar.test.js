@@ -1,9 +1,9 @@
 // @ts-check
-/** @module calendar.test Unit tests for src/domain/calendar.js (CAL-001 to CAL-004, CAL-007, HIJ-001, EX-002, EX-004, EX-007). */
+/** @module calendar.test Unit tests for src/domain/calendar.js (CAL-001 to CAL-004, CAL-007, HIJ-001, PCK-007, EX-002, EX-004, EX-007). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { buildMonth } from "../../src/domain/calendar.js";
+import { buildMonth, monthWeeks } from "../../src/domain/calendar.js";
 import { createPlace, editPlace } from "../../src/domain/places.js";
 import { defaultSettings } from "../../src/domain/settings.js";
 
@@ -120,4 +120,22 @@ test("test_hij_001_hijri_data_only_when_on_with_variant_and_adjustment", () => {
   assert.equal(off[0][15].hijri, null);
   assert.deepEqual(on[0][15].hijri, { day: 6, month: "Jumada II", year: 1448 });
   assert.deepEqual(on[1][15].hijri, { day: 7, month: "Jumada II", year: 1448 });
+});
+
+test("test_pck_007_month_weeks_start_on_monday_and_pad_with_null", () => {
+  const weeks = monthWeeks({ year: 2026, month: 11 });
+  assert.equal(weeks.length, 6);
+  assert.deepEqual(weeks[0], [null, null, null, null, null, null, 1]);
+  assert.deepEqual(weeks[2], [9, 10, 11, 12, 13, 14, 15]);
+  assert.deepEqual(weeks[5], [30, null, null, null, null, null, null]);
+});
+
+test("test_pck_007_month_weeks_hold_every_day_once_in_a_leap_february", () => {
+  const days = monthWeeks({ year: 2028, month: 2 })
+    .flat()
+    .filter((day) => day !== null);
+  assert.deepEqual(
+    days,
+    Array.from({ length: 29 }, (_, index) => index + 1),
+  );
 });

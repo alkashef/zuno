@@ -25,6 +25,7 @@
   --color-today: #6c5ce7;
   --color-hijri: #c0267c;
   --color-reference: #dff3f3;
+  --color-marker: var(--color-today);
   --color-map-sea: #bfe9f2;
   --color-map-land: #ffe6b8;
   --color-danger: #c9344a;
@@ -34,6 +35,11 @@
   --radius: 0;
   --control-height: 44px;
   --logo-size: 40px;
+  --picker-width: 36rem;
+  --picker-max-height: 50vh;
+  --picker-track-height: 24px;
+  --marker-width: 2px;
+  --handle-size: 20px;
 
   /* Spacing. */
   --space-1: 4px;

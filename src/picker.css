@@ -1,0 +1,171 @@
+/**
+ * The time picker panel: its title, the day selector with its month calendar, the hour axis, the
+ * rows with their coloured stretches, and the marker. It does not style the page shell
+ * (layout.css), the settings panel (settings.css) or any later view, and it holds no colour or
+ * size value of its own (theme.css does).
+ */
+.picker {
+  display: flex;
+  width: min(var(--picker-width), 100%);
+  flex-direction: column;
+  align-self: flex-end;
+  border: var(--line-width) solid var(--color-line-card);
+  background: var(--color-card);
+}
+
+.picker-title {
+  padding: var(--space-3) var(--space-3) 0;
+  font-size: var(--font-size-body);
+}
+
+.day-selector {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.day-selector-date {
+  flex: 1;
+}
+
+.calendar {
+  position: absolute;
+  z-index: 5;
+  top: 100%;
+  left: var(--space-3);
+  padding: var(--space-3);
+  border: var(--line-width) solid var(--color-line-control);
+  background: var(--color-card);
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.calendar-title {
+  margin: 0;
+  font-size: var(--font-size-body);
+}
+
+.calendar-table {
+  border-collapse: collapse;
+}
+
+.calendar-day {
+  min-width: var(--control-height);
+  padding: 0;
+}
+
+.calendar-day[aria-current="date"] {
+  border-color: var(--color-today);
+  font-weight: bold;
+}
+
+.picker-scroll {
+  max-height: var(--picker-max-height);
+  padding: 0 var(--space-3) var(--space-3);
+  overflow-y: auto;
+}
+
+.picker-axis {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  height: calc(var(--handle-size) + var(--space-4));
+  background: var(--color-card);
+  touch-action: none;
+}
+
+.picker-tick {
+  position: absolute;
+  top: 0;
+  left: calc(var(--tick-position) * 100%);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.picker-tick:first-child {
+  transform: none;
+}
+
+.picker-handle {
+  position: absolute;
+  bottom: 0;
+  left: calc(var(--marker-fraction) * 100%);
+  width: var(--handle-size);
+  height: var(--handle-size);
+  background: var(--color-marker);
+  cursor: grab;
+  transform: translateX(-50%);
+}
+
+.picker-content {
+  position: relative;
+}
+
+.picker-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  touch-action: pan-y;
+}
+
+.picker-info {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-small);
+}
+
+.picker-row[data-reference="true"] .picker-info {
+  background: var(--color-reference);
+}
+
+.picker-name {
+  margin-right: auto;
+  font-weight: bold;
+}
+
+.picker-track {
+  position: relative;
+  height: var(--picker-track-height);
+  margin-bottom: var(--space-2);
+}
+
+.picker-segment {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--segment-start) * 100%);
+  width: calc(var(--segment-size) * 100%);
+}
+
+.picker-segment[data-kind="working"] {
+  background: var(--color-working);
+}
+
+.picker-segment[data-kind="nonWorking"] {
+  background: var(--color-non-working);
+}
+
+.picker-segment[data-kind="dayOff"] {
+  background: var(--color-day-off);
+}
+
+.picker-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--marker-fraction) * 100%);
+  width: var(--marker-width);
+  background: var(--color-marker);
+  pointer-events: none;
+  transform: translateX(-50%);
+}

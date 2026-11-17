@@ -2,7 +2,7 @@
 /**
  * @module domain/format
  * Formats a local date as dd-mmm-yy and a local time as 12-hour text (DSP-001, DSP-002, EX-005,
- * EX-006) and a Hijri date as dd-month-yyyy (DSP-003). It does not compute local times
+ * EX-006), a Hijri date as dd-month-yyyy (DSP-003) and a month title (PCK-007). It does not compute local times
  * (domain/zones.js does) or Hijri dates (domain/hijri.js does).
  */
 
@@ -45,6 +45,15 @@ export function formatTime(local) {
  */
 export function formatHijri(hijri) {
   return `${twoDigits(hijri.day)}-${hijri.month}-${hijri.year}`;
+}
+
+/**
+ * @param {{ year: number, month: number }} monthRef The month, `month` 1 to 12.
+ * @returns {string} The month's full English name and the year, for example `November 2026`.
+ */
+export function formatMonth(monthRef) {
+  const names = new Intl.DateTimeFormat("en-US", { month: "long", timeZone: "UTC" });
+  return `${names.format(Date.UTC(2000, monthRef.month - 1, 1))} ${monthRef.year}`;
 }
 
 /**

@@ -2,7 +2,7 @@
 /**
  * @module domain/calendar
  * The month-grid model: one row per place, one cell of facts per day (CAL-001 to CAL-004, CAL-007,
- * HIJ-001). It says what each cell is; the view chooses colours, including the split cell for a
+ * HIJ-001), and the weeks of a month for the day selector's calendar (PCK-007). It says what each cell is; the view chooses colours, including the split cell for a
  * holiday on a weekend day (CAL-007). It reads no clock (the caller passes the instant), makes no
  * request, and does not format dates as text (domain/format.js does).
  */
@@ -105,4 +105,25 @@ export function buildMonth(settings, monthRef, holidays, nowInstant) {
     };
     return Array.from({ length: dayCount }, (_, index) => dayFacts(row, monthRef, index + 1));
   });
+}
+
+/**
+ * The days of a month laid out in weeks, Monday first, for the day selector's calendar (PCK-007).
+ * @param {MonthRef} monthRef
+ * @returns {(number | null)[][]} Weeks of seven entries; a day number, or `null` before the 1st and
+ *   after the last day.
+ */
+export function monthWeeks(monthRef) {
+  const { year, month } = monthRef;
+  const dayCount = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const firstWeekday = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+  const padding = (firstWeekday + 6) % 7;
+  const cells = [
+    ...Array(padding).fill(null),
+    ...Array.from({ length: dayCount }, (_, index) => index + 1),
+  ];
+  const weekCount = Math.ceil(cells.length / 7);
+  return Array.from({ length: weekCount }, (_, week) =>
+    Array.from({ length: 7 }, (_, day) => cells[week * 7 + day] ?? null),
+  );
 }
