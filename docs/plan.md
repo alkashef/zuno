@@ -9,7 +9,7 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M11** Page shell, theme, empty page | `main.js` wiring, `index.html`, theme tokens, header, Refresh, empty page; installs Playwright (Chromium first). | sonnet | high | open |
+| **M11** Page shell, theme, empty page | `main.js` wiring, `index.html`, theme tokens, header, Refresh, empty page; installs Playwright (Chromium first). | sonnet | high | blocked |
 | **M12** Settings panel: places | Add, remove, reorder and edit places in the panel; saved and restored. | sonnet | medium | open |
 | **M13** Settings panel: hours and display | Working hours, country names, Hijri switch, region, Hijri variant and adjustment. | sonnet | medium | open |
 | **M14** Picker view | Day selector, hour axis, rows, draggable marker, scroll. | sonnet | high | open |
@@ -38,6 +38,20 @@ Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
   "Updated" time, Refresh, Settings) and the empty page. The logo is `src/assets/zuno-logo.jpg`
   (already shrunk), inlined by `build.mjs` as a data URI, so the file stays one file. Add the browsers to the README setup.
 - **Gate:** the page opens as a file. The title stays "Global Timer" until the user locks the UI.
+- **Blocked:** M11 needs `npm install` of Playwright, and the run may not install packages on its own.
+  - The Build line says to install Playwright pinned; DEC-011 approves it as a dev dependency.
+  - `.claude/settings.json` lists `Bash(npm install *)` and `Edit(/package.json)` under `ask`.
+    `CLAUDE.md` (Git and destructive actions) says the run stops on an approval it cannot get. This
+    run is unattended, and the call `npm install --save-dev --save-exact playwright@1.65.1` was refused.
+  - `node_modules` has no `playwright` package, so the three `ui_*` tests cannot be written or run.
+  - Latest version checked at npm: `playwright` 1.65.1, licence Apache-2.0.
+  - Nothing else was changed. To continue, approve one of these:
+    1. Run `npm install --save-dev --save-exact playwright@1.65.1` yourself (this updates
+       `package.json` and `package-lock.json`), commit them, and set Status to `approved`. M11 then
+       uses `playwright` as a library inside `node --test`, with Chromium from the local cache or
+       `npx playwright install chromium`.
+    2. Approve M11 to run `npm install --save-dev --save-exact playwright@1.65.1`, edit
+       `package.json`, and run `npx playwright install chromium`, and nothing else.
 
 ### M12 — Settings panel: places
 
