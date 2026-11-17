@@ -115,3 +115,50 @@
 .month-grid-card-name {
   font-weight: bold;
 }
+
+.month-grid-band,
+.hijri-note-button {
+  color: var(--color-hijri);
+}
+
+.month-grid-band {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  background: var(--color-card);
+  font-weight: normal;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.month-grid-band-row + tr > th {
+  top: var(--grid-cell-size);
+}
+
+.month-grid-hijri {
+  display: block;
+  color: var(--color-hijri);
+  font-size: var(--font-size-small);
+}
+
+.month-grid-card-hijri {
+  color: var(--color-hijri);
+}
+
+.hijri-note {
+  position: relative;
+}
+
+.hijri-note-card {
+  position: absolute;
+  z-index: 5;
+  top: 100%;
+  left: 0;
+  width: max-content;
+  max-width: 16rem;
+  padding: var(--space-2);
+  border: var(--line-width) solid var(--color-line-control);
+  background: var(--color-card);
+  color: var(--color-text);
+  white-space: normal;
+}

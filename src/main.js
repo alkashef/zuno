@@ -20,6 +20,7 @@ import { createEmptyPage } from "./views/empty.js";
 import { createDaySelector } from "./views/day-selector.js";
 import { createErrorScreen } from "./views/error-screen.js";
 import { createHeader } from "./views/header.js";
+import { createHijriNote } from "./views/hijri-note.js";
 import { createMonthGrid } from "./views/month-grid.js";
 import { createPicker } from "./views/picker.js";
 import { createPlaceList } from "./views/settings-places.js";
@@ -46,7 +47,11 @@ const lookup = { countries: listCountries(), zonesOf, placeName, clockOf: placeC
 const views = [
   createHeader(document),
   createEmptyPage(document),
-  createMonthGrid(document, { dispatch: controller.dispatch, placeName }),
+  createMonthGrid(document, {
+    dispatch: controller.dispatch,
+    placeName,
+    makeHijriNote: createHijriNote,
+  }),
   createPicker(document, {
     dispatch: controller.dispatch,
     localAt: localDateTime,

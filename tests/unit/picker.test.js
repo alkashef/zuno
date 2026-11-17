@@ -239,3 +239,11 @@ test("test_pck_007_missing_time_moves_to_end_of_clock_change", () => {
   const marker = { instant: utc(2026, 3, 28, 1, 30) };
   assert.deepEqual(shiftMarkerDay(settings, marker, 1), { instant: utc(2026, 3, 29, 1) });
 });
+
+test("test_hij_001_picker_rows_carry_hijri_date_only_when_on", () => {
+  const settings = settingsWith([createPlace("a", "SA")]);
+  const marker = { instant: utc(2026, 11, 16, 9, 25) };
+  assert.equal(buildPicker(settings, marker, {})[0].hijri, null);
+  const on = buildPicker({ ...settings, showHijri: true }, marker, {});
+  assert.deepEqual(on[0].hijri, { day: 6, month: "Jumada II", year: 1448 });
+});

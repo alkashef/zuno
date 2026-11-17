@@ -60,3 +60,8 @@ test("test_pck_007_month_title_is_full_english_month_and_year", () => {
   assert.equal(formatMonth({ year: 2026, month: 11 }), "November 2026");
   assert.equal(formatMonth({ year: 2027, month: 1 }), "January 2027");
 });
+
+test("test_dsp_003_hijri_month_band_text", async () => {
+  const { formatHijriMonth } = await import("../../src/domain/format.js");
+  assert.equal(formatHijriMonth({ day: 6, month: "Jumada II", year: 1448 }), "Jumada II-1448");
+});

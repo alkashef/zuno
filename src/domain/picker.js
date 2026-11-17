@@ -7,6 +7,7 @@
  * to another day. It reads no clock (the caller passes the marker), makes no request, does not
  * format text (domain/format.js does) and chooses no colours (the view does).
  */
+import { hijriDate } from "./hijri.js";
 import { holidayOn } from "./holidays.js";
 import { isWeekend } from "./weekends.js";
 import { instantAtLocal, localDateTime, offsetChange } from "./zones.js";
@@ -23,6 +24,7 @@ const msPerMinute = 60 * 1000;
 const msPerDay = 24 * 60 * msPerMinute;
 
 /** @typedef {typeof DayKind[keyof typeof DayKind]} DayKindName */
+/** @typedef {import("./hijri.js").HijriDate} HijriDate */
 /** @typedef {import("./holidays.js").Holiday} Holiday */
 /** @typedef {import("./places.js").Place} Place */
 /** @typedef {import("./settings.js").Settings} Settings */
@@ -51,6 +53,8 @@ const msPerDay = 24 * 60 * msPerMinute;
  * @typedef {object} PickerRow One place's row.
  * @property {string} placeId
  * @property {LocalDateTime} localDateTime The place's local date and time at the marker (PCK-002).
+ * @property {HijriDate | null} hijri The place's Hijri date at the marker, or `null` while Hijri is
+ *   off (HIJ-001).
  * @property {Segment[]} segments In time order; they cover the window exactly.
  */
 
@@ -203,9 +207,11 @@ export function buildPicker(settings, marker, holidays) {
       workStartMinutes: settings.workStartMinutes,
       workEndMinutes: settings.workEndMinutes,
     };
+    const local = localDateTime(marker.instant, place.zone);
     return {
       placeId: place.id,
-      localDateTime: localDateTime(marker.instant, place.zone),
+      localDateTime: local,
+      hijri: settings.showHijri ? hijriDate(local, place.hijriVariant, place.hijriAdjust) : null,
       segments: rowSegments(row, range),
     };
   });

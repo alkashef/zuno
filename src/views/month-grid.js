@@ -7,9 +7,10 @@
  * index.html. It decides no cell kind (domain/calendar.js does), loads no holiday (the controller
  * does, through `deps.dispatch`) and picks no colour (month-grid.css does, from theme.css).
  */
-import { formatDate, formatMonth } from "../domain/format.js";
+import { formatDate, formatHijri, formatHijriMonth, formatMonth } from "../domain/format.js";
 
 /** @typedef {import("../domain/calendar.js").DayFacts} DayFacts */
+/** @typedef {import("../domain/hijri.js").HijriDate} HijriDate */
 /** @typedef {import("../domain/places.js").Place} Place */
 /** @typedef {import("../controller.js").Action} Action */
 
@@ -26,6 +27,8 @@ import { formatDate, formatMonth } from "../domain/format.js";
  * @typedef {object} Deps
  * @property {(action: Action) => Promise<void>} dispatch The controller's `dispatch`.
  * @property {(place: Place, showCountry: boolean) => string} placeName
+ * @property {(doc: Document) => { root: HTMLElement }} makeHijriNote Builds the information button
+ *   and card beside the Hijri month band (views/hijri-note.js, passed in by main.js).
  */
 
 /**
@@ -33,6 +36,7 @@ import { formatDate, formatMonth } from "../domain/format.js";
  * @property {HTMLElement} root The grid section.
  * @property {HTMLTemplateElement} cardTemplate
  * @property {Deps} deps
+ * @property {HTMLElement} note The Hijri information button and card, built once.
  * @property {{ signature: string, selected: string }} memo What was last drawn.
  */
 
@@ -93,6 +97,21 @@ function cellKind(day) {
 
 /**
  * @param {Document} doc
+ * @param {HTMLElement} target The cell or button that shows the day.
+ * @param {DayFacts} day
+ * @returns {void} Adds the two-digit Hijri day while Hijri is on (HIJ-001, DSP-003).
+ */
+function appendHijriDay(doc, target, day) {
+  if (day.hijri === null) return;
+  const hijri = doc.createElement("span");
+  hijri.className = "month-grid-hijri";
+  hijri.dataset.role = "hijri-day";
+  hijri.textContent = String(day.hijri.day).padStart(2, "0");
+  target.append(hijri);
+}
+
+/**
+ * @param {Document} doc
  * @param {string} placeId
  * @param {DayFacts} day A holiday day.
  * @returns {HTMLElement} The button that opens the day's holiday card (CAL-006).
@@ -105,6 +124,7 @@ function holidayButton(doc, placeId, day) {
   button.dataset.placeId = placeId;
   button.dataset.date = day.date;
   button.textContent = dayNumber(day.date);
+  appendHijriDay(doc, button, day);
   button.setAttribute("aria-label", `${day.holidayName}, ${dateText(day.date)}`);
   return button;
 }
@@ -122,23 +142,38 @@ function buildCell(doc, placeId, day) {
   cell.dataset.kind = cellKind(day);
   cell.dataset.today = String(day.isToday);
   cell.dataset.date = day.date;
-  if (day.holidayName === null) cell.textContent = dayNumber(day.date);
-  else cell.append(holidayButton(doc, placeId, day));
+  if (day.holidayName === null) {
+    cell.textContent = dayNumber(day.date);
+    appendHijriDay(doc, cell, day);
+  } else cell.append(holidayButton(doc, placeId, day));
   return cell;
 }
 
 /**
  * @param {GridContext} ctx
  * @param {{ placeId: string, date: string, name: string }} holiday
- * @returns {HTMLElement} The card with the holiday's name and date (CAL-006).
+ * @param {HijriDate | null} hijri The holiday's Hijri date, or `null` while Hijri is off.
+ * @returns {HTMLElement} The card with the holiday's name, date and Hijri date (CAL-006, DSP-003).
  */
-function buildCard(ctx, holiday) {
+function buildCard(ctx, holiday, hijri) {
   const card = /** @type {HTMLElement} */ (
     ctx.cardTemplate.content.firstElementChild?.cloneNode(true)
   );
   part(card, "card-name").textContent = holiday.name;
   part(card, "card-date").textContent = dateText(holiday.date);
+  const hijriText = part(card, "card-hijri");
+  hijriText.hidden = hijri === null;
+  hijriText.textContent = hijri === null ? "" : formatHijri(hijri);
   return card;
+}
+
+/**
+ * @param {DayFacts[]} days One place's days.
+ * @param {string} date `YYYY-MM-DD`.
+ * @returns {HijriDate | null} The Hijri date of that day, or `null` while Hijri is off.
+ */
+function hijriOf(days, date) {
+  return days.find((day) => day.date === date)?.hijri ?? null;
 }
 
 /**
@@ -160,7 +195,9 @@ function buildRowHeader(ctx, view, index) {
   name.textContent = ctx.deps.placeName(place, view.settings?.showCountry ?? false);
   header.append(name);
   if (view.selectedHoliday?.placeId === place.id)
-    header.append(buildCard(ctx, view.selectedHoliday));
+    header.append(
+      buildCard(ctx, view.selectedHoliday, hijriOf(view.grid[index], view.selectedHoliday.date)),
+    );
   return header;
 }
 
@@ -179,6 +216,49 @@ function buildRow(ctx, view, index) {
     buildRowHeader(ctx, view, index),
     ...view.grid[index].map((day) => buildCell(doc, placeId, day)),
   );
+  return row;
+}
+
+/**
+ * @param {Document} doc
+ * @param {DayFacts[]} days One place's days.
+ * @returns {HTMLTableCellElement[]} One band cell per run of days in the same Hijri month, as wide
+ *   as the run.
+ */
+function bandCells(doc, days) {
+  /** @type {HTMLTableCellElement[]} */
+  const cells = [];
+  for (const day of days) {
+    const text = day.hijri === null ? "" : formatHijriMonth(day.hijri);
+    let run = cells.at(-1);
+    if (run === undefined || run.textContent !== text) {
+      run = doc.createElement("th");
+      run.scope = "colgroup";
+      run.className = "month-grid-band";
+      run.colSpan = 0;
+      run.textContent = text;
+      cells.push(run);
+    }
+    run.colSpan += 1;
+  }
+  return cells;
+}
+
+/**
+ * @param {GridContext} ctx
+ * @param {DayFacts[]} days The first place's days; its Hijri months make the band.
+ * @returns {HTMLElement} The Hijri month band: the information button, then one cell per Hijri
+ *   month the days touch (HIJ-001, HIJ-004).
+ */
+function buildBand(ctx, days) {
+  const doc = ctx.root.ownerDocument;
+  const row = doc.createElement("tr");
+  row.className = "month-grid-band-row";
+  row.dataset.role = "hijri-band";
+  const corner = doc.createElement("th");
+  corner.className = "month-grid-corner";
+  corner.append(ctx.note);
+  row.append(corner, ...bandCells(doc, days));
   return row;
 }
 
@@ -210,7 +290,9 @@ function buildHead(doc, days) {
  */
 function draw(ctx, view) {
   part(ctx.root, "title").textContent = formatMonth(view.month);
-  part(ctx.root, "head").replaceChildren(buildHead(ctx.root.ownerDocument, view.grid[0]));
+  const head = buildHead(ctx.root.ownerDocument, view.grid[0]);
+  const showBand = view.grid[0][0].hijri !== null;
+  part(ctx.root, "head").replaceChildren(...(showBand ? [buildBand(ctx, view.grid[0])] : []), head);
   part(ctx.root, "body").replaceChildren(
     ...view.grid.map((_, index) => buildRow(ctx, view, index)),
   );
@@ -279,7 +361,9 @@ function buildGrid(doc, deps) {
     templateOf(doc, "month-grid-template").content.firstElementChild?.cloneNode(true)
   );
   const memo = { signature: "", selected: "" };
-  const ctx = { root, cardTemplate: templateOf(doc, "month-grid-card-template"), deps, memo };
+  const note = deps.makeHijriNote(doc).root;
+  const cardTemplate = templateOf(doc, "month-grid-card-template");
+  const ctx = { root, cardTemplate, deps, note, memo };
   root.addEventListener("click", (event) => onClick(ctx, event));
   root.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && memo.selected !== "") {

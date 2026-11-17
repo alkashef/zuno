@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M16** Hijri in the views | Hijri band, cell days, picker dates, information button. | sonnet | medium | open |
 | **M17** World map | SVG map with pins, names, times and dates, updated by the tick. | sonnet | medium | open |
 | **M18** Legend and notices | Bottom legend; notices card with a count badge for missing holiday data. | sonnet | medium | open |
 | **M19** Cross-browser and NFR checks | Playwright in four browsers: request check, English text, contrast, EX-002, EX-010; README; coverage floor. | sonnet | high | open |
@@ -18,17 +17,6 @@ history is the record. Template: `docs/workflow.md`.
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M16 — Hijri in the views
-
-- **Refs:** HIJ-001, HIJ-004, DSP-003, SET-011, EX-010.
-- **Owner:** `src/views/month-grid.js`, `src/views/picker.js`, `src/views/hijri-note.js`.
-- **Tests first:** `ui_hij_001_hijri_band_cell_days_and_picker_dates_only_when_on_ex_010`,
-  `ui_hij_004_info_button_shows_calculated_date_note`, `ui_dsp_003_hijri_format_in_picker_and_card`.
-- **Build:** the Hijri month band, the two-digit Hijri day in each cell, each place's Hijri date
-  beside the marker date, and the information button with its card (closes on Escape, focus
-  returns).
-- **Gate:** none beyond the common gate.
 
 ### M17 — World map
 

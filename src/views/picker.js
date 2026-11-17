@@ -8,7 +8,7 @@
  * selector (views/day-selector.js, built by `deps.makeDaySelector`), computes no window or kind of
  * time (domain/picker.js does) and picks no colour (picker.css does, from theme.css).
  */
-import { formatDate, formatTime } from "../domain/format.js";
+import { formatDate, formatHijri, formatTime } from "../domain/format.js";
 
 /** @typedef {import("../domain/picker.js").PickerRow} PickerRow */
 /** @typedef {import("../domain/places.js").Place} Place */
@@ -127,7 +127,8 @@ function drawSegments(track, row, range) {
  * @param {PickerRow} row
  * @param {string} name The name shown for the place.
  * @param {Range} range
- * @returns {HTMLElement} One row: the name, the local date and time, and the track.
+ * @returns {HTMLElement} One row: the name, the local date (and Hijri date while Hijri is on),
+ *   the time, and the track.
  */
 function buildRow(ctx, row, name, range) {
   const item = /** @type {HTMLElement} */ (
@@ -136,6 +137,9 @@ function buildRow(ctx, row, name, range) {
   part(item, "name").textContent = name;
   part(item, "local-date").textContent = formatDate(row.localDateTime);
   part(item, "local-time").textContent = formatTime(row.localDateTime);
+  const hijri = part(item, "local-hijri");
+  hijri.hidden = row.hijri === null;
+  hijri.textContent = row.hijri === null ? "" : formatHijri(row.hijri);
   drawSegments(part(item, "track"), row, range);
   return item;
 }

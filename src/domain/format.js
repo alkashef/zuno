@@ -48,6 +48,15 @@ export function formatHijri(hijri) {
 }
 
 /**
+ * @param {HijriDate} hijri
+ * @returns {string} The Hijri month and year for the band above the grid, for example
+ * `Jumada II-1448` (DSP-003).
+ */
+export function formatHijriMonth(hijri) {
+  return `${hijri.month}-${hijri.year}`;
+}
+
+/**
  * @param {{ year: number, month: number }} monthRef The month, `month` 1 to 12.
  * @returns {string} The month's full English name and the year, for example `November 2026`.
  */

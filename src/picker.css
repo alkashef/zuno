@@ -169,3 +169,7 @@
   pointer-events: none;
   transform: translateX(-50%);
 }
+
+.picker-hijri {
+  color: var(--color-hijri);
+}

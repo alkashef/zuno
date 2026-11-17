@@ -49,10 +49,35 @@
       <div class="month-grid-card" role="dialog" aria-label="Holiday">
         <p class="month-grid-card-name" data-role="card-name"></p>
         <p data-role="card-date"></p>
+        <p class="month-grid-card-hijri" data-role="card-hijri" hidden></p>
         <button type="button" class="button" data-role="card-close" aria-label="Close holiday">
           &#x2715;
         </button>
       </div>
+    </template>
+
+    <template id="hijri-note-template">
+      <span class="hijri-note" data-role="hijri-note">
+        <button
+          type="button"
+          class="button hijri-note-button"
+          data-role="note-button"
+          aria-label="About Hijri dates"
+          aria-haspopup="dialog"
+          aria-expanded="false"
+        >
+          i
+        </button>
+        <div
+          class="hijri-note-card"
+          data-role="note-card"
+          role="dialog"
+          aria-label="About Hijri dates"
+          hidden
+        >
+          Hijri dates are calculated and may differ from official announcements.
+        </div>
+      </span>
     </template>
 
     <template id="picker-template">
@@ -82,6 +107,7 @@
         <div class="picker-info" data-role="info">
           <span class="picker-name" data-role="name"></span>
           <span data-role="local-date"></span>
+          <span class="picker-hijri" data-role="local-hijri" hidden></span>
           <span data-role="local-time"></span>
         </div>
         <div class="picker-track" data-role="track"></div>
