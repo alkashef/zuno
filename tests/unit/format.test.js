@@ -1,9 +1,9 @@
 // @ts-check
-/** @module format.test Unit tests for src/domain/format.js (DSP-001, DSP-002, EX-005, EX-006). */
+/** @module format.test Unit tests for src/domain/format.js (DSP-001 to DSP-003, EX-005, EX-006). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { formatDate, formatTime } from "../../src/domain/format.js";
+import { formatDate, formatHijri, formatTime } from "../../src/domain/format.js";
 
 /**
  * @param {number} year
@@ -37,4 +37,9 @@ test("test_dsp_002_midnight_and_noon_show_12", () => {
   assert.equal(formatTime(local(2026, 11, 16, 0, 5)), "12:05 AM");
   assert.equal(formatTime(local(2026, 11, 16, 12, 0)), "12:00 PM");
   assert.equal(formatTime(local(2026, 11, 16, 23, 59)), "11:59 PM");
+});
+
+test("test_dsp_003_hijri_date_format_dd_month_yyyy", () => {
+  assert.equal(formatHijri({ day: 6, month: "Jumada II", year: 1448 }), "06-Jumada II-1448");
+  assert.equal(formatHijri({ day: 21, month: "Rajab", year: 1448 }), "21-Rajab-1448");
 });

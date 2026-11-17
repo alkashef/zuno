@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M6** Weekends and Hijri | `weekends.js`, `hijri.js` (variants, ±1 adjustment) and the Hijri date format. | sonnet | high | open |
 | **M7** Month-grid model | `domain/calendar.js`: weekend, holiday, split cell, today, Hijri day. | sonnet | high | open |
 | **M8** Picker model | `domain/picker.js`: reference window (23 or 25 hours on DST days), segments, day-off colour, marker moves. | opus | high | open |
 | **M9** Controller: page workflows | `controller.js` with fakes: open, tick, refresh, marker, month, notices, selected holiday. | opus | high | open |
@@ -28,21 +27,6 @@ history is the record. Template: `docs/workflow.md`.
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated.
-
-### M6 — Weekends and Hijri
-
-- **Refs:** CAL-002, HIJ-001 (data), HIJ-002, HIJ-003, DSP-003, SET-011, EX-002, EX-010, DEC-003.
-- **Owner:** `src/domain/weekends.js`, `src/domain/hijri.js`, `src/domain/format.js`.
-- **Tests first:** `test_cal_002_saudi_weekend_is_friday_and_saturday_ex_002`,
-  `test_hij_001_hijri_date_of_local_date`,
-  `test_hij_002_umalqura_and_tabular_differ_on_a_chosen_date`,
-  `test_hij_003_adjustment_minus_one_to_plus_one_ex_010`,
-  `test_dsp_003_hijri_date_format_dd_month_yyyy`.
-- **Build:** weekend days from `Intl.Locale.getWeekInfo()`; Hijri date from `Intl.DateTimeFormat`
-  with `islamic-umalqura` and `islamic-civil`, adjusted by -1, 0 or +1 days before conversion.
-  Choose and record a date where the variants differ (spec section 7).
-- **Gate:** the differing-variant example is added to spec section 6 only with the user's approval;
-  until then it lives in the test.
 
 ### M7 — Month-grid model
 

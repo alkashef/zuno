@@ -2,11 +2,12 @@
 /**
  * @module domain/format
  * Formats a local date as dd-mmm-yy and a local time as 12-hour text (DSP-001, DSP-002, EX-005,
- * EX-006). It does not compute local times (domain/zones.js does). Hijri dates are added with the
- * Hijri module (DSP-003).
+ * EX-006) and a Hijri date as dd-month-yyyy (DSP-003). It does not compute local times
+ * (domain/zones.js does) or Hijri dates (domain/hijri.js does).
  */
 
 /** @typedef {import("./zones.js").LocalDateTime} LocalDateTime */
+/** @typedef {import("./hijri.js").HijriDate} HijriDate */
 
 /**
  * @param {number} value A non-negative integer.
@@ -35,4 +36,13 @@ export function formatTime(local) {
   const suffix = local.hour < 12 ? "AM" : "PM";
   const hour = local.hour % 12 === 0 ? 12 : local.hour % 12;
   return `${hour}:${twoDigits(local.minute)} ${suffix}`;
+}
+
+/**
+ * @param {HijriDate} hijri
+ * @returns {string} The Hijri date as two-digit day, month name and year, for example
+ * `06-Jumada II-1448` (DSP-003).
+ */
+export function formatHijri(hijri) {
+  return `${twoDigits(hijri.day)}-${hijri.month}-${hijri.year}`;
 }
