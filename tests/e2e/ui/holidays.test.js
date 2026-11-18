@@ -139,3 +139,19 @@ test("test_hol_008_holiday_card_hides_a_service_holiday_and_removes_an_added_one
   const emptied = { version: 1, added: [], hidden: [] };
   assert.deepEqual(await storedRecord(page, config.holidaysStorageKey), emptied);
 });
+
+test("ui_hol_013_riyadh_holiday_and_credit_line_ex_022", async () => {
+  const { page, holidayRequests } = await openPage(browser, built.url, {
+    saved: savedPlaces(["riyadh"]),
+  });
+  const previous = page.getByRole("button", { name: "Previous month" });
+  await previous.click();
+  await previous.click();
+  await page.getByRole("heading", { name: "September 2026" }).waitFor();
+  const nationalDay = page.getByRole("button", { name: "National Day, 23-Sep-26" });
+  assert.equal(await nationalDay.count(), 1);
+  assert.deepEqual(holidayRequests, []);
+  const section = await openHolidays(page);
+  const credit = section.locator('[data-role="holiday-table-credit"]');
+  assert.match(await credit.innerText(), /date-holidays.*CC BY-SA 3\.0/s);
+});

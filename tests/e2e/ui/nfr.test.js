@@ -40,14 +40,16 @@ function browserOf(name) {
 }
 
 /**
- * @param {number} [hijriAdjust] The Saudi place's Hijri adjustment.
- * @returns {import("../../../src/domain/settings.js").Settings} A Saudi and a British place, Hijri on.
+ * @param {number} [hijriAdjust] The first place's Hijri adjustment.
+ * @param {string} [firstCityId] The first place's city: Riyadh, or Cairo for a Friday and Saturday
+ *   weekend whose holidays come from the holiday service (HOL-013 moved Saudi Arabia's to the table).
+ * @returns {import("../../../src/domain/settings.js").Settings} That place and a British place, Hijri on.
  */
-function savedSettings(hijriAdjust = 0) {
+function savedSettings(hijriAdjust = 0, firstCityId = "riyadh") {
   return {
     ...defaultSettings(540, 1020),
     places: [
-      { ...createPlace("place-1", "riyadh"), hijriAdjust },
+      { ...createPlace("place-1", firstCityId), hijriAdjust },
       createPlace("place-2", "london"),
     ],
     showHijri: true,
@@ -99,7 +101,7 @@ test("ui_nfr_001_only_holiday_service_requests", async () => {
 
 test("ui_nfr_002_core_workflows_in_chromium_firefox_webkit_edge", async () => {
   for (const name of browserNames) {
-    const { page, holidayRequests } = await openDrawn(name);
+    const { page, holidayRequests } = await openDrawn(name, { saved: savedSettings(0, "cairo") });
     assert.equal(await page.locator('[data-role="grid-row"]').count(), 2, `${name}: grid rows`);
     assert.equal(await page.locator('[data-role="pin"]').count(), 2, `${name}: map pins`);
     assert.equal(await page.locator('[data-role="row"]').count(), 2, `${name}: picker rows`);
@@ -108,7 +110,11 @@ test("ui_nfr_002_core_workflows_in_chromium_firefox_webkit_edge", async () => {
     const holidayCells = page.locator('[data-role="cell"][data-kind="holiday"]');
     assert.equal(await holidayCells.count(), 1, `${name}: British holiday cell in December`);
     const splitCells = page.locator('[data-role="cell"][data-kind="split"]');
-    assert.equal(await splitCells.count(), 1, `${name}: Saudi weekend holiday cell in December`);
+    assert.equal(
+      await splitCells.count(),
+      1,
+      `${name}: Friday-Saturday weekend holiday cell in December`,
+    );
     await openSettings(page);
     await page
       .getByRole("combobox", { name: "City", exact: true })
@@ -212,7 +218,7 @@ test("ui_dec_009_text_contrast_at_least_4_5_to_1", async () => {
   for (const colorScheme of /** @type {const} */ (["light", "dark"])) {
     const { page } = await openDrawn("chromium", {
       colorScheme,
-      saved: savedSettings(),
+      saved: savedSettings(0, "cairo"),
       failingCountries: ["GB"],
     });
     await showDecember(page);

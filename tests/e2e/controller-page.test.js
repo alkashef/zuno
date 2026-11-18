@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { createController } from "../../src/controller.js";
 import { createPlace, editPlace } from "../../src/domain/places.js";
 import { defaultSettings } from "../../src/domain/settings.js";
-import { serviceRecord } from "../unit/holiday-fixtures.js";
+import { emptyHolidayTable, serviceRecord } from "../unit/holiday-fixtures.js";
 
 /** @typedef {import("../../src/domain/holidays.js").HolidayResult} HolidayResult */
 /** @typedef {import("../../src/domain/places.js").Place} Place */
@@ -55,6 +55,7 @@ function setup(saved, start, answer = invented) {
   const calls = [];
   const clock = { time: start };
   const controller = createController({
+    holidayTable: emptyHolidayTable,
     api: {
       getHolidays: async (countryCode, year) => {
         calls.push(`${countryCode}-${year}`);

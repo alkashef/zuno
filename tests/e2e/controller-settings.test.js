@@ -8,6 +8,7 @@ import { createController } from "../../src/controller.js";
 import { createPlace, placeName } from "../../src/domain/places.js";
 import { defaultSettings, parseSettings } from "../../src/domain/settings.js";
 import { zoneOffset } from "../../src/domain/zones.js";
+import { emptyHolidayTable } from "../unit/holiday-fixtures.js";
 
 /** @typedef {import("../../src/domain/settings.js").Settings} Settings */
 
@@ -30,6 +31,7 @@ function setup({ saved = savedWithNoPlaces(), store = { saved } } = {}) {
   /** @type {Settings[]} */
   const saves = [];
   const controller = createController({
+    holidayTable: emptyHolidayTable,
     api: {
       getHolidays: async (countryCode, year) => {
         calls.push(`${countryCode}-${year}`);

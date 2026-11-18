@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                                             | Description                                                                                                          | Model  | Effort | Status   |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------ | ------ | -------- |
-| **M32** Holiday table in the page                     | Places in the seven countries show the table's holidays, with no request to the service                              | sonnet | high   | open     |
 | **M33** Notice skips countries with added holidays    | The "No holiday data" notice leaves out a country the user added a holiday for                                       | sonnet | medium | open     |
 | **M34** Real coastlines on the map                    | The map's outline is Natural Earth's coastlines, put into the page by the build                                      | sonnet | high   | open     |
 | **M35** Half-transparent map labels                   | The map shows through the city labels, and their text stays readable                                                 | sonnet | low    | open     |
@@ -27,22 +26,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M32 — Holiday table in the page
-
-- **Refs:** HOL-013, HOL-001, HOL-003, HOL-008, NFR-001, EX-022, EX-023, DEC-024.
-- **Owner:** `src/controller.js`.
-- **Tests first:** `test_hol_013_table_country_shows_table_holidays_ex_022`,
-  `test_hol_001_no_service_request_for_a_table_country`, `test_hol_008_hide_a_table_holiday`,
-  `test_hol_013_year_after_the_table_is_unavailable_ex_023`,
-  `ui_hol_013_riyadh_holiday_and_credit_line_ex_022`.
-- **Build:** for a table country the controller takes the holidays of a year from
-  `domain/holiday-table.js` instead of `api.js`: a list is a `loaded` result, `null` an `unavailable`
-  one. `main.js` passes the table functions in. The Holidays section of the settings panel gets one
-  credit line for the table (markup in `index.html`). README: what the table covers and until when.
-- **Gate:** a Riyadh place shows 2026-09-23 as a public holiday with no request to the holiday
-  service; January 2029 lists Saudi Arabia in the no-data notice; the request check of NFR-001 still
-  passes.
 
 ### M33 — Notice skips countries with added holidays
 

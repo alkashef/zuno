@@ -10,6 +10,7 @@ import { config } from "./config.js";
 import { createController } from "./controller.js";
 import { monthWeeks } from "./domain/calendar.js";
 import { countryName, listCities, listCountries } from "./domain/cities.js";
+import { isTableCountry, tableHolidays } from "./domain/holiday-table.js";
 import { placeFacts, placeName, placePin } from "./domain/places.js";
 import { parseSettings } from "./domain/settings.js";
 import { isAddedHoliday, parseUserHolidays } from "./domain/user-holidays.js";
@@ -54,6 +55,7 @@ const pickerLimits = {
 };
 const controller = createController({
   api: { getHolidays },
+  holidayTable: { isTableCountry, tableHolidays },
   storage: createStorage({
     store: localStorage,
     parse: (value) => parseSettings(value, pickerLimits),

@@ -5,12 +5,13 @@
  * hide, show, export and import actions to it and saves it, works out the holidays the page uses
  * (the service's holidays without those the user hid, plus those the user added), opens the holiday
  * card of a cell and lists the notices about missing holiday data (HOL-003, HOL-004, HOL-006 to
- * HOL-012, CAL-006, REF-002, SET-006, DEC-017, DEC-018, DEC-022). Pure apart from the `holidayStorage`
+ * HOL-013, CAL-006, REF-002, SET-006, DEC-017, DEC-018, DEC-022). Pure apart from the `holidayStorage`
  * and `files` it is given. It keeps no state (controller.js does, and passes it in), asks the holiday
  * service for nothing (controller.js does, through `api`) and builds no grid, picker or holiday list
  * logic itself (domain/* does). Only controller.js imports it.
  */
 import {
+  HolidayType,
   holidayOn,
   listRegions,
   placesMissingRegionalData,
@@ -68,6 +69,12 @@ import * as userHolidayList from "./domain/user-holidays.js";
  */
 
 /**
+ * @typedef {object} HolidayTable The built-in holiday table's reader (HOL-013, DEC-024).
+ * @property {(countryCode: string) => boolean} isTableCountry
+ * @property {(countryCode: string, year: number) => Holiday[] | null} tableHolidays
+ */
+
+/**
  * @typedef {object} HolidayContext What a holiday action handler uses.
  * @property {HolidayDeps} deps
  * @property {() => HolidayState} read
@@ -80,6 +87,27 @@ import * as userHolidayList from "./domain/user-holidays.js";
  */
 
 /** @typedef {(ctx: HolidayContext, action: HolidayAction) => void | Promise<void>} HolidayHandler */
+
+/**
+ * The answer for a country-year of the built-in table: its holidays as `loaded`, or `unavailable`
+ * for a year the table does not cover (HOL-013, EX-023).
+ * @param {HolidayTable} table
+ * @param {CountryYear} countryYear A year of a table country.
+ * @returns {HolidayResult}
+ */
+export function tableAnswer(table, { countryCode, year }) {
+  const holidays = table.tableHolidays(countryCode, year);
+  if (holidays === null) {
+    return { status: "unavailable", reason: `The holiday table does not cover ${year}` };
+  }
+  const records = holidays.map(({ date, name }) => ({
+    date,
+    name,
+    holidayTypes: [HolidayType.public],
+    subdivisionCodes: null,
+  }));
+  return { status: "loaded", holidays: records };
+}
 
 /**
  * @param {HolidayDeps["holidayStorage"]} holidayStorage

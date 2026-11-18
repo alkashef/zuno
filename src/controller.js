@@ -1,10 +1,10 @@
 // @ts-check
 /**
  * @module controller
- * The page workflows: applies an action to the page state, asks the injected `api` for the holidays
+ * The page workflows: applies an action to the page state, asks the injected `holidayTable` or `api` for the holidays
  * the shown month and the marker's window need, and tells subscribers about every new state
  * (PCK-004, PCK-006, PCK-007, PCK-009, LAY-003, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-001, SET-002,
- * SET-004 to SET-014, HIJ-002, HIJ-003, HOL-003, HOL-006 to HOL-012, DEC-007, DEC-016 to DEC-019, DEC-022).
+ * SET-004 to SET-014, HIJ-002, HIJ-003, HOL-003, HOL-006 to HOL-013, DEC-007, DEC-016 to DEC-019, DEC-022).
  * Pure apart from its injected `api`, `storage`, `holidayStorage`, `files` and `clock`. It touches no DOM (the
  * views do) and builds no picker, grid, notices or holiday-list logic itself (domain/* does). The
  * user's holiday actions, the holidays the page uses and the notices are in controller-holidays.js.
@@ -16,6 +16,7 @@ import {
   loadUserHolidays,
   noticesOf,
   regionsByCountry,
+  tableAnswer,
 } from "./controller-holidays.js";
 import { buildMonth } from "./domain/calendar.js";
 import { cityOf } from "./domain/cities.js";
@@ -42,6 +43,7 @@ import { localDateTime } from "./domain/zones.js";
 /** @typedef {import("./controller-holidays.js").CountryYear} CountryYear */
 /** @typedef {import("./controller-holidays.js").FileRead} FileRead */
 /** @typedef {import("./controller-holidays.js").HolidayAction} HolidayAction */
+/** @typedef {import("./controller-holidays.js").HolidayTable} HolidayTable */
 /** @typedef {import("./controller-holidays.js").Notices} Notices */
 /** @typedef {import("./controller-holidays.js").ResultsByCountryYear} ResultsByCountryYear */
 /** @typedef {import("./controller-holidays.js").SelectedHoliday} SelectedHoliday */
@@ -63,6 +65,8 @@ import { localDateTime } from "./domain/zones.js";
 /**
  * @typedef {object} ControllerDeps The outside world, injected so tests can pass fakes.
  * @property {{ getHolidays: (countryCode: string, year: number) => Promise<HolidayResult> }} api
+ * @property {HolidayTable} holidayTable The built-in holiday table's reader: a table country's
+ *   holidays come from it, not from `api` (HOL-013, DEC-024).
  * @property {{ load: () => Settings | null, save: (settings: Settings) => void }} storage
  * @property {{ load: () => UserHolidays | null, save: (record: UserHolidays) => void }} holidayStorage
  *   The record of the holidays the user added and hid (HOL-009, DEC-017).
@@ -235,14 +239,28 @@ function withResult(results, { countryCode, year }, result) {
 }
 
 /**
- * Asks for one country-year and stores the answer (HOL-001).
+ * @param {Context} ctx
+ * @param {CountryYear} countryYear
+ * @returns {Promise<HolidayResult>} The answer from the built-in table for a table country, else
+ *   from the holiday service (HOL-001, HOL-013).
+ */
+async function answerOf(ctx, countryYear) {
+  const { api, holidayTable } = ctx.deps;
+  if (holidayTable.isTableCountry(countryYear.countryCode)) {
+    return tableAnswer(holidayTable, countryYear);
+  }
+  return api.getHolidays(countryYear.countryCode, countryYear.year);
+}
+
+/**
+ * Gets the answer for one country-year and stores it (HOL-001, HOL-013).
  * @param {Context} ctx
  * @param {CountryYear} countryYear
  * @returns {Promise<void>}
  */
 async function requestOne(ctx, countryYear) {
   ctx.inFlight.add(keyOf(countryYear));
-  const result = await ctx.deps.api.getHolidays(countryYear.countryCode, countryYear.year);
+  const result = await answerOf(ctx, countryYear);
   ctx.inFlight.delete(keyOf(countryYear));
   ctx.update({ holidayResults: withResult(ctx.read().holidayResults, countryYear, result) });
 }

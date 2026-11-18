@@ -108,8 +108,8 @@ test("ui_leg_001_legend_parts_sit_at_the_bottom_of_their_cards_with_no_page_bann
 });
 
 test("ui_ref_002_failed_service_lists_countries_with_no_data_and_keeps_times", async () => {
-  const saved = withPlaces([createPlace("place-1", "riyadh"), createPlace("place-2", "london")]);
-  const { page } = await openPage(browser, built.url, { saved, failingCountries: ["SA", "GB"] });
+  const saved = withPlaces([createPlace("place-1", "cairo"), createPlace("place-2", "london")]);
+  const { page } = await openPage(browser, built.url, { saved, failingCountries: ["EG", "GB"] });
   const badge = page.locator('[data-role="notices-badge"]');
   await badge.waitFor();
   assert.equal(await badge.textContent(), "2");
@@ -118,10 +118,10 @@ test("ui_ref_002_failed_service_lists_countries_with_no_data_and_keeps_times", a
   await page.locator('[data-action="toggleNotices"]').click();
   await card.waitFor();
   const text = (await card.textContent()) ?? "";
-  assert.ok(text.includes("Saudi Arabia") && text.includes("United Kingdom"), text);
+  assert.ok(text.includes("Egypt") && text.includes("United Kingdom"), text);
   const pins = page.locator('[data-role="pin"]');
   assert.equal(await pins.count(), 2);
-  assert.ok(((await pins.first().textContent()) ?? "").includes("12:25 PM"));
+  assert.ok(((await pins.first().textContent()) ?? "").includes("11:25 AM"));
   await page.keyboard.press("Escape");
   assert.equal(await card.isHidden(), true);
 });

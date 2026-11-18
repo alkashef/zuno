@@ -64,7 +64,10 @@ npm run build
 ### The built-in holiday table
 
 The holiday service has no data for India, Israel, Malaysia, Pakistan, Saudi Arabia, Taiwan and
-the United Arab Emirates, so their public holidays come from `data/holiday-table.js`. The file is
+the United Arab Emirates, so their public holidays come from `data/holiday-table.js`, which is built into the page: the page asks
+the holiday service nothing for these countries. The table covers the years 2026 to 2028; for a later
+year these countries appear in the "Some holiday data is missing" notice until you add holidays or make the table
+again. The settings panel's Holidays section carries the credit for the data. The file is
 generated; never edit it by hand. To make it again (for example before 2029, when it runs out):
 
 ```bash

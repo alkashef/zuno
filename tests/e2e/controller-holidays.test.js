@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { createController } from "../../src/controller.js";
 import { createPlace } from "../../src/domain/places.js";
 import { defaultSettings } from "../../src/domain/settings.js";
-import { serviceRecord } from "../unit/holiday-fixtures.js";
+import { emptyHolidayTable, serviceRecord } from "../unit/holiday-fixtures.js";
 
 /** @typedef {import("../../src/domain/settings.js").Settings} Settings */
 /** @typedef {import("../../src/domain/user-holidays.js").UserHolidays} UserHolidays */
@@ -43,6 +43,7 @@ function setup(cityIds, stores) {
   /** @type {FakeFiles} */
   const fakeFiles = { saved: [], reads: new Map() };
   const controller = createController({
+    holidayTable: emptyHolidayTable,
     api: {
       getHolidays: async (countryCode, year) => ({
         status: "loaded",

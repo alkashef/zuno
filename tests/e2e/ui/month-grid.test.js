@@ -172,7 +172,7 @@ test("ui_cal_006_holiday_card_opens_and_closes", async () => {
 });
 
 test("ui_cal_007_weekend_holiday_cell_is_split", async () => {
-  const page = await openWith(["riyadh"]);
+  const page = await openWith(["cairo"]);
   await showDecember(page);
   assert.deepEqual(await datesOfKind(cellsOf(page, 0), "split"), ["2026-12-25"]);
   const image = await cellsOf(page, 0)

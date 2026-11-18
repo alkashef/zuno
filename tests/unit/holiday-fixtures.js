@@ -21,3 +21,9 @@ export function usRecords2026() {
     serviceRecord("2026-04-05", "Easter Sunday", ["Observance"]),
   ];
 }
+
+/** A holiday table that covers no country, so a test's fake holiday service answers for all. */
+export const emptyHolidayTable = Object.freeze({
+  isTableCountry: () => false,
+  tableHolidays: () => null,
+});
