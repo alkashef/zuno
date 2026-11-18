@@ -7,16 +7,15 @@ history is the record. Template: `docs/workflow.md`.
 
 ## Milestones at a glance
 
-| Milestone                                             | Description                                                                                                          | Model  | Effort | Status   |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------ | ------ | -------- |
-| **M43** Publish to GitHub Pages                       | Every push to `main` builds the page and publishes it                                                                | sonnet | medium | blocked  |
+| Milestone                       | Description                                           | Model  | Effort | Status   |
+| ------------------------------- | ----------------------------------------------------- | ------ | ------ | -------- |
+| **M43** Publish to GitHub Pages | Every push to `main` builds the page and publishes it | sonnet | medium | Approved |
 
 ## Milestones
 
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
 
 ### M43 — Publish to GitHub Pages
 
