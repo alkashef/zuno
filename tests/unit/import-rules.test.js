@@ -55,9 +55,11 @@ function isAllowed(file, target) {
     "src/log.js",
     "src/config.js",
   ];
+  if (target === "src/controller-holidays.js") return file === "src/controller.js";
   if (file === "src/main.js") return true;
   if (inDomain(file)) return inDomain(target) || target.startsWith("data/");
   if (file === "src/controller.js") return inDomain(target);
+  if (file === "src/controller-holidays.js") return inDomain(target);
   if (file.startsWith("src/views/")) return target === "src/domain/format.js";
   if (file === "src/log.js") return target === "src/config.js";
   if (leaves.includes(file)) return ["src/config.js", "src/log.js"].includes(target);
@@ -95,6 +97,9 @@ test("test_import_rules_broken_rules_are_reported", () => {
     "src/files.js": 'import { x } from "./controller.js";',
     "src/domain/format.js": 'import { y } from "./zones.js"; import "lodash";',
     "src/main.js": 'import { z } from "./domain/zones.js";',
+    "src/controller-holidays.js":
+      'import { c } from "./clock.js"; import { h } from "./controller.js";',
+    "src/views/notices.js": 'import { n } from "../controller-holidays.js";',
   };
   assert.deepEqual(findViolations(sources), [
     "src/domain/zones.js must not import src/log.js",
@@ -103,5 +108,16 @@ test("test_import_rules_broken_rules_are_reported", () => {
     "src/clock.js must not import src/domain/zones.js",
     "src/files.js must not import src/controller.js",
     "src/domain/format.js must not import lodash",
+    "src/controller-holidays.js must not import src/clock.js",
+    "src/controller-holidays.js must not import src/controller.js",
+    "src/views/notices.js must not import src/controller-holidays.js",
   ]);
+});
+
+test("test_import_rules_only_the_controller_imports_the_holiday_controller_and_it_imports_domain_only", () => {
+  const sources = {
+    "src/controller.js": 'import { holidayAt } from "./controller-holidays.js";',
+    "src/controller-holidays.js": 'import { toHolidays } from "./domain/holidays.js";',
+  };
+  assert.deepEqual(findViolations(sources), []);
 });

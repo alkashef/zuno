@@ -4,19 +4,21 @@
  * The page workflows: applies an action to the page state, asks the injected `api` for the holidays
  * the shown month and the marker's window need, and tells subscribers about every new state
  * (PCK-004, PCK-006, PCK-007, PCK-009, LAY-003, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-001, SET-002,
- * SET-004 to SET-014, HIJ-002, HIJ-003, HOL-003, HOL-006 to HOL-012, DEC-007, DEC-016 to DEC-019).
+ * SET-004 to SET-014, HIJ-002, HIJ-003, HOL-003, HOL-006 to HOL-012, DEC-007, DEC-016 to DEC-019, DEC-022).
  * Pure apart from its injected `api`, `storage`, `holidayStorage`, `files` and `clock`. It touches no DOM (the
- * views do) and builds no picker, grid, notices or holiday-list logic itself (domain/* does).
+ * views do) and builds no picker, grid, notices or holiday-list logic itself (domain/* does). The
+ * user's holiday actions, the holidays the page uses and the notices are in controller-holidays.js.
  */
+import {
+  holidayAt,
+  holidayHandlers,
+  holidaysByCountry,
+  loadUserHolidays,
+  noticesOf,
+  regionsByCountry,
+} from "./controller-holidays.js";
 import { buildMonth } from "./domain/calendar.js";
 import { cityOf } from "./domain/cities.js";
-import {
-  holidayOn,
-  listRegions,
-  placesMissingRegionalData,
-  toHolidays,
-  unavailableCountries,
-} from "./domain/holidays.js";
 import {
   buildPicker,
   chooseDay,
@@ -34,12 +36,17 @@ import {
   withTheme,
   withWorkingHours,
 } from "./domain/settings.js";
-import * as userHolidayList from "./domain/user-holidays.js";
+import { emptyUserHolidays } from "./domain/user-holidays.js";
 import { localDateTime } from "./domain/zones.js";
 
+/** @typedef {import("./controller-holidays.js").CountryYear} CountryYear */
+/** @typedef {import("./controller-holidays.js").FileRead} FileRead */
+/** @typedef {import("./controller-holidays.js").HolidayAction} HolidayAction */
+/** @typedef {import("./controller-holidays.js").Notices} Notices */
+/** @typedef {import("./controller-holidays.js").ResultsByCountryYear} ResultsByCountryYear */
+/** @typedef {import("./controller-holidays.js").SelectedHoliday} SelectedHoliday */
 /** @typedef {import("./domain/calendar.js").DayFacts} DayFacts */
 /** @typedef {import("./domain/calendar.js").MonthRef} MonthRef */
-/** @typedef {import("./domain/holidays.js").Holiday} Holiday */
 /** @typedef {import("./domain/holidays.js").HolidayResult} HolidayResult */
 /** @typedef {import("./domain/picker.js").DayChoice} DayChoice */
 /** @typedef {import("./domain/picker.js").Marker} Marker */
@@ -50,11 +57,8 @@ import { localDateTime } from "./domain/zones.js";
 /** @typedef {import("./domain/places.js").PlaceChanges} PlaceChanges */
 /** @typedef {import("./domain/settings.js").PickerLimits} PickerLimits */
 /** @typedef {import("./domain/settings.js").Settings} Settings */
-/** @typedef {import("./domain/user-holidays.js").HolidayEntry} HolidayEntry */
 /** @typedef {import("./domain/user-holidays.js").UserHolidays} UserHolidays */
 /** @typedef {import("./domain/weekends.js").CalendarDate} CalendarDate */
-/** @typedef {Record<string, Record<string, HolidayResult>>} ResultsByCountryYear Keyed by country code, then year. */
-/** @typedef {{ status: "read", value: unknown } | { status: "unreadable" }} FileRead What a picked file holds (DEC-018). */
 
 /**
  * @typedef {object} ControllerDeps The outside world, injected so tests can pass fakes.
@@ -74,13 +78,6 @@ import { localDateTime } from "./domain/zones.js";
  */
 
 /**
- * @typedef {object} SelectedHoliday The holiday cell whose card is open (CAL-006).
- * @property {string} placeId
- * @property {string} date `YYYY-MM-DD`.
- * @property {string} name
- */
-
-/**
  * @typedef {object} PageState
  * @property {Settings | null} settings The saved settings; `null` when none are saved.
  * @property {number} now The current instant (UTC milliseconds), updated by `tick` (CLK-003).
@@ -94,12 +91,6 @@ import { localDateTime } from "./domain/zones.js";
  * @property {boolean} noticesOpen
  * @property {boolean} settingsOpen
  * @property {"refused" | null} holidayImport `refused` while the last imported file was refused (HOL-012).
- */
-
-/**
- * @typedef {object} Notices What the notices card lists (REF-002, HOL-004).
- * @property {string[]} countries Country codes with no holiday data for the shown dates.
- * @property {string[]} placeIds Places whose chosen region has no regional holiday data.
  */
 
 /**
@@ -129,11 +120,8 @@ import { localDateTime } from "./domain/zones.js";
  *   | { type: "setWorkingHours", start: number, end: number }
  *   | { type: "setShowCountry", value: boolean } | { type: "setShowHijri", value: boolean }
  *   | { type: "setTheme", value: string } | { type: "setPickerHours", hours: number }
- *   | { type: "exportHolidays" } | { type: "importHolidays", file: Blob }
- *   | ({ type: "addHoliday" | "removeHoliday" | "hideHoliday" | "showHoliday" } & HolidayEntry)} Action
+ *   | HolidayAction} Action
  */
-
-/** @typedef {{ countryCode: string, year: number }} CountryYear */
 
 /**
  * @typedef {object} Context What every action handler uses.
@@ -202,92 +190,6 @@ function neededCountryYears(state) {
 }
 
 /**
- * @param {Record<string, HolidayResult>} byYear
- * @returns {Holiday[]} The public holidays of every loaded year.
- */
-function loadedHolidays(byYear) {
-  return Object.values(byYear).flatMap((result) =>
-    result.status === "loaded" ? toHolidays(result.holidays) : [],
-  );
-}
-
-/**
- * @param {PageState} state
- * @param {string} countryCode
- * @returns {Holiday[]} The country's holidays as the page uses them: the loaded ones without those
- *   the user hid, plus those the user added (HOL-003).
- */
-function countryHolidays(state, countryCode) {
-  const loaded = loadedHolidays(state.holidayResults[countryCode] ?? {});
-  return userHolidayList.effectiveHolidays(loaded, state.userHolidays, countryCode);
-}
-
-/**
- * @param {PageState} state
- * @param {Settings} settings The state's settings, known not to be `null`.
- * @returns {Record<string, Holiday[]>} The holidays of every loaded country and of every place's
- *   country, by country code (HOL-003, REF-002).
- */
-function holidaysByCountry(state, settings) {
-  const codes = new Set([
-    ...Object.keys(state.holidayResults),
-    ...settings.places.map((place) => place.countryCode),
-  ]);
-  return Object.fromEntries([...codes].map((code) => [code, countryHolidays(state, code)]));
-}
-
-/**
- * @param {Record<string, Holiday[]>} holidays Every loaded holiday by country code.
- * @returns {Record<string, string[]>} The region codes of each country (SET-006).
- */
-function regionsByCountry(holidays) {
-  return Object.fromEntries(
-    Object.entries(holidays).map(([countryCode, list]) => [countryCode, listRegions(list)]),
-  );
-}
-
-/**
- * @param {Record<string, HolidayResult>} byYear
- * @returns {HolidayResult} `unavailable` when any year failed, else every year's records together.
- */
-function mergeYears(byYear) {
-  const results = Object.values(byYear);
-  const failed = results.find((result) => result.status === "unavailable");
-  if (failed !== undefined) return failed;
-  const holidays = results.flatMap((result) => (result.status === "loaded" ? result.holidays : []));
-  return { status: "loaded", holidays };
-}
-
-/**
- * @param {PageState} state
- * @returns {Record<string, HolidayResult>} One answer per country, from the needed years only.
- */
-function neededResultsByCountry(state) {
-  /** @type {ResultsByCountryYear} */
-  const needed = {};
-  for (const { countryCode, year } of neededCountryYears(state)) {
-    const result = state.holidayResults[countryCode]?.[year];
-    if (result !== undefined) needed[countryCode] = { ...needed[countryCode], [year]: result };
-  }
-  return Object.fromEntries(
-    Object.entries(needed).map(([countryCode, byYear]) => [countryCode, mergeYears(byYear)]),
-  );
-}
-
-/**
- * @param {PageState} state
- * @param {Settings} settings The state's settings, known not to be `null`.
- * @returns {Notices}
- */
-function noticesOf(state, settings) {
-  const byCountry = neededResultsByCountry(state);
-  return {
-    countries: unavailableCountries(byCountry),
-    placeIds: placesMissingRegionalData(settings.places, byCountry).map((place) => place.id),
-  };
-}
-
-/**
  * @param {PageState} state
  * @returns {PageView} The state with empty models (SET-007).
  */
@@ -313,7 +215,7 @@ function derive(state) {
     pickerWindow: pickerWindow(settings, state.selectedDay),
     windowDates: windowDates(settings, state.selectedDay),
     grid: buildMonth(settings, state.month, holidays, state.now),
-    notices: noticesOf(state, settings),
+    notices: noticesOf(state.holidayResults, neededCountryYears(state), settings.places),
   };
 }
 
@@ -386,7 +288,7 @@ function defaultsOf({ defaultHours, defaultCityIds, pickerLimits }) {
  */
 function open(ctx) {
   const settings = ctx.deps.storage.load() ?? defaultsOf(ctx.deps);
-  const userHolidays = ctx.deps.holidayStorage.load() ?? userHolidayList.emptyUserHolidays();
+  const userHolidays = loadUserHolidays(ctx.deps.holidayStorage);
   const now = ctx.deps.clock.now();
   const month = monthAt(now, settings);
   const selectedDay = dayAt(now, settings);
@@ -461,18 +363,6 @@ function shiftMarkerDay(ctx, action) {
 function showMonth(ctx, action) {
   ctx.update({ month: shiftMonth(ctx.read().month, action.offset), selectedHoliday: null });
   return requestMissing(ctx);
-}
-
-/**
- * @param {PageState} state
- * @param {{ placeId: string, date: string }} cell
- * @returns {SelectedHoliday | null} The cell's holiday, or `null` when the cell is not a holiday.
- */
-function holidayAt(state, { placeId, date }) {
-  const place = state.settings?.places.find((candidate) => candidate.id === placeId);
-  if (place === undefined) return null;
-  const holiday = holidayOn(countryHolidays(state, place.countryCode), place.region, date);
-  return holiday === null ? null : { placeId, date, name: holiday.name };
 }
 
 /**
@@ -667,75 +557,6 @@ function settingsHandlers() {
 }
 
 /**
- * Saves a change of the user's holidays and shows it; a holiday card whose holiday is gone closes
- * (HOL-006 to HOL-009). `null` is a refused change: nothing is saved or shown.
- * @param {Context} ctx
- * @param {UserHolidays | null} next
- * @returns {void}
- */
-function commitUserHolidays(ctx, next) {
-  if (next === null) return;
-  ctx.deps.holidayStorage.save(next);
-  const state = { ...ctx.read(), userHolidays: next };
-  const selected = state.selectedHoliday;
-  ctx.update({
-    userHolidays: next,
-    selectedHoliday: selected === null ? null : holidayAt(state, selected),
-  });
-}
-
-/**
- * @param {(record: UserHolidays, entry: HolidayEntry) => UserHolidays | null} change
- * @returns {Handler} The handler that applies the change to the action's country, date and name.
- */
-function holidayChange(change) {
-  return (ctx, action) => {
-    const { countryCode, date, name } = /** @type {HolidayEntry} */ (action);
-    commitUserHolidays(ctx, change(ctx.read().userHolidays, { countryCode, date, name }));
-  };
-}
-
-/**
- * @returns {Partial<Record<Action["type"], Handler>>} The handlers of the holiday workflows
- *   (HOL-006 to HOL-008).
- */
-function holidayHandlers() {
-  return {
-    addHoliday: holidayChange(userHolidayList.addHoliday),
-    removeHoliday: holidayChange(userHolidayList.removeHoliday),
-    hideHoliday: holidayChange(userHolidayList.hideHoliday),
-    showHoliday: holidayChange(userHolidayList.showHoliday),
-  };
-}
-
-/**
- * Saves the user's added and hidden holidays as a file (HOL-010).
- * @param {Context} ctx
- * @returns {void}
- */
-function exportHolidays(ctx) {
-  ctx.deps.files.saveJson(ctx.deps.holidaysFileName, ctx.read().userHolidays);
-}
-
-/**
- * Adds the holidays of a picked file to the saved ones (HOL-011). A file that is not JSON or not a
- * holidays record changes nothing and is reported (HOL-012).
- * @param {Context} ctx
- * @param {Extract<Action, { type: "importHolidays" }>} action
- * @returns {Promise<void>}
- */
-async function importHolidays(ctx, { file }) {
-  const read = await ctx.deps.files.readJson(file);
-  const imported = read.status === "read" ? userHolidayList.parseUserHolidays(read.value) : null;
-  if (imported === null) {
-    ctx.update({ holidayImport: "refused" });
-    return;
-  }
-  ctx.update({ holidayImport: null });
-  commitUserHolidays(ctx, userHolidayList.mergeUserHolidays(ctx.read().userHolidays, imported));
-}
-
-/**
  * @returns {Record<Action["type"], Handler>} The handler of each action type.
  */
 function handlers() {
@@ -749,8 +570,6 @@ function handlers() {
     selectHoliday,
     ...settingsHandlers(),
     ...holidayHandlers(),
-    exportHolidays,
-    importHolidays,
     toggleNotices: (ctx) => ctx.update({ noticesOpen: !ctx.read().noticesOpen }),
     openSettings: (ctx) => ctx.update({ settingsOpen: true }),
     closeSettings: (ctx) => ctx.update({ settingsOpen: false }),
@@ -770,7 +589,7 @@ function initialState(now) {
     selectedDay: dayAt(now, null),
     month: monthAt(now, null),
     holidayResults: {},
-    userHolidays: userHolidayList.emptyUserHolidays(),
+    userHolidays: emptyUserHolidays(),
     selectedHoliday: null,
     noticesOpen: false,
     settingsOpen: false,
