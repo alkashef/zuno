@@ -29,6 +29,8 @@ import { createMap } from "./views/map.js";
 import { createMonthGrid } from "./views/month-grid.js";
 import { createNotices } from "./views/notices.js";
 import { createPicker } from "./views/picker.js";
+import { createPickerHover } from "./views/picker-hover.js";
+import { createPickerResize } from "./views/picker-resize.js";
 import { createHolidaysSection } from "./views/settings-holidays.js";
 import { createPlaceList } from "./views/settings-places.js";
 import { createSettingsPanel } from "./views/settings.js";
@@ -99,6 +101,13 @@ const views = [
     },
     makeDaySelector: (slot) =>
       createDaySelector(document, slot, { dispatch: controller.dispatch, monthWeeks }),
+    makeResize: (handle) =>
+      createPickerResize(handle, {
+        dispatch: controller.dispatch,
+        limits: { minHours: config.pickerMinHours, maxHours: config.pickerMaxHours },
+      }),
+    makeHover: (rows) =>
+      createPickerHover(rows, { localAt: localDateTime, stepMinutes: config.pickerStepMinutes }),
   }),
   createSettingsPanel(document, {
     defaultHours: { start: config.defaultWorkStartMinutes, end: config.defaultWorkEndMinutes },

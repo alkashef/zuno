@@ -52,6 +52,7 @@
   /* Shapes and sizes: square corners, 1 px lines, 44 px controls. */
   --line-width: 1px;
   --radius: 0;
+  --radius-round: 999px;
   --control-height: 44px;
   --control-height-small: 36px;
   --control-height-large: 48px;
@@ -69,6 +70,10 @@
   --badge-size: 18px;
   --badge-offset: -5px;
   --picker-slot: 17.5px;
+  --map-min-width: 320px;
+  --resize-width: 22px;
+  --grip-width: 4px;
+  --grip-height: 44px;
   --picker-max-height: calc(100vh - 15rem);
   --picker-info-height: 56px;
   --picker-track-height: 38px;

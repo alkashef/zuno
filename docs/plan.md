@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M27** Resize handle and hover time | Dragging the picker's left edge adds or removes hour slots; pointing at a row shows the local time and date there | sonnet | high | open |
 | **M28** Rounded look and split legend | Rounded corners, cyan weekend, the picker as a card, the legend in two parts, location icons, the settings sections in the canvas's order with lines | sonnet | high | open |
 
 ## Milestones
@@ -22,14 +21,6 @@ The visual reference for M26 to M28 is the "Zuno UI" canvas named at the top of 
 DEC-019 to DEC-021 state its sizes and colours. Existing tests that check behaviour a requirement
 of 2026-11-18 changed (SET-002, SET-003, SET-007, CAL-002, HOL-003, PCK-003, PCK-006, PCK-007) are
 updated in the milestone that changes it, and the report names them.
-
-### M27 — Resize handle and hover time
-
-- **Refs:** LAY-002, PCK-008, EX-019, EX-021, DEC-019.
-- **Owner:** `src/views/picker.js`.
-- **Tests first:** `test_lay_002_dragging_the_left_edge_adds_and_removes_hour_slots` (browser; EX-019: 6 slots wider, never below 24), `test_lay_002_arrow_keys_on_the_handle_change_the_width_by_one_slot` (browser), `test_pck_008_pointer_over_a_row_shows_that_places_local_time_and_date` (browser; EX-021), `test_pck_008_the_label_goes_when_the_pointer_leaves` (browser).
-- **Build:** a resize handle (a real `<button>` in the picker template) on the panel's left edge that dispatches `setPickerHours` in whole slots on drag and on the left and right arrow keys, capped as in DEC-019; a hover label above the row under the pointer, from the instant on the `pickerStepMinutes` grid and the `localAt` lookup; both are view state only.
-- **Gate:** the picker's marker drag and keyboard tests still pass.
 
 ### M28 — Rounded look and split legend
 

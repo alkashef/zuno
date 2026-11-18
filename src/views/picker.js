@@ -42,7 +42,13 @@ import { formatDate, formatHijri, formatOffset, formatTime } from "../domain/for
  *   and the drag move the marker, and how often the axis is labelled (from config).
  * @property {(slot: HTMLElement) => { render: (view: DaySelectorView) => void }} makeDaySelector
  *   Builds the day selector inside the panel.
+ * @property {(handle: HTMLElement) => { render: (hours: number) => void }} makeResize Builds the
+ *   behaviour of the resize handle (views/picker-resize.js).
+ * @property {(rows: HTMLElement) => { render: (shown: HoverWindow) => void }} makeHover Builds the
+ *   hover label behaviour of the rows (views/picker-hover.js).
  */
+
+/** @typedef {import("./picker-hover.js").HoverWindow} HoverWindow */
 
 /**
  * @typedef {object} Range The instants every row covers.
@@ -64,6 +70,8 @@ import { formatDate, formatHijri, formatOffset, formatTime } from "../domain/for
  * @property {HTMLTemplateElement} rowTemplate
  * @property {Deps} deps
  * @property {Memo} memo
+ * @property {ReturnType<Deps["makeResize"]>} resize The resize handle.
+ * @property {ReturnType<Deps["makeHover"]>} hover The hover label.
  */
 
 /** The direction of the marker for each arrow key. */
@@ -295,7 +303,9 @@ function arrangeInfo(ctx) {
  */
 function update(ctx, view) {
   const range = windowOf(view.picker);
-  ctx.root.style.setProperty("--picker-hours", String(view.settings?.pickerHours));
+  const hours = view.settings?.pickerHours ?? 0;
+  ctx.root.style.setProperty("--picker-hours", String(hours));
+  ctx.resize.render(hours);
   ctx.memo.range = range;
   ctx.memo.marker = view.marker.instant;
   drawMarker(ctx, view, range);
@@ -304,6 +314,8 @@ function update(ctx, view) {
     ctx.memo.signature = signature;
     drawRows(ctx, view, range);
     drawTicks(ctx, view, range);
+    const zones = (view.settings?.places ?? []).map((place) => place.zone);
+    ctx.hover.render({ from: range.from, to: range.to, zones });
   }
   arrangeInfo(ctx);
 }
@@ -388,7 +400,14 @@ function buildPanel(doc, deps) {
     templateOf(doc, "picker-template").content.firstElementChild?.cloneNode(true)
   );
   const memo = { signature: "", range: { from: 0, to: 1 }, marker: 0, dragging: false };
-  const ctx = { root, rowTemplate: templateOf(doc, "picker-row-template"), deps, memo };
+  const ctx = {
+    root,
+    rowTemplate: templateOf(doc, "picker-row-template"),
+    deps,
+    memo,
+    resize: deps.makeResize(part(root, "resize")),
+    hover: deps.makeHover(part(root, "rows")),
+  };
   bindMarker(ctx);
   new ResizeObserver(() => arrangeInfo(ctx)).observe(part(root, "content"));
   return { ctx, daySelector: deps.makeDaySelector(part(root, "day-selector-slot")) };

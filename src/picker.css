@@ -6,12 +6,45 @@
  * does).
  */
 .picker {
+  position: relative;
   display: flex;
   min-width: 0;
   flex-direction: column;
   padding: var(--space-card) var(--space-card) var(--space-5);
   border-left: var(--line-width) solid var(--color-line-card);
   background: var(--color-card);
+}
+
+/* The strip that changes the panel's width, centred on the panel's left edge (LAY-002). */
+.picker-resize {
+  position: absolute;
+  z-index: 6;
+  top: 0;
+  bottom: 0;
+  left: calc(-0.5 * var(--resize-width));
+  display: flex;
+  width: var(--resize-width);
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.picker-resize-grip {
+  width: var(--grip-width);
+  height: var(--grip-height);
+  border-radius: var(--radius-round);
+  background: var(--color-line-control);
+}
+
+@media (width <= 60rem) {
+  .picker-resize {
+    display: none;
+  }
 }
 
 .picker-title {
@@ -249,6 +282,37 @@
 
 .picker-hijri {
   color: var(--color-hijri);
+}
+
+.picker-band {
+  position: relative;
+}
+
+/* The time and date under the pointer, above the band; it never catches pointer events (PCK-008). */
+.picker-hover {
+  position: absolute;
+  z-index: 1;
+  bottom: calc(100% + var(--space-hairline));
+  left: var(--hover-x, 0);
+  padding: var(--space-hairline) var(--space-tight);
+  background: var(--color-text);
+  color: var(--color-on-text);
+  font-size: var(--font-size-caption);
+  font-weight: bold;
+  pointer-events: none;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.picker-hover[data-align="start"] {
+  left: 0;
+  transform: none;
+}
+
+.picker-hover[data-align="end"] {
+  right: 0;
+  left: auto;
+  transform: none;
 }
 
 .picker-track {

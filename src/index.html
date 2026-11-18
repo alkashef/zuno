@@ -239,6 +239,14 @@
 
     <template id="picker-template">
       <section class="picker" data-role="picker" aria-labelledby="picker-title">
+        <button
+          type="button"
+          class="picker-resize"
+          data-role="resize"
+          aria-label="Change the width of the meeting-time picker"
+        >
+          <span class="picker-resize-grip"></span>
+        </button>
         <h2 id="picker-title" class="picker-title">Meeting time</h2>
         <div data-role="day-selector-slot"></div>
         <div class="picker-scroll" data-role="scroll">
@@ -274,7 +282,10 @@
             <span class="picker-hijri" data-role="local-hijri" hidden></span>
           </div>
         </div>
-        <div class="picker-track" data-role="track"></div>
+        <div class="picker-band">
+          <div class="picker-track" data-role="track"></div>
+          <span class="picker-hover" data-role="hover" hidden></span>
+        </div>
       </li>
     </template>
 
