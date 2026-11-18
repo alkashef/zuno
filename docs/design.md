@@ -658,6 +658,5 @@ Everything else follows DEC-006 and the top-level handler.
 | --- | --- | --- | --- |
 | Weekend data lags a recent country change. DEC-003 | Accepted risk | EX-002 in four browsers. | None. |
 | The built-in holiday table ends with 2028, and its Islamic holidays are calculated. DEC-024 | User | Generate the table again before 2029; correct a wrong day by hiding it and adding the right one. | None. |
-| The newer workflows (picker resize and hover, the holidays the user adds and hides, the day selector) run in the browser tests in Chromium only. NFR-002, DEC-011 | Implementation | The same workflows in Firefox, WebKit and Edge. | None; a milestone in the plan. |
 | Publishing needs a public repository on the `alkashef` account and this clone's remote pointing to it. DEC-023 | User | The repository exists and a push succeeds. | The Pages milestone. |
 | The Hijri day at about 3.1:1 on the holiday colour. DEC-027 | Accepted risk (user, 2026-11-18) | The browser test measures the real ratio. | None. |

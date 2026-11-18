@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                                             | Description                                                                                                          | Model  | Effort | Status   |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------ | ------ | -------- |
-| **M42** Newer workflows in four browsers              | The workflows added since M21 also run in Firefox, WebKit and Edge                                                   | sonnet | medium | open     |
 | **M43** Publish to GitHub Pages                       | Every push to `main` builds the page and publishes it                                                                | sonnet | medium | blocked  |
 
 ## Milestones
@@ -18,19 +17,6 @@ Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
 
-
-### M42 — Newer workflows in four browsers
-
-- **Refs:** NFR-002, LAY-002, PCK-007, PCK-008, HOL-006, HOL-008, HOL-013, VER-001, DEC-011.
-- **Owner:** `tests/e2e/ui/nfr.test.js`.
-- **Tests first:** `ui_nfr_002_newer_workflows_in_chromium_firefox_webkit_edge`.
-- **Build:** one test that runs, in each of the four browsers: widen the picker by its handle,
-  read a hover time, choose the next day, add a holiday, hide a holiday of the built-in table, and
-  read the version. Tests only. If a browser fails a step, fix the cause in the owning module.
-- **Gate:** the test passes in Chromium, Firefox, WebKit and Edge. Remove the row "The newer
-  workflows ... in Chromium only" from `docs/design.md` section 5.
-- **Approval:** User, 2026-11-18, dialog (the plan): this milestone adds tests only, so its new test
-  need not fail first (step 4.2 of the workflow). Nothing else.
 
 ### M43 — Publish to GitHub Pages
 

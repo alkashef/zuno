@@ -1,5 +1,5 @@
 // @ts-check
-/** @module nfr.test Headless-browser tests of the non-functional requirements and the cross-browser examples, in Chromium, Firefox, WebKit and Edge (NFR-001, NFR-002, NFR-003, DEC-009, EX-002, EX-010). */
+/** @module nfr.test Headless-browser tests of the non-functional requirements and the cross-browser examples, in Chromium, Firefox, WebKit and Edge (NFR-001, NFR-002, NFR-003, DEC-009, EX-002, EX-010; LAY-002, PCK-007, PCK-008, HOL-006, HOL-008, HOL-013, VER-001 in the newer workflows). */
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
@@ -306,5 +306,79 @@ test("ui_ex_010_hijri_names_in_four_browsers", async () => {
     const one = await openDrawn(name, { saved: savedSettings(1) });
     const adjusted = await one.page.locator('[data-role="local-hijri"]').allTextContents();
     assert.equal(adjusted[0], "07-Jumada II-1448", `${name}: adjustment +1`);
+  }
+});
+
+const resizeHandleName = "Change the width of the meeting-time picker";
+
+/**
+ * @param {Page} page
+ * @param {string} name The browser, for messages.
+ * @returns {Promise<void>} Widens the picker by dragging its handle left, then reads a hover time.
+ */
+async function widenAndHover(page, name) {
+  const track = page.locator('[data-role="track"]').first();
+  const before = await track.boundingBox();
+  const handle = await page.getByRole("button", { name: resizeHandleName }).boundingBox();
+  assert.ok(before !== null && handle !== null, `${name}: picker boxes`);
+  const x = handle.x + handle.width / 2;
+  const y = handle.y + handle.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x - (before.width / config.pickerMinHours) * 4, y, { steps: 6 });
+  await page.mouse.up();
+  const after = await track.boundingBox();
+  assert.ok(after !== null && after.width > before.width + 1, `${name}: the band did not widen`);
+  await page.mouse.move(after.x + after.width / 2, after.y + after.height / 2);
+  const hover = await page.locator('[data-role="hover"]:not([hidden])').textContent();
+  assert.match(hover ?? "", /^\d{1,2}:\d{2} [AP]M · \d{2}-[A-Z][a-z]{2}-\d{2}$/, `${name}: hover`);
+}
+
+/**
+ * @param {Page} page
+ * @param {string} name The browser, for messages.
+ * @returns {Promise<void>} Chooses the next day and adds a holiday in the settings panel.
+ */
+async function nextDayAndAddHoliday(page, name) {
+  const date = page.locator('[data-role="date"]');
+  const first = await date.textContent();
+  await page.getByRole("button", { name: "Next day" }).click();
+  assert.notEqual(await date.textContent(), first, `${name}: the day did not change`);
+  await openSettings(page);
+  const section = page.getByRole("region", { name: "Holidays" });
+  await section.getByRole("combobox", { name: "Country" }).selectOption({ label: "Egypt" });
+  await section.getByLabel("Date").fill("2026-11-08");
+  await section.getByRole("textbox", { name: "Name" }).fill("Team Day");
+  await section.getByRole("button", { name: "Add holiday" }).click();
+  const added = section.locator('[data-role="added"] [data-role="holiday-text"]').first();
+  assert.equal(await added.textContent(), "08-Nov-26 · Egypt · Team Day", name);
+}
+
+/**
+ * @param {Page} page
+ * @param {string} name The browser, for messages.
+ * @returns {Promise<void>} Hides the built-in Saudi National Day and reads the version.
+ */
+async function hideBuiltInAndReadVersion(page, name) {
+  await page.keyboard.press("Escape");
+  const previous = page.getByRole("button", { name: "Previous month" });
+  await previous.click();
+  await previous.click();
+  await page.getByRole("heading", { name: "September 2026" }).waitFor();
+  const nationalDay = page.getByRole("button", { name: "National Day, 23-Sep-26" });
+  await nationalDay.click();
+  await page.getByRole("dialog", { name: "Holiday" }).getByRole("button", { name: "Hide" }).click();
+  assert.equal(await nationalDay.count(), 0, `${name}: the built-in holiday stayed`);
+  await openSettings(page);
+  const footer = await page.locator(".settings-footer").textContent();
+  assert.match(footer ?? "", /Version \d{4}\.\d{1,2}\.\d{1,2}\.\d{4}/, `${name}: version`);
+}
+
+test("ui_nfr_002_newer_workflows_in_chromium_firefox_webkit_edge", async () => {
+  for (const name of browserNames) {
+    const { page } = await openDrawn(name, { saved: savedSettings() });
+    await widenAndHover(page, name);
+    await nextDayAndAddHoliday(page, name);
+    await hideBuiltInAndReadVersion(page, name);
   }
 });
