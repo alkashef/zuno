@@ -24,8 +24,8 @@ paths:
 - Keep shared sheets (`theme.css`, base, layout) and add one sheet per view or component only for
   styles specific to it. Every CSS file starts with a header comment that says what it styles and
   what it does not.
-- Name CSS classes with BEM, `block__element--modifier`, and by purpose, not appearance
-  (`sidebar__toggle`, not `blue-box`).
+- Name CSS classes `block-element`, in lower case with hyphens (the pattern that Stylelint's
+  standard config checks), and by purpose, not appearance (`sidebar-toggle`, not `blue-box`).
 - Avoid duplicate rules, unused classes, excessive specificity, and layout hacks.
 - Use meaningful link text and `alt` text on images. Keep text contrast readable. Do not rely on
   color alone to convey meaning.

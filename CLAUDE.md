@@ -3,9 +3,12 @@
 ## Project
 
 - Purpose: A timer app that tracks time across time zones.
-- Stack: TBD
-- Test command: TBD
-- Run command: TBD
+- Stack: plain JavaScript (ES modules, JSDoc types checked by `tsc`), HTML and CSS. No framework,
+  no runtime dependency. esbuild bundles the one-file page. Playwright drives the browser tests
+  (dev-only). Versions are in `package.json`.
+- Test command: `npm test`, then `npm run typecheck`, `npm run lint`, `npm run lint:css`,
+  `npm run format:check`.
+- Run command: `npm run build`, then open `dist/zuno.html` in a browser.
 - Project rules: none yet (rules that apply only to this project, including protected paths)
 
 ## Identity and source of truth

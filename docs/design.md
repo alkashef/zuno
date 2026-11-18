@@ -2,16 +2,19 @@
 
 How to build what `spec.md` says. If this file and the spec disagree, the spec wins.
 
-Review state: Draft. The user approved DEC-002, DEC-005 and DEC-011 in chat on 2026-11-17, and
-DEC-015 to DEC-021 on 2026-11-18, in a dialog; the code implements them (milestones M21 to M28).
-The design as a whole is not yet approved: the open items in section 5 remain.
+Review state: Approved. The user approved the design as a whole on 2026-11-18, in a dialog,
+including DEC-023 to DEC-027 and the changed DEC-005, DEC-015 and DEC-020. The code implements
+DEC-001 to DEC-022 (milestones up to M29). DEC-023 to DEC-027 are not built yet: `docs/plan.md`
+holds their milestones.
 Spec baseline: `docs/spec.md` as approved on 2026-11-18, with the acceptance examples EX-011 to
-EX-021.
+EX-026.
 Visual reference (not code to copy): the "Zuno UI" canvas,
 https://claude.ai/artifact/2GmNVHXyaLzy3E5XxUJPRB (light and dark Main page, Settings panel and
 empty state). The app is called Zuno. The canvas was updated on 2026-11-18 from the user's
-comments; DEC-020 and DEC-021 record the look it shows. The canvas does not show the Holidays
-section of the settings panel or the city list in "Add a place": section 4 is the reference there.
+comments; DEC-020 records the look it shows. Its Settings boards were brought in line
+with the app on 2026-11-18: the city list in "Add a place", no time-zone field, and the Holidays
+section. For the map outline the canvas no longer leads: it keeps its hand-drawn coastlines, and
+DEC-026 is the reference.
 
 ## 1. Decisions
 
@@ -22,20 +25,23 @@ One current decision per topic. Replaced decisions live in Git history.
 | DEC-001 | Plain JavaScript (ES modules, JSDoc types checked by `tsc`), plain HTML and CSS. No framework, no runtime dependency. All time, weekend and Hijri maths use the browser's built-in `Intl`. | PKG-001, NFR-002, project rules. A page this size needs no framework. |
 | DEC-002 | Source is many small files; a build script bundles them into one HTML file. The build uses esbuild as a dev-only tool. | PKG-001 needs one file; the rules need small separate files. Deviates from the rule "no build step". Approved by the user 2026-11-17. |
 | DEC-003 | Weekends come from `Intl.Locale.getWeekInfo()`. Hijri dates come from `Intl.DateTimeFormat` with `islamic-umalqura` (Umm al-Qura) and `islamic-civil` (tabular). | CAL-002, HIJ-001 to HIJ-003, EX-002, EX-010. Closes the open weekend-source item in spec section 7. |
-| DEC-005 | Public holidays come from the Nager.Date public-holiday service. The page sends it only a country code and a year. | HOL-001 to HOL-004, REF-002, NFR-001. Outside data flow approved by the user 2026-11-17. Checked 2026-11-17: both API versions answer with `access-control-allow-origin: *`. Terms of service still unread (section 5). |
+| DEC-005 | Public holidays come from the Nager.Date public-holiday service. The page sends it only a country code and a year. | HOL-001 to HOL-004, REF-002, NFR-001. Outside data flow approved by the user 2026-11-17. Checked 2026-11-17: both API versions answer with `access-control-allow-origin: *`. Terms of service read on 2026-11-18: free for private or non-profit projects, which is how the user classes Zuno (spec section 7). |
 | DEC-006 | `api.js` returns an expected service failure as data (`HolidayResult`), not as a thrown error. Unexpected errors still reach the top-level handler. | REF-002, HOL-004. The rules say catch only in `api.js`; this is the one case where the spec defines the recovery. |
 | DEC-007 | Layers: pure domain logic, one pure controller, DOM views, and three leaf modules for the outside world (`api.js`, `storage.js`, `clock.js`). `main.js` only wires them. | Project architecture rules; makes every workflow testable with fakes. |
 | DEC-011 | Unit tests use `node --test`. Browser tests use Playwright (Chromium, Firefox, WebKit, and Edge through the `msedge` channel) with the holiday service faked by request routing. | NFR-002, NFR-001, CLAUDE.md testing rules. New dev dependency approved by the user 2026-11-17. |
 | DEC-012 | The build adds a Content-Security-Policy `<meta>` tag with hashes of the inline script and style. It allows requests only to the holiday host. | NFR-001. A browser-enforced backstop for the automated request check. |
-| DEC-013 | The built file is meant to be hosted on the user's GitHub Pages as a static site, and can also be opened as a file. | User suggestion 2026-11-17. PKG-001. Pages serves the page over `https`, so its origin is never `null`. |
-| DEC-015 | A built-in city table (`data/cities.js`) holds the 55 cities of the spec's section 9: a stable id, the name, the country or territory code, the time zone and the map coordinates. A place is a city of that table. Country names come from `Intl`. The 245-country table is removed. | SET-002, SET-013, MAP-001, NFR-003. Replaces DEC-004 (user decision 2026-11-18: only these cities). |
+| DEC-015 | A built-in city table (`data/cities.js`) holds the 55 cities of the spec's section 9: a stable id, the name, the country or territory code, the time zone and the map coordinates. A place is a city of that table. Country names come from `Intl`, except a territory that the city list names differently (Hong Kong). The 245-country table is removed. | SET-002, SET-013, MAP-001, NFR-003, DSP-004. Replaces DEC-004 (user decision 2026-11-18: only these cities). |
 | DEC-016 | Settings are saved in `localStorage` as one record of version 2. A record of version 1 (places by country) is not converted: it is read as "no saved settings", so the default places show. A version 2 place whose city is not in the table is dropped when the record is read. | SET-004, SET-014, SET-015, SET-016, LAY-003, SET-012. Replaces DEC-008 and DEC-014. Settings are user preferences, so the rule against app data in `localStorage` does not apply (approved 2026-11-17). |
 | DEC-017 | The holidays a user adds or hides are a second `localStorage` record with the same shape as the holidays file. The controller applies them to the service's holidays before it builds the month grid and the picker. Holidays from the service are still kept in memory only. | HOL-003, HOL-006 to HOL-009. The user's own entries cannot be fetched again, so they must be saved. |
 | DEC-018 | One new leaf module, `files.js`, is the only one that saves a file to the user's machine and reads a file the user picks. A picked file that is not JSON is returned as "unreadable" data, not thrown. | HOL-010 to HOL-012. Same pattern as DEC-006: the spec defines the recovery. Nothing is sent over the network (NFR-001). |
 | DEC-019 | The picker window is `pickerHours` hour slots (a saved setting, 24 to `pickerMaxHours`) from midnight of the selected day in the first place. The selected day is state beside the marker. Every slot has the width `--picker-slot`; the panel's width follows the number of slots. | PCK-003, PCK-006 to PCK-009, LAY-002, LAY-003. User decisions 2026-11-18 (fixed slots, 24 hours or more, selected day). |
-| DEC-020 | All colours and shapes are CSS custom properties in `theme.css`, each colour with its light and dark value in `light-dark()`; `views/theme.js` sets `data-theme` from the theme setting. Cards, buttons, inputs and popovers have rounded corners; month-grid cells stay square. Weekends are cyan. | THM-001, SET-012, LEG-001. Replaces DEC-009 (user decisions on the canvas, 2026-11-18: rounded corners, cyan weekend). |
-| DEC-021 | The world map is a static SVG of simplified outlines inside `index.html` (latitude 80 to -58, stretched to fill the map). Each place is a location icon whose tip is on the place, with a label placed by `views/map.js` where it covers no other label or icon. | MAP-001. Replaces DEC-010 (user decision on the canvas, 2026-11-18: location icons instead of squares). |
+| DEC-020 | All colours and shapes are CSS custom properties in `theme.css`, each colour with its light and dark value in `light-dark()`; `views/theme.js` sets `data-theme` from the theme setting. Cards, buttons, inputs and popovers have rounded corners; month-grid cells stay square. Weekends are cyan. | THM-001, SET-012, LEG-001. Replaces DEC-009 (user decisions on the canvas, 2026-11-18: rounded corners, cyan weekend). Changed by user decisions of 2026-11-18 (dialogs): a smaller month header, the corner label "Day", half-transparent map labels. |
 | DEC-022 | The controller has two modules. `controller.js` keeps the state, `createController`, the page, settings and picker workflows and the requests to the holiday service. `controller-holidays.js` holds the holiday side: loading the user's holiday record, the holiday actions, the holidays the page uses and the notices. Only `controller.js` imports it; it imports `domain/*` only. | DEC-007, DEC-017, DEC-018. `controller.js` passed the 300-line mark (user decision 2026-11-18). Behaviour does not change. |
+| DEC-023 | The page is published to GitHub Pages by a GitHub Actions workflow (`.github/workflows/pages.yml`) in a public repository on the user's personal account `alkashef`: on every push to `main` it builds `dist/zuno.html` and deploys it as the site's `index.html`. The same file can also be opened from disk. The delivered app stays one file. | PKG-001. Replaces DEC-013. User decisions 2026-11-18: run from GitHub Pages or the local desktop, publish automatically; move the repository to `alkashef` and use Pages (dialog). |
+| DEC-024 | The public holidays of the seven countries the holiday service does not cover come from a table in `data/holiday-table.js`. A development script generates it for 2026 to 2028 with the open-source library `date-holidays`, a dev-only tool. The page carries the table, sends no request for those countries, and treats a table holiday like a service holiday. | HOL-013, HOL-001, HOL-003, HOL-008, REF-002, NFR-001, EX-022, EX-023. User decision 2026-11-18 (dialog), which also approves the dev dependency. |
+| DEC-025 | The version is the build's date and time in UTC, written `YYYY.MM.DD.HHmm`. `scripts/build.mjs` writes it into the settings panel's footer in place of a marker in `index.html`. The build gets the time as an argument. | VER-001, DSP-001, EX-026. User decisions 2026-11-18 (dialogs: build date, settings footer, wording). |
+| DEC-026 | The world map's outline is real coastlines: Natural Earth's 1:110m land data (public domain), kept in `data/`, turned by a development script into one SVG path on the map's whole-world grid, and put into the page by the build. No country borders. Each place is still a location icon whose tip is on the place, with a label placed by `views/map.js` where it covers no other label or icon. | MAP-001. Replaces DEC-021. User decisions 2026-11-18 (dialogs: real coastlines only; the milestone downloads the data once). |
+| DEC-027 | In a month-grid cell the Hijri day has no background of its own and regular weight. On a weekend or holiday cell it takes `--color-hijri-on-tint`, a slightly darker shade of the Hijri colour, which the user accepted at about 3.1:1 on the light theme's holiday colour: the one text that may fall below 4.5:1. | HIJ-001, DSP-003, spec section 7 (accepted risk). User decisions 2026-11-18 (dialogs). Replaces the Hijri day chip of DEC-020. |
 
 ### Detail
 
@@ -77,8 +83,14 @@ countries. The site moved from `date.nager.at` to `nagerholidays.com`; the curre
 `subdivisionCodes`, `nationalHoliday` and `holidayTypes` (`Public`, `Bank`, `School`,
 `Authorities`, `Optional`, `Observance`). Older sources describe `/api/v3/PublicHolidays/{year}/{code}`
 with `counties`, `global` and `types`. One third-party directory reports a browser CORS error. The
-contract and CORS were checked against the live service in M2 (section 5). Holidays of type `Public` count; the other types
-do not (HOL-003). The page sends nothing else: no user data, no settings (HOL-002).
+contract and CORS were checked against the live service in M2. Holidays of type `Public` count; the other types
+do not (HOL-003). The page sends nothing else: no user data, no settings (HOL-002). Alternative (c)
+now holds for the seven countries the service lacks (DEC-024); the service stays the source for all
+others. Terms of service (nagerholidays.com/legal/termsofservice, last updated 2023-09-15, read
+2026-11-18): "The Web API can be used for private or non-profit projects. For commercial purposes we
+require active sponsorship." Running a holiday portal with the data is forbidden; no warranty; no
+rate limit is named. The user classes Zuno as a private, free, non-profit project (dialog,
+2026-11-18); revisit before a company adopts the page officially (spec section 7).
 
 **DEC-006.** `HolidayResult` is `{ status: "loaded", holidays }` or `{ status: "unavailable",
 reason }`. A network failure, a non-success HTTP status, or a body that is not the documented shape
@@ -99,7 +111,11 @@ Tel Aviv `Asia/Jerusalem`). Coordinates are each city's own, so a pin no longer 
 zone is named after. Alternative: keep the country table and filter it. Rejected: several listed
 cities share a zone and a country, so the city, not the zone, must be the identity.
 `domain/cities.js` replaces `domain/countries.js` and exposes `listCities`, `cityOf(id)` and
-`countryName(code)`. Validation: `tests/unit/cities.test.js` checks 55 rows, unique ids, every zone
+`countryName(code)`. DSP-004: `countryName` first looks in `territoryNames`, a frozen object in
+`domain/cities.js` with the names the city list gives where the browser's name differs (today only
+`HK`: "Hong Kong"; the browser says "Hong Kong SAR China"), then asks `Intl`. Alternative: a
+country name in every row of the city table. Rejected: 54 of 55 names would repeat what the browser
+knows. The unit test compares the name of every row's country with the spec's section 9. Validation: `tests/unit/cities.test.js` checks 55 rows, unique ids, every zone
 valid for `Intl.DateTimeFormat`, every code valid for `Intl.DisplayNames`, and that the smaller of
 each zone's offsets on 1 January and 1 July 2026 equals the standard-time offset in the spec's
 section 9.
@@ -167,7 +183,14 @@ and holiday, today) and one at the bottom of the picker card (working hours, non
 off), so no banner is fixed to the page bottom. The picker has no heading (its section carries the
 accessible name "Meeting time"). A picker row shows the name with its offset from UTC and, beside
 the marker, the time in bold with the date after it in the style of the offset; rows are only as
-tall as their text and their 28 px band. In the month grid the weekday sits above the day number.
+tall as their text and their 28 px band. In the month grid the weekday sits above the day number,
+and the day header's corner label reads "Day" whether Hijri is on or off (user decision 2026-11-18;
+the Hijri day stays in the cells, with no Hijri row in the header). The month grid's header row is
+smaller than the page's other controls (user decision 2026-11-18): the previous and next month
+buttons are 32 px squares (`--month-nav-size`) with 16 px arrows (`--icon-size-small`), the title is
+14 px (`--font-size-body`), and 8 px (`--space-2`) lie under the row: 40 px in all, 60 px before. A
+map label's background is the card colour at half strength (`--color-map-label`, a `color-mix` of
+`--color-card` and `transparent` at 50%; user request 2026-11-18), so the map shows through.
 Palette (hex):
 
 | Token | Light | Dark |
@@ -180,20 +203,109 @@ Palette (hex):
 | text on weekend and holiday cells (`--color-text-on-tint`; keeps 4.5:1 on the two tints) | `#0E2A33` | `#07090D` |
 | today outline, Hijri text, reference row | `#6C5CE7`, `#C0267C`, `#DFF3F3` | `#FFD166`, `#C7AEFF`, `#161B2A` |
 | map sea, map land, map coast, danger | `#BFE9F2`, `#FFE6B8`, `#FFFFFF`, `#C9344A` | `#0B0F18`, `#222B40`, `#07090D`, `#FF7A9E` |
-| text on dark fills (`--color-on-text`), pin label name, Hijri day chip | `#FFFFFF`, `#285560`, `#FFFFFF` | `#07090D`, `#B6BFCD`, `#07090D` |
+| text on dark fills (`--color-on-text`), pin label name | `#FFFFFF`, `#285560` | `#07090D`, `#B6BFCD` |
+| Hijri day on a weekend or holiday cell (`--color-hijri-on-tint`, DEC-027) | `#8F1A5B` | `#2B1464` |
+| map label background (`--color-map-label`) | the card colour at 50% | the card colour at 50% |
 | marker line, handle and map icons (`--color-marker`) | the text colour | the text colour |
 
 The dark today outline moved from blue to warm yellow because a blue outline does not show on a
 cyan weekend cell. Validation: the browser tests check the text contrast of every text token on its
-background (4.5:1) and the layout facts above (`tests/e2e/ui/canvas-layout.test.js`).
+background (4.5:1; the one exception is DEC-027) and the layout facts above
+(`tests/e2e/ui/canvas-layout.test.js`). The text of a map label is checked against the label's
+colour laid over the map's land and over its sea.
 
-**DEC-021.** The outline is the canvas's hand-drawn coastlines (`viewBox="0 20 720 276"` of a 720 by
-360 whole-world grid). The icon is an inline SVG in the pin template, 24 by 22 px, a teardrop
-with a hole, filled with `--color-marker` and outlined in the card colour; its tip, the bottom
-centre, is on the place. A label stands 18 px beside the tip (centred on the icon's middle), 28 px
-above it or 8 px below it (`--map-label-gap-side`, `--map-label-gap-above` and
-`--map-label-gap-below` in `theme.css`, which `views/map.js` reads to choose the side). The pin layer spans the whole world, so it reaches past the view by the two hidden
-bands. Better outline data can replace the drawing later without a layout change.
+**DEC-026.** Source: `ne_110m_land.geojson` from Natural Earth's public repository
+(github.com/nvkelso/natural-earth-vector, folder `geojson`; public domain, about 130 KB; not yet
+downloaded). `scripts/make-map.mjs` has two steps. With `--download` it fetches that one file into
+`data/` (the only network use, at development time; the user approved it on 2026-11-18). Without
+it, it reads the file and writes `data/map-outline.svg`: one `<path>` of all land rings on the
+720 by 360 whole-world grid the pins already use (x = (longitude + 180) times 2, y = (90 -
+latitude) times 2, one decimal), leaving out rings that lie wholly south of latitude -58, which the
+map's view (`viewBox="0 20 720 276"`, latitude 80 to -58) does not show. Both files are committed;
+the outline is generated and never edited by hand. `scripts/build.mjs` puts the path into the map's
+SVG in place of the marker `<!--zuno:map-outline-->` in `index.html`, so the page still loads
+nothing (PKG-001, NFR-001). The projection is a pure exported function with a unit test. Estimate,
+not measured: the path adds 40 to 60 KB to the page. Alternatives: (a) keep the hand-drawn outline,
+rejected by the user; (b) coastlines with country borders, rejected by the user: more lines under
+the pins, twice the size, and every border data set takes a side on disputed borders; (c) fetch the
+outline at run time, rejected: NFR-001. The pins are unchanged: the icon is an inline SVG in the pin
+template, 24 by 22 px, a teardrop with a hole, filled with `--color-marker` and outlined in the card
+colour; its tip, the bottom centre, is on the place. A label stands 18 px beside the tip (centred
+on the icon's middle), 28 px above it or 8 px below it (`--map-label-gap-side`,
+`--map-label-gap-above` and `--map-label-gap-below` in `theme.css`, which `views/map.js` reads to
+choose the side). The pin layer spans the whole world, so it reaches past the view by the two
+hidden bands. Validation: the unit test of the projection, a build test that the built page holds
+the outline and no marker, and the existing browser tests of the pins.
+
+**DEC-023.** Alternatives: (a) commit the built file and let Pages serve it from the branch,
+rejected: a generated file in Git that goes stale when someone forgets to rebuild; (b) upload by
+hand, rejected for the same reason; (c) deliver several files (HTML, script, stylesheet) instead of
+one, rejected: browsers block module scripts opened from disk, and PKG-001 requires one file;
+(d) stay on the company-managed account, rejected by the user: its plan has no Pages for this
+repository. The workflow uses GitHub's own actions (`checkout`, `setup-node`,
+`upload-pages-artifact`, `deploy-pages`) and runs `npm ci` and `npm run build`; it runs no tests,
+because the pre-commit hook runs them before a commit reaches `main`. Pages must be set to the
+source "GitHub Actions" in the repository's settings. The repository is public, so anyone with the
+address can open the page and read the code; the page holds no secret and no user data. Settings
+and holidays are saved per origin: the page on Pages and a copy opened from disk each keep their
+own (the holidays file carries holidays between them). The version (DEC-025) of the published page
+is the time of the workflow's build. Precondition, the user's to do: a public repository on
+`alkashef` with this history, and this clone's remote pointing to it. Validation: the workflow run
+succeeds and the site's address answers with the page. Opening the file from disk is covered by the
+browser tests, which load it as a `file:` URL.
+
+**DEC-024.** Table countries: India, Israel, Malaysia, Pakistan, Saudi Arabia, Taiwan and the
+United Arab Emirates (`IN`, `IL`, `MY`, `PK`, `SA`, `TW`, `AE`). `scripts/make-holiday-table.mjs`
+asks `date-holidays` for each country and each year from 2026 to 2028, keeps the holidays of type
+`public` for the whole country (no state or region), takes the English name, and writes
+`data/holiday-table.js`: a frozen object with the years it covers and, per country code, a list of
+`{ date, name }` sorted by date. The script fails if a kept holiday has no English name (NFR-003).
+The file is generated, committed and never edited by hand; its header names the library, its
+version and the licence of the data. `domain/holiday-table.js` (pure) is the only reader:
+`isTableCountry(code)` and `tableHolidays(code, year)`, which gives the country's `Holiday` list
+(no regions) or `null` for a year outside the table. `controller.js` asks the table instead of
+`api.js` for a table country: a list becomes a `loaded` result and `null` an `unavailable` one, so
+the notices, the hiding (HOL-008) and the user's added holidays work as for a service country, and
+a year after 2028 shows the no-data notice (EX-023). `api.js` and the Content-Security-Policy do
+not change. Licence: the library's code is ISC and its holiday data CC BY-SA 3.0
+(github.com/commenthol/date-holidays, read 2026-11-18), so `data/holiday-table.js` is under
+CC BY-SA 3.0, the README says so, and the Holidays section of the settings panel carries one credit
+line. Islamic holidays in the table are calculated; the library warns they "might not be correct as
+they are subject to the sighting of the moon" (spec section 7). Not verified yet, and checked by
+the milestone that adds the library: that it gives `public` holidays with English names for each
+of the seven countries, and the dates of EX-022. Estimate, not measured: about 250 entries, under
+20 KB. Alternatives: (a) a second holiday service: the search of 2026-11-18 found one free service
+without a key that claims these countries (holidays.abouts.co); it has no named operator and no
+terms, and it answered a request for Pakistan 2027 with Saudi Arabia's holidays of 2026, so it is
+rejected; (b) the library inside the page, rejected: it would be the first runtime dependency
+(DEC-001) and its full bundle is about 1.5 MB; (c) holidays only from the user, which was the state
+before: the default places Riyadh, New Delhi and Islamabad then show no holidays on a first visit.
+Validation: unit tests of `domain/holiday-table.js`, controller tests of EX-022 and EX-023, and the
+request check of NFR-001 (no request for a table country).
+
+**DEC-025.** `buildPage` takes `builtAt` (a `Date`) with its other options; the command-line entry
+passes the current time and the tests pass a fixed one, so a build is reproducible in tests.
+`versionText(builtAt)` (exported, pure) gives `YYYY.MM.DD.HHmm` from the UTC parts. `index.html`
+holds the line "Version" followed by the marker `<!--zuno:version-->` in the settings panel's
+footer, under the sentence about saved changes; the build replaces the marker. No JavaScript of the
+page knows the version. The page published by DEC-023 carries the time of that build. Alternatives,
+all offered to the user and not chosen: a `1.MINOR.PATCH` number raised by each milestone, the last
+milestone's number, and a number raised by hand. Consequence: two builds of the same code carry
+different versions; the version tells the age of a copy, not its content. Validation: a unit test
+of `versionText` and a browser test of EX-026.
+
+**DEC-027.** `month-grid.css`: the Hijri day keeps `--color-hijri` on a plain cell (5.5:1 on the
+card); on a weekend, holiday or split cell it takes `--color-hijri-on-tint`; it has no background,
+no padding of a chip and weight `normal`. `--color-chip` leaves `theme.css`. Contrast, calculated by
+hand and to be measured by the browser test: light `#8F1A5B` is about 5.2:1 on the weekend colour
+and 3.1:1 on the holiday colour; dark `#2B1464` is about 6.5:1 on the weekend colour and 4.9:1 on
+the holiday colour. In the dark theme the tints are bright and the Hijri colour is light, so a
+"slightly darker" shade cannot be read there; the dark value is a deep shade of the same hue
+instead (the designer's choice, shown to the user with this design). The contrast test asks 4.5:1
+for every text and 3:1 for this text on the holiday colour. Alternatives offered to the user and not
+chosen: one deep shade on both tints (4.8:1), a slight shade on the weekend colour with a deep one
+on the holiday colour, and the cell's own text colour. The user also chose regular weight over
+semi-bold, from the canvas comment of 2026-11-17 ("the hijri date should not be in bold").
 
 **DEC-022.** Context: `controller.js` had 378 code lines, over the 300 that ESLint warns at, and the
 holiday work had grown into a second responsibility. Choice: `controller-holidays.js` holds the
@@ -242,6 +354,7 @@ at implementation.
 | `domain/weekends.js` | Weekend days of a place: the days the user chose for it (SET-016), else those of its country or territory (`countryWeekendDays`); `placeWeekendDays` gives a place's days, `isWeekend` asks about a date for a place, and `isWeekendChoice` validates a choice (`null` or 1 to 7 distinct days). | none | CAL-002, SET-016 |
 | `domain/cities.js` | The city list (`listCities`, in the table's order), one city by id (`cityOf`), country names (`countryName`), the countries and territories of the list, each once and sorted by English name (`listCountries`, for the Holidays section), and whether a code is one of them (`isListedCountry`). | `data/cities.js` | SET-002, SET-013, HOL-006, DEC-015 |
 | `domain/holidays.js` | Turns a `HolidayResult` into per-day facts for a place; lists regions; reports missing data. | none | HOL-003, HOL-004, REF-002 |
+| `domain/holiday-table.js` | The built-in holiday table (DEC-024, not built yet): `isTableCountry(code)` and `tableHolidays(code, year)`, a country's holidays of a year as `Holiday` rows with no regions, or `null` for a year the table does not cover. The only reader of `data/holiday-table.js`. | `data/holiday-table.js`, `domain/holidays.js` types | HOL-013, HOL-001, EX-022, EX-023 |
 | `domain/user-holidays.js` | The holidays a user adds and hides (M24): `emptyUserHolidays`; `addHoliday`, `removeHoliday`, `hideHoliday` and `showHoliday`, each returning the new record or `null` for a refused change (adding or hiding refuses a date that is not a real calendar date, a name empty after trimming, a country no city of the list has, and an entry already in the list); `isAddedHoliday` (whether the holiday card offers Remove or Hide); `parseUserHolidays` (validates a stored value); `effectiveHolidays` (a country's service holidays without the hidden ones, plus the added ones as national holidays). `mergeUserHolidays(saved, imported)` (M25: the saved entries, then the imported ones the saved record lacks, so nothing is removed and no entry is doubled, HOL-011). | `domain/cities.js`, `domain/holidays.js` types | HOL-003, HOL-006 to HOL-012, DEC-017 |
 | `domain/places.js` | Adds a place from a city, removes, moves, relabels and edits places (label, region, weekend days, Hijri variant and adjustment); validates a stored place and fills in its country and zone from the city table; a place's map pin (`placePin`: position as percentages of the whole world from the city's coordinates, local time and date), and the parts of its name the views lay out apart (`placeFacts`: name, the city when a display name hides it, and the country while country names are on). | `domain/cities.js`, `domain/hijri.js`, `domain/zones.js`, `domain/format.js` | SET-001, SET-002, SET-006, SET-008, SET-009, SET-015, SET-016 |
 | `domain/settings.js` | Settings shape (version 2), defaults (with the default places and the picker hours), validation, the theme choices (`themes`, `withTheme`) and the picker hours (M26: `withPickerHours(settings, hours, limits)` refuses hours that are not a whole number within the `PickerLimits`; `parseSettings(value, limits)` gives a record without `pickerHours` the default and refuses one outside the limits; with no limits given, both mean the whole day only). | `domain/places.js` | SET-005, SET-007, SET-010 to SET-012, SET-014, SET-015, LAY-003, DEC-016 |
@@ -255,14 +368,14 @@ at implementation.
 | `views/picker.js`, `views/day-selector.js` | The picker card (M14, M26, M28). `picker.js` owns the panel: its width of `pickerHours` hour slots (it sets `--picker-hours` on the panel; `layout.css` multiplies it by `--picker-slot`), the hour axis (labelled with the first place's local time every `pickerAxisLabelEveryHours`, from the window's start to its end, past midnight when the window is longer than the day), one row per place with its name, offset from UTC and (when they apply) city and country, its local time in bold with the date after it on the same line (in the style of the offset: caption size, muted colour) and, below, the Hijri date (while Hijri is on) at the marker, and its coloured stretches (a 28 px band) with hour lines, and the marker line with its handle under the rows, moved by dragging or by arrow keys in steps of `pickerStepMinutes`. The card has no heading: its section carries the accessible name "Meeting time". A row is only as tall as its text (padding 8 px above and below, 10 px at the sides, 6 px between the text and the band). The card ends with the picker's part of the legend (a slot that `views/legend.js` fills). It builds the resize handle (a button centred on the card's left border) and the hover label of each row from the templates in `index.html` and passes them to `picker-resize.js` and `picker-hover.js` (the factories `makeResize` and `makeHover` that `main.js` supplies, because a view imports no other view), telling them the number of hour slots and the window and zones of the rows on every render. Each row's marker time sits just right of the marker line (just left when it does not fit), and the name takes the wider space that is left. The axis is sticky inside the scrolling rows, so it shares their width and stays in view (LAY-001). `day-selector.js` owns the previous-day and next-day buttons, the date button, which shows the window's first and last date (`formatDateRange` of `windowDates`, PCK-009), and its month calendar on the selected day (Escape closes it and returns the focus). `main.js` passes `picker.js` the lookups it may not import (`localDateTime`, `zoneOffset`, `placeFacts`), the steps from `config.js` and the day-selector, resize and hover factories, and passes `day-selector.js` `monthWeeks`. | `domain/format.js` | PCK-001 to PCK-003, PCK-005 to PCK-007, PCK-009, LAY-001, DSP-001, DSP-002 |
 | `views/picker-resize.js` | The resize handle of the picker card (M27, M28): dragging the button centred on the card's left border (pointer capture), or the left and right arrow keys on it, adds or removes hour slots. One slot width to the left (the computed `--picker-slot`) is one more hour. It dispatches `setPickerHours` with whole hours, only when the number changes, never below `pickerMinHours` or above `pickerMaxHours` (both passed in from `config.js` by `main.js`), and stops widening when the map column left of the card would get narrower than `--map-min-width` (320 px, in `theme.css`; it never narrows the panel because of that limit). The handle is hidden in the one-column layout under 60rem. The controller saves the width (LAY-003). | none | LAY-002, LAY-003, DEC-019 |
 | `views/picker-hover.js` | The hover label of the picker rows (M27): while the pointer is over a row's band, a label above the band, at the pointer, shows that place's local time and date there (`formatTime`, a space, a middle dot, a space, `formatDate`; for example `8:00 PM · 19-Nov-26`). The instant is the window's start plus the pointer's fraction of the band, rounded to the `pickerStepMinutes` grid; the local time comes from `localAt` with the row's zone. View state only: no action, nothing saved. The label goes when the pointer leaves the band, catches no pointer events and is aligned to the band's end near its left or right end. `picker.js` tells it the window and the zones. | `domain/format.js` | PCK-008, DSP-001, DSP-002, DEC-019 |
-| `views/map.js` | The world map (M17): clones the static SVG outline (DEC-021) and draws one pin per place, rebuilt on every render so the tick updates the times. Each pin is a location icon (M28: an inline SVG in the pin template, 24 by 22 px, its tip on the place; DEC-021) placed by the CSS custom properties `--pin-left` and `--pin-top`, with a label of the place's name (following the country-name setting), time and date, which the view puts beside (18 px from the tip), above (28 px) or below (8 px) the icon, wherever it covers no other label or icon. `main.js` passes `placeName` and `placePin`. `layout.css` puts the map and the month grid in one left column as one joined card, the map (rounded at the top) taking the height the grid (rounded at the bottom) leaves, and the picker as its own card at the right, a card gap (20 px) away and inside the page's padding (one column on narrow screens). On a short map the labels shrink (a container query in `map.css`). | none | MAP-001, CLK-001, CLK-003 |
+| `views/map.js` | The world map (M17): clones the static SVG outline (DEC-026; the hand-drawn outline until M34) and draws one pin per place, rebuilt on every render so the tick updates the times. Each pin is a location icon (M28: an inline SVG in the pin template, 24 by 22 px, its tip on the place; DEC-026) placed by the CSS custom properties `--pin-left` and `--pin-top`, with a label of the place's name (following the country-name setting), time and date, which the view puts beside (18 px from the tip), above (28 px) or below (8 px) the icon, wherever it covers no other label or icon. `main.js` passes `placeName` and `placePin`. `layout.css` puts the map and the month grid in one left column as one joined card, the map (rounded at the top) taking the height the grid (rounded at the bottom) leaves, and the picker as its own card at the right, a card gap (20 px) away and inside the page's padding (one column on narrow screens). On a short map the labels shrink (a container query in `map.css`). | none | MAP-001, CLK-001, CLK-003 |
 | `views/month-grid.js` | The month grid (M15): previous and next month buttons, day headers (a two-letter weekday above the day number), one row per place (its name, and its country below it while country names are on) with a blank cell per day (weekend, holiday, split by a diagonal gradient, today outlined, the selected holiday outlined in the text colour) and the holiday card beside the place's name, which opens from a holiday cell's button and closes on its close button or Escape. The card has a Hide button for a service holiday (dispatches `hideHoliday`) and a Remove button for one the user added (dispatches `removeHoliday`); either way the controller closes the card. `main.js` passes `isAddedHoliday`, so the card knows which button to show. The rows scroll inside `.month-grid-scroll` while the day headers stay sticky. The card ends with the month grid's part of the legend (a slot that `views/legend.js` fills). `main.js` passes `dispatch`, `placeFacts` and the Hijri-note factory. While Hijri is on (M16) it adds a Hijri month band above the day headers (one cell per Hijri month of the first place, with the information button in the corner), the two-digit Hijri day in each cell, and the Hijri date in the holiday card. | `domain/format.js` | CAL-001 to CAL-007, LAY-001, HIJ-001, DSP-003 |
 | `views/hijri-note.js` | The information button beside the Hijri month band and its card with the note that Hijri dates are calculated (M16). The button toggles the card; Escape closes it and returns the focus to the button. `main.js` passes its factory to `month-grid.js`. | none | HIJ-004 |
 | `views/legend.js` | The legend (LEG-001, M28), in two parts. The month-grid and picker templates each hold an empty part (`data-legend="month"` and `data-legend="picker"`); `legend.js` fills each from `#legend-month-template` (weekend, public holiday, weekend and holiday, today) and `#legend-picker-template` (working hours, non-working hours, day off: weekend or holiday) and empties them on the empty page. It renders after the month grid and the picker, so their parts exist. `legend.css` draws each part under a hairline at the bottom of its card; no banner is fixed to the page bottom. | none | LEG-001, DEC-020 |
 | `views/actions.js` | One delegated click listener: turns `data-action` of a plain action (`refresh`, `openSettings`) into a controller action. Only `main.js` imports it. | none | REF-001, SET-007 |
 | `views/error-screen.js` | Shows the message and stack of an unexpected error on the page; `main.js` calls it from the `error` and `unhandledrejection` handlers. | none | project rule (top-level handler) |
 
-Import rules: `domain/*` imports only other `domain/*` modules and `data/*`. `controller.js`
+Import rules: `domain/*` imports only other `domain/*` modules and `data/*` (`data/cities.js` only from `domain/cities.js`, `data/holiday-table.js` only from `domain/holiday-table.js`). `controller.js`
 imports `domain/*` and `controller-holidays.js`; `controller-holidays.js` imports `domain/*` only and only
 `controller.js` imports it (DEC-022). Views import `domain/format.js` and receive everything else as arguments.
 `api.js`, `storage.js`, `files.js` and `clock.js` import `config.js` and `log.js` only. Only `main.js` imports
@@ -275,15 +388,15 @@ Create a folder only when it is listed here.
 | Path | Purpose and owner |
 | --- | --- |
 | `src/` | Source. Holds `index.html`, `main.js`, `config.js`, `log.js`, `api.js`, `storage.js`, `files.js`, `clock.js`, `controller.js`, `controller-holidays.js` and the sheets `styles.css` (imports the others), `theme.css`, `base.css`, `layout.css` plus one sheet per view (`map.css` styles the world map and its location icons; `month-grid.css` styles the month grid; `picker.css` styles the picker card, the day selector and its calendar; `legend.css` styles the two legend parts and the notices button, badge and card; `settings.css` styles the settings panel). `layout.css` also styles the page area (the joined map and month grid card, the picker card and the gaps), the header, the empty page and the error screen. Each component's sheet sets its own corner radius from the `--radius-*` tokens of `theme.css`; `base.css` sets only the buttons'. |
-| `src/assets/` | Image files. Holds `zuno-logo.jpg`, the app logo (290 by 292 pixels, 24 KB), which the page no longer shows: the user asked on 2026-11-18 to remove the logo from the header. The page's only images are the data-URI icons in `theme.css`, which the Content-Security-Policy allows with `img-src data:`. |
 | `src/domain/` | Pure logic modules from section 2.1. |
 | `src/views/` | View modules, one per screen part. |
-| `data/` | `cities.js` (the city table, DEC-015). Input data, read by `domain/cities.js`. |
+| `data/` | Input data. `cities.js` (the city table, DEC-015), read by `domain/cities.js`. With DEC-024: `holiday-table.js`, generated by `scripts/make-holiday-table.mjs`, read by `domain/holiday-table.js`. With DEC-026: `ne_110m_land.geojson`, downloaded once, and `map-outline.svg`, generated from it by `scripts/make-map.mjs` and read by `scripts/build.mjs`. Generated files are never edited by hand. |
 | `dist/` | The built one-file page. Generated by `scripts/build.mjs`; not committed. |
 | `tests/unit/` | `node --test` tests, one file per source module. |
 | `tests/e2e/` | Workflow tests through `controller.js` with fakes for `api`, `storage` and `clock`. |
 | `tests/e2e/ui/` | Playwright tests of the built file. |
-| `scripts/` | Adds `build.mjs`. The other scripts are unchanged. |
+| `scripts/` | Adds `build.mjs` and, with DEC-024 and DEC-026, the development scripts `make-holiday-table.mjs` and `make-map.mjs`. The other scripts are unchanged. |
+| `.github/workflows/` | With DEC-023: `pages.yml`, the workflow that builds the page and publishes it to GitHub Pages. |
 | `docs/`, `config/`, `.claude/`, `.githooks/`, `.vscode/` | Unchanged. `config/.env` stays unused: the page has no secrets and no environment. |
 
 ### 2.3 Settings
@@ -294,15 +407,15 @@ All values live in `config.js` as one frozen object. The page has no environment
 | Setting | Default | Meaning and references |
 | --- | --- | --- |
 | `holidayServiceBaseUrl` | `https://nagerholidays.com/api/v4` | Base URL of the holiday service. Checked live in M2; see section 5. HOL-001 |
-| `holidayRequestTimeoutMs` | 10000 | Time to wait for one holiday request. A proposed value, not from the spec. |
+| `holidayRequestTimeoutMs` | 10000 | Time to wait for one holiday request. Confirmed by the user on 2026-11-18 (dialog). |
 | `clockTickMs` | 60000 | How often the current times update. CLK-003. Added to `config.js` in M11. |
-| `pickerStepMinutes` | 15 | How far the marker moves for one arrow key press, and the grid its drag snaps to. PCK-001. A proposed value, not from the spec. |
+| `pickerStepMinutes` | 15 | How far the marker moves for one arrow key press, and the grid its drag and the hover time snap to. PCK-001, PCK-008. Confirmed by the user on 2026-11-18 (dialog). |
 | `pickerAxisLabelEveryHours` | 6 | Hours between two labels of the picker's hour axis. PCK-001. From the canvas (2026-11-18). |
 | `storageKey` | `zuno.settings` | Key of the saved settings record. SET-004 |
 | `holidaysStorageKey` | `zuno.holidays` | Key of the saved record of the user's added and hidden holidays. HOL-009, DEC-017. Added to `config.js` in M24. |
 | `holidaysFileName` | `zuno-holidays.json` | Name of the exported holidays file. HOL-010. Added to `config.js` in M25. |
 | `defaultCityIds` | `tokyo`, `cairo`, `new-delhi`, `madrid`, `bogota`, `riyadh`, `islamabad` | The default places, in order. SET-014 |
-| `pickerDefaultHours`, `pickerMinHours`, `pickerMaxHours` | 24, 24, 48 | Hour slots of the picker window: at first, the fewest (the whole day, PCK-006) and the most. The upper limit is a proposed value, not from the spec. LAY-002, DEC-019. Added to `config.js` in M26; `main.js` passes them to the controller and to `parseSettings` as `pickerLimits`. |
+| `pickerDefaultHours`, `pickerMinHours`, `pickerMaxHours` | 24, 24, 48 | Hour slots of the picker window: at first, the fewest (the whole day, PCK-006) and the most. The upper limit was confirmed by the user on 2026-11-18 (dialog). LAY-002, DEC-019. Added to `config.js` in M26; `main.js` passes them to the controller and to `parseSettings` as `pickerLimits`. |
 | `defaultWorkStartMinutes`, `defaultWorkEndMinutes` | 540, 1020 | 9:00 AM and 5:00 PM. SET-005 |
 | `workingHoursStepMinutes` | 60 | Minutes between two choices of the working-hours lists in the settings panel. SET-005. From the canvas (2026-11-18). |
 | `logLevel` | `warn` | Lowest level `log.js` prints. |
@@ -325,7 +438,10 @@ Exact versions of installed packages are in `package.json`.
 | Playwright | Browser tests | DEC-011 | Installed 1.65.1 in M11, dev-only, exact version. Licence Apache-2.0 (`node_modules/playwright/package.json`, checked 2026-11-17). Browsers are downloaded separately with `npx playwright install` (M11 installed Chromium; Firefox, WebKit and Edge come in M19). The tests build the page into a scratch folder, open it as a `file:` URL, fix the clock with `page.clock` and answer holiday requests by `context.route`. | playwright.dev/docs/browsers, 2026-11-17 |
 | Nager.Date | Public holidays | DEC-005 | Approved (DEC-005). Contract and CORS checked live in M2 (section 5). | nagerholidays.com/Api, 2026-11-17 |
 | IANA time-zone names | Zones of `data/cities.js` | DEC-015 | Each city's zone is an IANA name that `Intl.DateTimeFormat` accepts (checked by the unit test). | iana.org/time-zones |
-| Database, server, LLM, framework | none | | The page is local with one outside service. | |
+| `date-holidays` | Generates the built-in holiday table at development time | DEC-024 | Proposed dev-only dependency, approved by the user on 2026-11-18; not installed yet. Code ISC, data CC BY-SA 3.0. The README lists all seven countries. Its `public` holidays and English names for them are unverified until the milestone. | github.com/commenthol/date-holidays, 2026-11-18 |
+| Natural Earth 1:110m land | The map's outline | DEC-026 | Not downloaded yet. Public domain. One file, fetched once at development time. | github.com/nvkelso/natural-earth-vector, 2026-11-18 (licence and file size from memory, to be confirmed at download) |
+| GitHub Pages and GitHub Actions | Publishes the built page | DEC-023 | Needs the public repository on the `alkashef` account. Free for public repositories. | Prepared on 2026-11-18; not run yet |
+| Database, server, LLM, framework | none | | The page is static with one outside service. | |
 
 ### 2.5 Critical flows and operations
 
@@ -335,7 +451,8 @@ controller uses the default settings, which hold the default places (SET-014); a
 whose city is not in the table is dropped (SET-015). With no places it shows the empty page and
 stops (SET-007). Otherwise it sets the selected day to today in the first place and the marker to
 the current instant (PCK-004), draws every view from the zones, weekends and any holidays already
-in memory, and asks `api.js` for each needed country and year. A country-year is requested once,
+in memory, and asks `api.js` for each needed country and year, or the built-in holiday table for one
+of its seven countries (DEC-024). A country-year is requested once,
 however many places share the country. The years needed are those of the shown month and of the
 picker window. Each answer redraws the month grid and the picker. A failed answer is kept as
 `unavailable` and shown in the notices (REF-002).
@@ -373,7 +490,9 @@ when no other place uses it.
 
 **Notices (REF-002, HOL-004).** `domain/holidays.js` lists the countries whose result is
 `unavailable` and the places whose chosen region cannot be served because the country's loaded
-result has no regional holiday for any region (user decision 2026-11-17; HOL-004). The
+result has no regional holiday for any region (user decision 2026-11-17; HOL-004). A country for
+which the user has added at least one holiday is left out of the first list (HOL-014;
+`noticesOf` in `controller-holidays.js` has the user's record). The
 notices view shows both lists in the card behind the information button, with a count badge.
 
 **Failures.** The holiday service down or slow: `unavailable`, the page stays useful (REF-002).
@@ -383,7 +502,9 @@ else: the top-level handler shows the error and the stack and logs it (project r
 **External data flow.** One flow leaves the machine: a `GET` to the holiday service with a country
 code and a year (HOL-002, DEC-005). Nothing else is sent, no cookie, no header with user data. The
 Content-Security-Policy tag (DEC-012) blocks any other request. The holidays file is written to
-and read from the user's own machine and never sent anywhere (DEC-018).
+and read from the user's own machine and never sent anywhere (DEC-018). At development time only,
+and with no user data: one download of the map data (DEC-026) and the installation of the holiday
+library (DEC-024). Publishing (DEC-023) sends the built page, which holds no user data, to GitHub.
 
 ## 3. Data model
 
@@ -391,11 +512,11 @@ All types are JSDoc `@typedef`s in the module that owns them.
 
 | Type | Fields | Owner and rules |
 | --- | --- | --- |
-| `Place` | `id` (string, unique), `cityId` (id of a `City`), `countryCode` and `zone` (filled in from the city, not chosen), `label` (display name, empty means the city name), `region` (code, empty means national only), `weekendDays` (list of days, 1 = Monday to 7 = Sunday, or `null` for the country's weekend), `hijriVariant` (`umalqura` or `tabular`), `hijriAdjust` (-1, 0 or 1) | `domain/places.js`. The list order is the display order; the first place is the picker's reference (PCK-006). SET-002, SET-016. |
+| `Place` | `id` (string, unique), `cityId` (id of a `City`), `countryCode` and `zone` (filled in from the city, not chosen), `label` (display name, empty means the city name), `region` (code, empty means national only), `weekendDays` (list of days, 1 = Monday to 7 = Sunday, or `null` for the country's weekend; an edit that sets exactly the country's days stores `null`, SET-017), `hijriVariant` (`umalqura` or `tabular`), `hijriAdjust` (-1, 0 or 1) | `domain/places.js`. The list order is the display order; the first place is the picker's reference (PCK-006). SET-002, SET-016. |
 | `Settings` | `version` (2), `places` (list of `Place`), `workStartMinutes`, `workEndMinutes`, `showCountry` (false by default), `showHijri` (false by default), `theme` (`light`, `dark` or `auto`; `auto` by default), `pickerHours` (whole number from `pickerMinHours` to `pickerMaxHours`) | `domain/settings.js`. Saved as one JSON record. Start must be before end. A record without `pickerHours` gets `pickerDefaultHours`; hours outside the limits make the record invalid. DEC-016. |
 | `City` | `id` (slug, never changes), `name`, `countryCode` (ISO 3166-1 alpha-2), `zone` (IANA name), `latitude`, `longitude` | `data/cities.js`. The 55 rows of the spec's section 9, in that order. DEC-015. |
 | `UserHolidays` | `version` (1), `added` and `hidden` (lists of `{ countryCode, date, name }`, `date` as `YYYY-MM-DD`) | `domain/user-holidays.js`. Saved as one JSON record and exported in the same shape. No two entries of one list share country, date and name. DEC-017. |
-| `Holiday` | `date` (`YYYY-MM-DD`), `name`, `regions` (list of codes, or empty for national) | `domain/holidays.js`, made from the service record. Only type `Public` is kept. |
+| `Holiday` | `date` (`YYYY-MM-DD`), `name`, `regions` (list of codes, or empty for national) | `domain/holidays.js`, made from the service record (only type `Public` is kept) or from a row of the built-in holiday table (DEC-024). |
 | `HolidayResult` | `status` (`loaded` or `unavailable`), `holidays` or `reason` | `api.js`. Kept in memory per country and year. |
 | `Marker` | `instant` (UTC milliseconds) | State in `main.js`. Starts at the current instant. Always inside the picker window. |
 | `selectedDay` | `{ year, month, day }` in the first place | State in `main.js`. Starts at today in the first place. The picker window starts at its midnight. DEC-019. |
@@ -483,13 +604,13 @@ invalid and is read as no saved settings (DEC-016).
   time of day and the date in the browser's own zone, from `state.now`),
   a notices button with a count badge, Refresh, Settings. The notices card opens and closes on the
   button; Escape closes it. The Settings button opens the settings panel (M12). `views/notices.js`
-  owns the badge and card; `views/legend.js` owns the two legend parts. CSS class names are kebab-case (`header-title`), because `stylelint-config-standard` rejects
-  the BEM `__` form that the HTML and CSS rules ask for (open question for the user).
+  owns the badge and card; `views/legend.js` owns the two legend parts. CSS class names are `block-element` in lower case with hyphens (`header-title`), the form
+  `stylelint-config-standard` checks; the HTML and CSS rule says the same since 2026-11-18 (user decision).
 - Map: one pin per place with the place name, current time and date. Pins stay at their coordinates
-  as the map grows and shrinks (the map stretches to fill its space; DEC-021). Each pin is a location icon; each label sits beside,
+  as the map grows and shrinks (the map stretches to fill its space; DEC-026). Each pin is a location icon; each label sits beside,
   above or below its pin, wherever it covers no other label or pin.
-- Month grid: previous and next month buttons; a Hijri month band and Hijri day in each cell only
-  while Hijri is on; selecting a holiday cell outlines it and opens a card beside that place's name
+- Month grid: previous and next month buttons (32 px, DEC-020) around the month title; the corner label "Day"; a Hijri month band and Hijri day in each cell only
+  while Hijri is on (the Hijri day as DEC-027 describes); selecting a holiday cell outlines it and opens a card beside that place's name
   with the holiday's name, date and (if Hijri is on) Hijri date. The card's close button or Escape
   closes it. While Hijri is on, an information button beside the Hijri month band opens a card with the
   note that Hijri dates are calculated and may differ from official announcements (HIJ-004). The header and Hijri band stay in view while the rows scroll vertically.
@@ -508,15 +629,18 @@ invalid and is read as no saved settings (DEC-016).
   arrows, expand to edit the display name, the region, the weekend days and, while Hijri is on,
   the Hijri variant and adjustment; remove); Holidays (add a holiday by country, date and name;
   the added holidays, each with Remove; the hidden holidays, each with Show; Export and Import; a
-  message when an imported file was refused). Regions are listed by the service's code (for
+  message when an imported file was refused; with DEC-024 one credit line for the built-in holiday
+  table). The footer: the sentence about saved changes and, with DEC-025, the version. Regions are listed by the service's code (for
   example `ES-MD`). The panel gets the default working hours (`defaultHours`) from `main.js`.
-- Holiday card in the month grid: a holiday from the service has a Hide button (HOL-008); one the
+- Holiday card in the month grid: a holiday from the service or from the built-in holiday table has a Hide button (HOL-008); one the
   user added has a Remove button (HOL-007).
 - Empty page: prompt to add a place, shown only while the settings hold no places (SET-007).
 
 Keyboard and accessibility: every control is a real `<button>`, `<a>`, `<input>` or `<select>`;
 every icon-only button has an `aria-label`; popovers close on Escape and return focus to the button
-that opened them.
+that opened them. The hover time of the picker (PCK-008) needs a pointer; a keyboard user reads the
+same times by moving the marker with the arrow keys (accepted by the user on 2026-11-18, spec
+section 7).
 
 **Validation and errors.** Invalid input (a working-hours end before the start, no city chosen)
 is refused by `domain/settings.js` and the view shows the field as invalid; it is not an error.
@@ -526,11 +650,10 @@ Everything else follows DEC-006 and the top-level handler.
 
 | Issue and references | Owner | Evidence needed | Blocks what? |
 | --- | --- | --- | --- |
-| Holiday service terms of service (use, availability, any limit on a hosted page). DEC-005. The CORS and contract check ran on 2026-11-17: `curl` with `Origin: null` to `/api/v4/Holidays/US/2026` and `/api/v3/PublicHolidays/2026/US` gave HTTP 200, `access-control-allow-origin: *`, and the documented fields for each version. Version 4 is the current one. The live-response check of M2 (2026-11-17, one request, `Holidays/US/2026`, no user data): HTTP 200, `access-control-allow-origin: *`, a JSON array of 17 records with the fields `date`, `name`, `countryCode`, `nationalHoliday`, `subdivisionCodes` (`null` or a list such as `US-CA`) and `holidayTypes` (`Public`, `Bank`, `Observance`, `Optional`, `School`, `Authorities`). Regional records exist (6 of 17), some of type `Public` (Good Friday) and some `Observance`. `api.js` checks `date`, `name`, `holidayTypes` and `subdivisionCodes`. | User | Read the service's terms page. | None until release. |
-| City table accuracy (zones, country codes, coordinates). DEC-015 | Implementation | The unit test of every row against the spec's section 9. | The city milestone. |
-| A `blob:` download under the page's Content-Security-Policy. DEC-018 | Implementation | Resolved in M25: the export browser test (`tests/e2e/ui/holidays-file.test.js`) passes in Chromium, Firefox, WebKit and Edge with the policy unchanged (`default-src 'none'`); no request for the `blob:` URL reaches the network layer, and the downloaded file has the expected name and content. | None. |
-| Countries the holiday service does not cover (India, Israel, Malaysia, Pakistan, Saudi Arabia, Taiwan, United Arab Emirates) always show a "No holiday data" notice (REF-002), even after the user adds holidays for them. | User | A decision whether the notice should go once the user has added holidays. | None. |
 | Weekend data lags a recent country change. DEC-003 | Accepted risk | EX-002 in four browsers. | None. |
-| English Hijri month names (for example `Jumada II`) from `Intl` in all four browsers. EX-010 | Implementation | Browser test of EX-010 in four browsers. | HIJ milestone. |
-| JavaScript coverage flags for `node --test` (floor 80%). | Implementation | Run the flags in the Node version in use. | Test milestone. |
-| `dist/` must be ignored by ESLint and Prettier; `.gitignore` needs `dist/`. | User (edits to config ask) | Approval of the edits. | Build milestone. |
+| `date-holidays` gives `public` holidays with English names for all seven countries, and the dates of EX-022. DEC-024 | Implementation | The generator's run and its unit tests. If a country lacks them, the milestone stops as blocked. | The holiday-table milestones. |
+| The built-in holiday table ends with 2028, and its Islamic holidays are calculated. DEC-024 | User | Generate the table again before 2029; correct a wrong day by hiding it and adding the right one. | None. |
+| Size of the real coastline path in the page (estimate 40 to 60 KB). DEC-026 | Implementation | The size of `data/map-outline.svg` after the first generation. | None; report it. |
+| The newer workflows (picker resize and hover, the holidays the user adds and hides, the day selector) run in the browser tests in Chromium only. NFR-002, DEC-011 | Implementation | The same workflows in Firefox, WebKit and Edge. | None; a milestone in the plan. |
+| Publishing needs a public repository on the `alkashef` account and this clone's remote pointing to it. DEC-023 | User | The repository exists and a push succeeds. | The Pages milestone. |
+| The Hijri day at about 3.1:1 on the holiday colour. DEC-027 | Accepted risk (user, 2026-11-18) | The browser test measures the real ratio. | None. |
