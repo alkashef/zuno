@@ -2,13 +2,9 @@
 
 How to build what `spec.md` says. If this file and the spec disagree, the spec wins.
 
-Review state: Draft. The user approved DEC-002, DEC-005 and DEC-011 in chat on 2026-11-17.
-The user approved DEC-015 to DEC-021 on 2026-11-18, in a dialog. M21 implemented DEC-015 and the
-version 2 record of DEC-016 (places by city); M24 implemented DEC-017 without the holidays file; M25 implemented the holidays file (DEC-018);
-M26 and M27 implemented DEC-019; M28
-implemented DEC-020 and DEC-021 (the rounded look, the split legend, the picker card and the
-location icons); the code does not implement the rest yet (the milestones in `docs/plan.md` do). The design as a whole is not yet approved: the
-open items in section 5 remain.
+Review state: Draft. The user approved DEC-002, DEC-005 and DEC-011 in chat on 2026-11-17, and
+DEC-015 to DEC-021 on 2026-11-18, in a dialog; the code implements them (milestones M21 to M28).
+The design as a whole is not yet approved: the open items in section 5 remain.
 Spec baseline: `docs/spec.md` as approved on 2026-11-18, with the acceptance examples EX-011 to
 EX-021.
 Visual reference (not code to copy): the "Zuno UI" canvas,
