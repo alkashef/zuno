@@ -26,7 +26,7 @@ test("test_set_004_settings_round_trip_in_storage", () => {
   assert.equal(storage.load(), null);
   const settings = {
     ...defaultSettings(540, 1020),
-    places: [createPlace("a", "SA")],
+    places: [createPlace("a", "riyadh")],
     showHijri: true,
   };
   storage.save(settings);

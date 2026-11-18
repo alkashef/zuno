@@ -1,5 +1,5 @@
 // @ts-check
-/** @module settings-places.test Headless-browser tests of the places part of the settings panel in Chromium (SET-001 to SET-004, SET-008, SET-009). */
+/** @module settings-places.test Headless-browser tests of the places part of the settings panel in Chromium (SET-001, SET-002, SET-004, SET-008, SET-009, SET-013). */
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
@@ -27,11 +27,11 @@ after(async () => {
 });
 
 /**
- * @param {string[]} countryCodes
- * @returns {import("../../../src/domain/settings.js").Settings} Settings with one place per code.
+ * @param {string[]} cityIds
+ * @returns {import("../../../src/domain/settings.js").Settings} Settings with one place per city id.
  */
-function savedPlaces(countryCodes) {
-  const places = countryCodes.map((code, index) => createPlace(`place-${index + 1}`, code));
+function savedPlaces(cityIds) {
+  const places = cityIds.map((cityId, index) => createPlace(`place-${index + 1}`, cityId));
   return { ...defaultSettings(540, 1020), places };
 }
 
@@ -46,13 +46,11 @@ async function openSettings(page) {
 
 /**
  * @param {Page} page
- * @param {string} country English country name.
+ * @param {string} city The city and its country as the add list shows them.
  * @returns {Promise<void>} Adds a place through the panel's add form.
  */
-async function addCountry(page, country) {
-  await page
-    .getByRole("combobox", { name: "Country", exact: true })
-    .selectOption({ label: country });
+async function addCity(page, city) {
+  await page.getByRole("combobox", { name: "City", exact: true }).selectOption({ label: city });
   await page.getByRole("button", { name: "Add place" }).click();
 }
 
@@ -65,16 +63,16 @@ function listedNames(page) {
 }
 
 test("ui_set_001_add_and_remove_a_place", async () => {
-  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["US"]) });
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["washington-dc"]) });
   await openSettings(page);
-  await addCountry(page, "Saudi Arabia");
+  await addCity(page, "Riyadh, Saudi Arabia");
   assert.deepEqual(await listedNames(page), ["Washington, D.C.", "Riyadh"]);
   await page.getByRole("button", { name: "Remove Washington, D.C." }).click();
   assert.deepEqual(await listedNames(page), ["Riyadh"]);
 });
 
 test("ui_set_001_escape_closes_panel_and_returns_focus_to_its_button", async () => {
-  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["US"]) });
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["washington-dc"]) });
   await openSettings(page);
   await page.keyboard.press("Escape");
   assert.equal(await page.getByRole("dialog").count(), 0);
@@ -85,34 +83,37 @@ test("ui_set_001_escape_closes_panel_and_returns_focus_to_its_button", async () 
   );
 });
 
-test("ui_set_002_new_place_shows_capital_zone_offset", async () => {
-  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["US"]) });
+test("ui_set_002_new_place_shows_its_country_and_offset", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["washington-dc"]) });
   await openSettings(page);
-  await addCountry(page, "Saudi Arabia");
+  await addCity(page, "Riyadh, Saudi Arabia");
   const riyadh = page.locator(".settings-place", { hasText: "Riyadh" });
   assert.equal(await riyadh.locator('[data-role="facts"]').textContent(), "Saudi Arabia · UTC+3");
 });
 
-test("ui_set_003_choose_another_city_zone", async () => {
-  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["US"]) });
+test("test_set_013_add_a_place_lists_the_55_cities_with_their_countries", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["riyadh"]) });
   await openSettings(page);
-  await page.getByRole("button", { name: "Edit Washington, D.C." }).click();
-  const zone = page.getByRole("combobox", { name: "Time zone", exact: true });
-  const options = await zone.locator("option").allTextContents();
-  assert.equal(options[0], "Washington, D.C., capital (UTC−5)");
-  assert.match(
-    (await page.locator('[data-role="zone-hint"]').textContent()) ?? "",
-    /^United States has more than one time zone\./,
-  );
-  await zone.selectOption({ label: "Chicago (UTC−6)" });
-  assert.equal(await page.locator('[data-role="facts"]').textContent(), "United States · UTC−6");
-  assert.deepEqual(await listedNames(page), ["Chicago"]);
+  const options = page.getByRole("combobox", { name: "City", exact: true }).locator("option");
+  const labels = await options.allTextContents();
+  assert.equal(labels.length, 56);
+  assert.equal(labels[0], "Choose a city");
+  assert.equal(labels[1], "Buenos Aires, Argentina");
+  assert.ok(labels.includes("Mumbai, India"));
+  assert.ok(labels.includes("São Paulo, Brazil"));
+  assert.ok(!labels.some((label) => label.startsWith("Nairobi")));
+  await page.getByRole("button", { name: "Edit Riyadh" }).click();
+  assert.equal(await page.getByRole("combobox", { name: "Time zone" }).count(), 0);
+  await addCity(page, "Mumbai, India");
+  assert.deepEqual(await listedNames(page), ["Riyadh", "Mumbai"]);
+  const mumbai = page.locator(".settings-place", { hasText: "Mumbai" });
+  assert.equal(await mumbai.locator('[data-role="facts"]').textContent(), "India · UTC+5:30");
 });
 
 test("ui_set_004_places_survive_reload", async () => {
   const { page } = await openPage(browser, built.url);
   await page.getByRole("button", { name: "Add a place" }).click();
-  await addCountry(page, "Saudi Arabia");
+  await addCity(page, "Riyadh, Saudi Arabia");
   await page.reload();
   assert.equal(await page.getByRole("button", { name: "Add a place" }).count(), 0);
   await openSettings(page);
@@ -120,7 +121,9 @@ test("ui_set_004_places_survive_reload", async () => {
 });
 
 test("ui_set_008_move_arrows_reorder_places", async () => {
-  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["US", "SA"]) });
+  const { page } = await openPage(browser, built.url, {
+    saved: savedPlaces(["washington-dc", "riyadh"]),
+  });
   await openSettings(page);
   await page.getByRole("button", { name: "Move Riyadh up" }).click();
   assert.deepEqual(await listedNames(page), ["Riyadh", "Washington, D.C."]);
@@ -129,7 +132,7 @@ test("ui_set_008_move_arrows_reorder_places", async () => {
 });
 
 test("ui_set_009_display_name_shown_instead_of_city", async () => {
-  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["SA"]) });
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["riyadh"]) });
   await openSettings(page);
   await page.getByRole("button", { name: "Edit Riyadh" }).click();
   assert.equal(await page.getByRole("button", { name: "Collapse Riyadh" }).count(), 1);

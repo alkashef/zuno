@@ -34,7 +34,7 @@ function withPlaces(places) {
 }
 
 test("ui_leg_001_legend_names_every_colour", async () => {
-  const saved = withPlaces([createPlace("place-1", "SA"), createPlace("place-2", "GB")]);
+  const saved = withPlaces([createPlace("place-1", "riyadh"), createPlace("place-2", "london")]);
   const { page } = await openPage(browser, built.url, { saved });
   const legend = page.locator('[data-role="legend"]');
   await legend.waitFor();
@@ -71,7 +71,7 @@ test("ui_leg_001_legend_names_every_colour", async () => {
 });
 
 test("ui_ref_002_failed_service_lists_countries_with_no_data_and_keeps_times", async () => {
-  const saved = withPlaces([createPlace("place-1", "SA"), createPlace("place-2", "GB")]);
+  const saved = withPlaces([createPlace("place-1", "riyadh"), createPlace("place-2", "london")]);
   const { page } = await openPage(browser, built.url, { saved, failingCountries: ["SA", "GB"] });
   const badge = page.locator('[data-role="notices-badge"]');
   await badge.waitFor();
@@ -90,8 +90,8 @@ test("ui_ref_002_failed_service_lists_countries_with_no_data_and_keeps_times", a
 });
 
 test("ui_hol_004_missing_region_listed_with_national_shown", async () => {
-  const regional = { ...createPlace("place-1", "US"), region: "US-CA" };
-  const saved = withPlaces([regional, createPlace("place-2", "GB")]);
+  const regional = { ...createPlace("place-1", "washington-dc"), region: "US-CA" };
+  const saved = withPlaces([regional, createPlace("place-2", "london")]);
   const { page } = await openPage(browser, built.url, { saved });
   const badge = page.locator('[data-role="notices-badge"]');
   await badge.waitFor();

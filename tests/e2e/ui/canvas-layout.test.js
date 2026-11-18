@@ -39,8 +39,8 @@ const viewports = Object.freeze([
  *   map (Cairo, Riyadh, Islamabad, New Delhi), at that window size.
  */
 async function openSixPlaces(viewport) {
-  const chicago = { ...createPlace("place-1", "US"), zone: "America/Chicago", label: "Jesse" };
-  const others = ["EG", "PK", "IN", "JP", "SA"].map((code, index) =>
+  const chicago = { ...createPlace("place-1", "chicago"), label: "Jesse" };
+  const others = ["cairo", "islamabad", "new-delhi", "tokyo", "riyadh"].map((code, index) =>
     createPlace(`place-${index + 2}`, code),
   );
   const saved = { ...defaultSettings(540, 1020), places: [chicago, ...others] };

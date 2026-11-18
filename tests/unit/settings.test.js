@@ -1,5 +1,5 @@
 // @ts-check
-/** @module settings.test Unit tests for src/domain/settings.js (SET-005, SET-007, SET-010 to SET-012). */
+/** @module settings.test Unit tests for src/domain/settings.js (SET-005, SET-007, SET-010 to SET-012, SET-015). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -38,9 +38,9 @@ test("test_set_011_hijri_off_by_default", () => {
 });
 
 test("test_set_004_parse_accepts_valid_and_refuses_invalid", () => {
-  const valid = { ...fresh(), places: [createPlace("a", "SA")] };
+  const valid = { ...fresh(), places: [createPlace("a", "riyadh")] };
   assert.deepEqual(parseSettings(valid), valid);
-  assert.equal(parseSettings({ ...valid, version: 2 }), null);
+  assert.equal(parseSettings({ ...valid, version: 3 }), null);
   assert.equal(parseSettings({ ...valid, showHijri: "yes" }), null);
   assert.equal(parseSettings({ ...valid, places: [valid.places[0], valid.places[0]] }), null);
   assert.equal(parseSettings({ ...valid, places: [{ id: "x" }] }), null);
@@ -69,8 +69,26 @@ test("test_set_012_theme_is_auto_by_default_and_refuses_other_values", () => {
 });
 
 test("test_set_012_saved_record_without_theme_gets_auto_and_a_wrong_theme_is_refused", () => {
-  const { theme, ...older } = { ...fresh(), places: [createPlace("a", "SA")] };
+  const { theme, ...older } = { ...fresh(), places: [createPlace("a", "riyadh")] };
   assert.equal(theme, "auto");
   assert.deepEqual(parseSettings(older), { ...older, theme: "auto" });
   assert.equal(parseSettings({ ...older, theme: "blue" }), null);
+});
+
+test("test_set_015_saved_place_outside_the_list_is_dropped", () => {
+  const london = createPlace("a", "london");
+  const { countryCode, zone, ...stored } = london;
+  const unlisted = { ...stored, id: "b", cityId: "nairobi" };
+  const record = { ...fresh(), places: [stored, unlisted] };
+  assert.deepEqual(parseSettings(record), {
+    ...fresh(),
+    places: [{ ...stored, countryCode, zone }],
+  });
+  assert.equal(parseSettings({ ...record, places: [stored, { ...unlisted, cityId: 7 }] }), null);
+});
+
+test("test_set_015_version_1_record_is_read_as_no_saved_settings", () => {
+  const record = { ...fresh(), places: [createPlace("a", "riyadh")] };
+  assert.equal(parseSettings({ ...record, version: 1 }), null);
+  assert.equal(fresh().version, 2);
 });

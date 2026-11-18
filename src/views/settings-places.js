@@ -3,22 +3,20 @@
  * @module views/settings-places
  * Owns the list of places inside the settings panel: one row per place with move arrows, its name,
  * its city, country and offset from UTC (and Hijri variant while Hijri is on), an edit button, a
- * remove button and an editor for the display name, time zone, region and, while Hijri is on, the
- * Hijri variant and adjustment (SET-001 to SET-003, SET-006, SET-008, SET-009, HIJ-002, HIJ-003).
+ * remove button and an editor for the display name, region and, while Hijri is on, the Hijri
+ * variant and adjustment (SET-001, SET-002, SET-006, SET-008, SET-009, HIJ-002, HIJ-003).
  * It does not own the panel, the add form or Escape (views/settings.js does) and it computes no
  * names or offsets (the `lookup` it receives does).
  */
 import { formatOffset } from "../domain/format.js";
 
 /** @typedef {import("../domain/places.js").Place} Place */
-/** @typedef {import("../domain/countries.js").CountryName} CountryName */
-/** @typedef {import("../../data/countries.js").CityZone} CityZone */
+/** @typedef {import("../domain/cities.js").CityChoice} CityChoice */
 /** @typedef {import("../controller.js").Action} Action */
 
 /**
  * @typedef {object} Lookup What the views may not import, passed in by main.js.
- * @property {CountryName[]} countries Every country for the add list.
- * @property {(countryCode: string) => CityZone[]} zonesOf The cities a place of a country can use.
+ * @property {CityChoice[]} cities Every city of the list, with its country, for the add list.
  * @property {(place: Place, showCountry: boolean) => { name: string, city: string | null, country: string | null }} placeFacts
  *   The name shown for a place, the city a display name hides, and the country name.
  * @property {(instant: number, zone: string) => number} offsetAt A zone's offset from UTC (ms).
@@ -104,28 +102,6 @@ function offsetText(ctx, zone, instant) {
 }
 
 /**
- * @param {ListContext} ctx
- * @param {HTMLElement} item
- * @param {Place} place
- * @param {number} now UTC milliseconds.
- * @returns {void} Lists the zones of a country with several, the capital first and marked, each
- *   with its offset from UTC, and explains the choice (SET-003).
- */
-function fillZones(ctx, item, place, now) {
-  const zones = ctx.lookup.zonesOf(place.countryCode);
-  const zone = /** @type {HTMLSelectElement} */ (part(item, "zone"));
-  zones.forEach((city, index) => {
-    const name = index === 0 ? `${city.label}, capital` : city.label;
-    zone.append(new Option(`${name} (${offsetText(ctx, city.zone, now)})`, city.zone));
-  });
-  zone.value = place.zone;
-  part(item, "zone-field").hidden = zones.length < 2;
-  const country = ctx.lookup.placeFacts(place, true).country;
-  part(item, "zone-hint").textContent =
-    `${country} has more than one time zone. The capital's zone is the default.`;
-}
-
-/**
  * @param {HTMLElement} item
  * @param {Place} place
  * @param {string[]} codes The region codes known for the place's country.
@@ -197,7 +173,6 @@ function buildItem(ctx, place, view) {
   item.dataset.name = name;
   labelButtons(item, place, name);
   /** @type {HTMLInputElement} */ (part(item, "label")).value = place.label;
-  fillZones(ctx, item, place, view.now);
   fillRegion(item, place, view.regions[place.countryCode] ?? []);
   fillHijri(item, place, view.settings?.showHijri ?? false);
   setExpanded(item, ctx.expanded.has(place.id));
@@ -260,8 +235,6 @@ function onClick(ctx, event) {
 const fieldChanges = Object.freeze({
   /** @param {string} value @returns {Partial<Place>} */
   label: (value) => ({ label: value.trim() }),
-  /** @param {string} value @returns {Partial<Place>} */
-  zone: (value) => ({ zone: value }),
   /** @param {string} value @returns {Partial<Place>} */
   region: (value) => ({ region: value }),
   /** @param {string} value @returns {Partial<Place>} */

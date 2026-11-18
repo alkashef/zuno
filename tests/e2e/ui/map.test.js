@@ -31,10 +31,10 @@ after(async () => {
  * @returns {import("../../../src/domain/settings.js").Settings} Settings with a Saudi and a British place.
  */
 function twoPlaces(showCountry = false) {
-  const labelled = { ...createPlace("place-1", "SA"), label: "Riyadh HQ" };
+  const labelled = { ...createPlace("place-1", "riyadh"), label: "Riyadh HQ" };
   return {
     ...defaultSettings(540, 1020),
-    places: [labelled, createPlace("place-2", "GB")],
+    places: [labelled, createPlace("place-2", "london")],
     showCountry,
   };
 }

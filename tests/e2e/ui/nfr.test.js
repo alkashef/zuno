@@ -46,7 +46,10 @@ function browserOf(name) {
 function savedSettings(hijriAdjust = 0) {
   return {
     ...defaultSettings(540, 1020),
-    places: [{ ...createPlace("place-1", "SA"), hijriAdjust }, createPlace("place-2", "GB")],
+    places: [
+      { ...createPlace("place-1", "riyadh"), hijriAdjust },
+      createPlace("place-2", "london"),
+    ],
     showHijri: true,
   };
 }
@@ -108,8 +111,8 @@ test("ui_nfr_002_core_workflows_in_chromium_firefox_webkit_edge", async () => {
     assert.equal(await splitCells.count(), 1, `${name}: Saudi weekend holiday cell in December`);
     await openSettings(page);
     await page
-      .getByRole("combobox", { name: "Country", exact: true })
-      .selectOption({ label: "Japan" });
+      .getByRole("combobox", { name: "City", exact: true })
+      .selectOption({ label: "Tokyo, Japan" });
     await page.getByRole("button", { name: "Add place" }).click();
     assert.equal(await page.locator(".settings-place-name").count(), 3, `${name}: places`);
     assert.ok(holidayRequests.length >= 2, `${name}: holiday requests`);
@@ -231,7 +234,7 @@ test("ui_dec_009_text_contrast_at_least_4_5_to_1", async () => {
 
 test("ui_ex_002_saudi_weekend_in_four_browsers", async () => {
   for (const name of browserNames) {
-    const saved = { ...defaultSettings(540, 1020), places: [createPlace("place-1", "SA")] };
+    const saved = { ...defaultSettings(540, 1020), places: [createPlace("place-1", "riyadh")] };
     const { page } = await openDrawn(name, { saved });
     const weekend = await page
       .locator('[data-role="cell"][data-kind="weekend"]')

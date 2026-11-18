@@ -28,11 +28,11 @@ after(async () => {
 });
 
 /**
- * @param {string[]} countryCodes
+ * @param {string[]} cityIds
  * @returns {Promise<Page>} The page opened with one invented place per country code, in order.
  */
-async function openWith(countryCodes) {
-  const places = countryCodes.map((code, index) => createPlace(`place-${index + 1}`, code));
+async function openWith(cityIds) {
+  const places = cityIds.map((cityId, index) => createPlace(`place-${index + 1}`, cityId));
   const { page } = await openPage(browser, built.url, {
     saved: { ...defaultSettings(540, 1020), places },
   });
@@ -136,7 +136,7 @@ function hasFocus(element) {
 }
 
 test("ui_pck_001_one_row_per_place", async () => {
-  const codes = ["GB", "US", "JP"];
+  const codes = ["london", "washington-dc", "tokyo"];
   const page = await openWith(codes);
   const facts = await rowFacts(page);
   const expected = codes.map((code) => placeName(createPlace("x", code), false));
@@ -148,7 +148,7 @@ test("ui_pck_001_one_row_per_place", async () => {
 });
 
 test("ui_pck_002_moving_marker_updates_row_times_ex_003", async () => {
-  const page = await openWith(["GB", "US", "JP"]);
+  const page = await openWith(["london", "washington-dc", "tokyo"]);
   await dragMarkerTo(page, 15 / 24);
   assert.deepEqual(
     (await rowFacts(page)).map(({ date, time }) => [date, time]),
@@ -161,7 +161,7 @@ test("ui_pck_002_moving_marker_updates_row_times_ex_003", async () => {
 });
 
 test("ui_pck_002_arrow_keys_move_the_marker_one_step", async () => {
-  const page = await openWith(["GB"]);
+  const page = await openWith(["london"]);
   const stepMs = config.pickerStepMinutes * 60 * 1000;
   const next = (Math.floor(startInstant.getTime() / stepMs) + 1) * stepMs;
   await handleOf(page).focus();
@@ -174,7 +174,7 @@ test("ui_pck_002_arrow_keys_move_the_marker_one_step", async () => {
 });
 
 test("ui_pck_003_row_colours_working_and_non_working", async () => {
-  const page = await openWith(["GB", "US"]);
+  const page = await openWith(["london", "washington-dc"]);
   const working = await segmentUnderMarker(page, 0);
   const nonWorking = await segmentUnderMarker(page, 1);
   assert.deepEqual(working, { kind: "working", colour: await tokenColour(page, "working") });
@@ -185,14 +185,14 @@ test("ui_pck_003_row_colours_working_and_non_working", async () => {
 });
 
 test("ui_pck_004_marker_starts_at_now", async () => {
-  const page = await openWith(["GB"]);
+  const page = await openWith(["london"]);
   assert.equal(await markerInstant(page), startInstant.getTime());
   const [row] = await rowFacts(page);
   assert.deepEqual([row.date, row.time], ["16-Nov-26", "9:25 AM"]);
 });
 
 test("ui_pck_005_day_off_colour", async () => {
-  const page = await openWith(["GB", "SA"]);
+  const page = await openWith(["london", "riyadh"]);
   for (let day = 0; day < 4; day += 1) {
     await page.getByRole("button", { name: "Next day" }).click();
   }
@@ -204,7 +204,7 @@ test("ui_pck_005_day_off_colour", async () => {
 });
 
 test("ui_pck_006_first_place_is_reference", async () => {
-  const page = await openWith(["JP", "GB"]);
+  const page = await openWith(["tokyo", "london"]);
   const rows = page.locator('[data-role="row"]');
   assert.equal(await rows.nth(0).getAttribute("data-reference"), "true");
   assert.equal(await rows.nth(1).getAttribute("data-reference"), "false");
@@ -220,7 +220,7 @@ test("ui_pck_006_first_place_is_reference", async () => {
 });
 
 test("ui_pck_007_previous_next_and_calendar_day_keep_time", async () => {
-  const page = await openWith(["GB"]);
+  const page = await openWith(["london"]);
   const date = page.locator('[data-role="date"]');
   const time = startInstant.getTime() % (24 * 60 * 60 * 1000);
   await page.getByRole("button", { name: "Next day" }).click();
@@ -239,7 +239,7 @@ test("ui_pck_007_previous_next_and_calendar_day_keep_time", async () => {
 });
 
 test("ui_pck_007_calendar_closes_on_escape_and_returns_focus", async () => {
-  const page = await openWith(["GB"]);
+  const page = await openWith(["london"]);
   const date = page.locator('[data-role="date"]');
   await date.click();
   await page.getByRole("dialog", { name: "Choose a day" }).waitFor();
@@ -250,18 +250,18 @@ test("ui_pck_007_calendar_closes_on_escape_and_returns_focus", async () => {
 
 test("ui_lay_001_picker_rows_scroll_axis_stays_in_view", async () => {
   const page = await openWith([
-    "GB",
-    "US",
-    "JP",
-    "SA",
-    "DE",
-    "FR",
-    "IN",
-    "BR",
-    "AU",
-    "EG",
-    "CA",
-    "MX",
+    "london",
+    "washington-dc",
+    "tokyo",
+    "riyadh",
+    "berlin",
+    "paris",
+    "new-delhi",
+    "brasilia",
+    "canberra",
+    "cairo",
+    "bogota",
+    "mexico-city",
   ]);
   const scroller = page.locator('[data-role="scroll"]');
   const sizes = await scroller.evaluate((element) => ({

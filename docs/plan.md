@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M21** Cities and places by city | The 55-city list replaces the country table; a place is added by city; saved places outside the list are dropped | opus | high | open |
 | **M22** Default places | Seven places show when nothing is saved; the empty page shows only when the settings hold no places | sonnet | medium | open |
 | **M23** Weekend days per place | The user chooses a place's weekend days; the month grid and the picker follow them | sonnet | high | open |
 | **M24** Holidays the user adds and hides | Add, remove, hide and show holidays per country, saved in the browser, from the settings panel and the holiday card | opus | high | open |
@@ -28,14 +27,6 @@ The visual reference for M26 to M28 is the "Zuno UI" canvas named at the top of 
 DEC-019 to DEC-021 state its sizes and colours. Existing tests that check behaviour a requirement
 of 2026-11-18 changed (SET-002, SET-003, SET-007, CAL-002, HOL-003, PCK-003, PCK-006, PCK-007) are
 updated in the milestone that changes it, and the report names them.
-
-### M21 — Cities and places by city
-
-- **Refs:** SET-002, SET-013, SET-015, SET-001, MAP-001, EX-012, EX-013, DEC-015, DEC-016.
-- **Owner:** `data/cities.js`, `src/domain/cities.js`, `src/domain/places.js`, `src/domain/settings.js`.
-- **Tests first:** `test_set_013_city_table_has_the_55_cities_of_the_spec` (every row of spec section 9: name, country, standard offset; ids unique; zones valid), `test_set_002_add_city_sets_name_country_and_zone` (EX-012, controller), `test_set_013_only_listed_cities_can_be_added` (an unknown `cityId` is refused), `test_set_015_saved_place_outside_the_list_is_dropped` (EX-013, `parseSettings` and controller `open`), `test_set_015_version_1_record_is_read_as_no_saved_settings`, `test_set_013_add_a_place_lists_the_55_cities_with_their_countries` (browser), `test_map_001_pin_sits_at_the_citys_own_coordinates`.
-- **Build:** add `data/cities.js` and `domain/cities.js` and delete `data/countries.js` and `domain/countries.js` (`.gitignore` keeps `data/cities.js` tracked); `Place` gets `cityId` and has its `countryCode` and `zone` filled in from the city; settings version 2 (`pickerHours` and `weekendDays` are added by M26 and M23 with a default for records that lack them); `addPlace` takes a `cityId`; the settings panel's "Add a place" lists the cities with their countries and a place's editor loses the time-zone field; `placePin` uses the city's coordinates; remove `zonesOf`, `capitalZone`, `otherZones` and the tests of SET-003 (withdrawn).
-- **Gate:** no module imports `data/countries.js`; the import-rules test passes; every existing test passes with places made from cities.
 
 ### M22 — Default places
 

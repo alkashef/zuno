@@ -3,11 +3,12 @@
  * @module controller
  * The page workflows: applies an action to the page state, asks the injected `api` for the holidays
  * the shown month and the marker's window need, and tells subscribers about every new state
- * (PCK-004, PCK-007, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-001 to
- * SET-011, HIJ-002, HIJ-003, DEC-007, DEC-008). Pure apart from its injected `api`, `storage` and `clock`. It touches no DOM (the views
+ * (PCK-004, PCK-007, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-001, SET-002,
+ * SET-004 to SET-013, HIJ-002, HIJ-003, DEC-007, DEC-016). Pure apart from its injected `api`, `storage` and `clock`. It touches no DOM (the views
  * do) and builds no picker, grid or notices logic itself (domain/* does).
  */
 import { buildMonth } from "./domain/calendar.js";
+import { cityOf } from "./domain/cities.js";
 import {
   holidayOn,
   listRegions,
@@ -32,6 +33,7 @@ import { localDateTime } from "./domain/zones.js";
 /** @typedef {import("./domain/picker.js").Marker} Marker */
 /** @typedef {import("./domain/picker.js").PickerRow} PickerRow */
 /** @typedef {import("./domain/places.js").Place} Place */
+/** @typedef {import("./domain/places.js").PlaceChanges} PlaceChanges */
 /** @typedef {import("./domain/settings.js").Settings} Settings */
 /** @typedef {import("./domain/weekends.js").CalendarDate} CalendarDate */
 /** @typedef {Record<string, Record<string, HolidayResult>>} ResultsByCountryYear Keyed by country code, then year. */
@@ -88,9 +90,9 @@ import { localDateTime } from "./domain/zones.js";
  *   | { type: "shiftMarkerDay", days: number } | { type: "showMonth", offset: number }
  *   | { type: "selectHoliday", cell: { placeId: string, date: string } | null }
  *   | { type: "toggleNotices" } | { type: "openSettings" } | { type: "closeSettings" }
- *   | { type: "addPlace", countryCode: string } | { type: "removePlace", placeId: string }
+ *   | { type: "addPlace", cityId: string } | { type: "removePlace", placeId: string }
  *   | { type: "movePlace", placeId: string, offset: number }
- *   | { type: "editPlace", placeId: string, changes: Partial<Omit<Place, "id" | "countryCode">> }
+ *   | { type: "editPlace", placeId: string, changes: PlaceChanges }
  *   | { type: "setWorkingHours", start: number, end: number }
  *   | { type: "setShowCountry", value: boolean } | { type: "setShowHijri", value: boolean }
  *   | { type: "setTheme", value: string }} Action
@@ -465,14 +467,16 @@ function changePlaces(ctx, change) {
 }
 
 /**
- * Adds a place for a country with the capital's zone (SET-001, SET-002).
+ * Adds a place for a city of the list, with its name, country and zone (SET-001, SET-002). A city
+ * that is not in the list is refused and nothing is saved (SET-013).
  * @param {Context} ctx
  * @param {Extract<Action, { type: "addPlace" }>} action
  * @returns {Promise<void>}
  */
-function addPlace(ctx, { countryCode }) {
+function addPlace(ctx, { cityId }) {
+  if (cityOf(cityId) === null) return Promise.resolve();
   return changePlaces(ctx, (places) =>
-    placeList.addPlace(places, placeList.createPlace(nextPlaceId(places), countryCode)),
+    placeList.addPlace(places, placeList.createPlace(nextPlaceId(places), cityId)),
   );
 }
 
@@ -495,8 +499,8 @@ function movePlace(ctx, { placeId, offset }) {
 }
 
 /**
- * Changes the zone, display name, region or Hijri choices of a place (SET-003, SET-006, SET-009,
- * HIJ-002, HIJ-003).
+ * Changes the display name, region or Hijri choices of a place (SET-006, SET-009, HIJ-002,
+ * HIJ-003).
  * @param {Context} ctx
  * @param {Extract<Action, { type: "editPlace" }>} action
  * @returns {Promise<void>}

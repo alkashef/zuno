@@ -1,22 +1,25 @@
 // @ts-check
 /**
  * @module domain/places
- * The list of places: makes, validates, adds, removes, moves, edits and names them (SET-001 to
- * SET-003, SET-006, SET-008, SET-009, SET-010). Every function returns a new list and leaves its
- * input unchanged. The list order is the display order (PCK-006).
+ * The list of places: makes a place from a city, restores a saved one, validates, adds, removes,
+ * moves, edits and names them (SET-001, SET-002, SET-006, SET-008, SET-009, SET-010, SET-013,
+ * SET-015). Every function returns a new list and leaves its input unchanged. The list order is the
+ * display order (PCK-006). It does not hold the city list (domain/cities.js does).
  */
-import { capitalZone, countryName, listCountries, otherZones } from "./countries.js";
+import { cityOf, countryName } from "./cities.js";
 import { formatDate, formatTime } from "./format.js";
 import { HijriVariant, isHijriAdjust, isHijriVariant } from "./hijri.js";
 import { localDateTime } from "./zones.js";
 
 /** @typedef {import("./hijri.js").HijriVariantName} HijriVariantName */
+/** @typedef {import("./cities.js").City} City */
 
 /**
- * @typedef {object} Place One place the user follows.
+ * @typedef {object} Place One place the user follows: a city of the list (SET-002).
  * @property {string} id Unique within the list.
- * @property {string} countryCode ISO 3166-1 alpha-2 code from the country table.
- * @property {string} zone IANA time-zone name, one of the country's zones.
+ * @property {string} cityId Id of a city of the list.
+ * @property {string} countryCode The city's ISO 3166-1 alpha-2 code, filled in from the city.
+ * @property {string} zone The city's IANA time-zone name, filled in from the city.
  * @property {string} label Display name; empty means the city name (SET-009).
  * @property {string} region Region code; empty means national holidays only (SET-006).
  * @property {HijriVariantName} hijriVariant
@@ -24,31 +27,23 @@ import { localDateTime } from "./zones.js";
  */
 
 /**
- * @param {string} countryCode
- * @returns {import("../../data/countries.js").CityZone[]} The capital first, then the other zones
- *   of the country: the cities a place can use (SET-002, SET-003).
+ * @param {string} cityId
+ * @returns {City} The city of the list with this id.
+ * @throws {RangeError} When the list has no such city (SET-013).
  */
-export function zonesOf(countryCode) {
-  return [capitalZone(countryCode), ...otherZones(countryCode)];
-}
-
-/**
- * @param {unknown} code
- * @returns {boolean} Whether the country table has this code.
- */
-function isKnownCountry(code) {
-  return typeof code === "string" && listCountries().some((country) => country.code === code);
+function listedCity(cityId) {
+  const city = cityOf(cityId);
+  if (city === null) throw new RangeError(`Unknown city id: ${cityId}`);
+  return city;
 }
 
 /**
  * @param {Record<string, unknown>} record
- * @returns {boolean} Whether the country is known and the zone is one of its zones.
+ * @returns {boolean} Whether the city is in the list and the country and zone are the city's.
  */
-function hasValidCountryAndZone(record) {
-  return (
-    isKnownCountry(record.countryCode) &&
-    zonesOf(/** @type {string} */ (record.countryCode)).some((city) => city.zone === record.zone)
-  );
+function hasCityFacts(record) {
+  const city = cityOf(record.cityId);
+  return city !== null && record.countryCode === city.countryCode && record.zone === city.zone;
 }
 
 /**
@@ -66,8 +61,8 @@ function hasTextFields(record) {
 
 /**
  * @param {unknown} value
- * @returns {value is Place} Whether it is a valid place: a known country, a zone of that country,
- * text fields and Hijri fields in range.
+ * @returns {value is Place} Whether it is a valid place: a city of the list with that city's
+ *   country and zone, text fields and Hijri fields in range.
  */
 export function isPlace(value) {
   if (typeof value !== "object" || value === null) return false;
@@ -76,22 +71,48 @@ export function isPlace(value) {
     hasTextFields(record) &&
     isHijriVariant(record.hijriVariant) &&
     isHijriAdjust(record.hijriAdjust) &&
-    hasValidCountryAndZone(record)
+    hasCityFacts(record)
   );
 }
 
 /**
- * Makes a place for a country with the capital's zone (SET-002).
- * @param {string} id Unique id.
- * @param {string} countryCode
- * @returns {Place}
- * @throws {RangeError} When the code is not in the country table.
+ * @param {unknown} value A place as read from storage.
+ * @returns {boolean} Whether its city id is text that names no city of the list (SET-015).
  */
-export function createPlace(id, countryCode) {
+export function isUnlistedPlace(value) {
+  if (typeof value !== "object" || value === null) return false;
+  const { cityId } = /** @type {Record<string, unknown>} */ (value);
+  return typeof cityId === "string" && cityOf(cityId) === null;
+}
+
+/**
+ * Turns a saved place back into a place: its country and zone are filled in from its city, so a
+ * correction of the city table reaches saved places (DEC-016).
+ * @param {unknown} value A place as read from storage.
+ * @returns {Place | null} The place, or `null` when it is invalid or its city is not in the list.
+ */
+export function restorePlace(value) {
+  if (typeof value !== "object" || value === null) return null;
+  const city = cityOf(/** @type {Record<string, unknown>} */ (value).cityId);
+  if (city === null) return null;
+  const place = { ...value, countryCode: city.countryCode, zone: city.zone };
+  return isPlace(place) ? place : null;
+}
+
+/**
+ * Makes a place for a city of the list, with that city's country and zone (SET-002).
+ * @param {string} id Unique id.
+ * @param {string} cityId
+ * @returns {Place}
+ * @throws {RangeError} When the city is not in the list (SET-013).
+ */
+export function createPlace(id, cityId) {
+  const city = listedCity(cityId);
   return {
     id,
-    countryCode,
-    zone: capitalZone(countryCode).zone,
+    cityId,
+    countryCode: city.countryCode,
+    zone: city.zone,
     label: "",
     region: "",
     hijriVariant: HijriVariant.umalqura,
@@ -137,28 +158,30 @@ export function movePlace(places, id, offset) {
   return moved;
 }
 
+/** @typedef {Partial<Omit<Place, "id" | "cityId" | "countryCode" | "zone">>} PlaceChanges */
+
 /**
- * Changes fields of a place (SET-003, SET-006, SET-009, HIJ-002, HIJ-003). The id and country do
- * not change.
+ * Changes fields of a place (SET-006, SET-009, HIJ-002, HIJ-003). The id and the city, with its
+ * country and zone, do not change.
  * @param {Place[]} places
  * @param {string} id
- * @param {Partial<Omit<Place, "id" | "countryCode">>} changes
+ * @param {PlaceChanges} changes
  * @returns {Place[]} The new list; the place is unchanged when the edit would make it invalid.
  */
 export function editPlace(places, id, changes) {
   return places.map((place) => {
-    const edited = { ...place, ...changes, id: place.id, countryCode: place.countryCode };
+    const { cityId, countryCode, zone } = place;
+    const edited = { ...place, ...changes, id: place.id, cityId, countryCode, zone };
     return place.id === id && isPlace(edited) ? edited : place;
   });
 }
 
 /**
  * @param {Place} place
- * @returns {string} The city name of the place's zone.
+ * @returns {string} The name of the place's city.
  */
 function cityName(place) {
-  const city = zonesOf(place.countryCode).find((candidate) => candidate.zone === place.zone);
-  return city === undefined ? place.zone : city.label;
+  return listedCity(place.cityId).name;
 }
 
 /**
@@ -200,12 +223,12 @@ export function placeFacts(place, showCountry) {
 /**
  * @param {Place} place
  * @param {number} instant UTC milliseconds.
- * @returns {PlacePin} The position of the place's zone city on the map, and its local time and
+ * @returns {PlacePin} The position of the place's own city on the map, and its local time and
  *   date (MAP-001, CLK-001).
+ * @throws {RangeError} When the place's city is not in the list.
  */
 export function placePin(place, instant) {
-  const city = zonesOf(place.countryCode).find((candidate) => candidate.zone === place.zone);
-  const { latitude, longitude } = city ?? capitalZone(place.countryCode);
+  const { latitude, longitude } = listedCity(place.cityId);
   const local = localDateTime(instant, place.zone);
   return {
     left: ((longitude + 180) / 360) * 100,

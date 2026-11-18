@@ -27,11 +27,11 @@ after(async () => {
 });
 
 /**
- * @param {string[]} countryCodes
+ * @param {string[]} cityIds
  * @returns {Promise<Page>} The page opened with one invented place per country code, in order.
  */
-async function openWith(countryCodes) {
-  const places = countryCodes.map((code, index) => createPlace(`place-${index + 1}`, code));
+async function openWith(cityIds) {
+  const places = cityIds.map((cityId, index) => createPlace(`place-${index + 1}`, cityId));
   const { page } = await openPage(browser, built.url, {
     saved: { ...defaultSettings(540, 1020), places },
   });
@@ -89,7 +89,7 @@ async function showDecember(page) {
 }
 
 test("ui_cal_001_grid_has_row_per_place_and_cell_per_day", async () => {
-  const page = await openWith(["GB", "US", "JP"]);
+  const page = await openWith(["london", "washington-dc", "tokyo"]);
   assert.equal(await page.locator('[data-role="grid-row"]').count(), 3);
   assert.equal(await cellsOf(page, 0).count(), 30);
   assert.equal(await page.getByRole("heading", { name: "November 2026" }).count(), 1);
@@ -98,7 +98,7 @@ test("ui_cal_001_grid_has_row_per_place_and_cell_per_day", async () => {
 });
 
 test("ui_cal_002_weekend_cells_marked", async () => {
-  const page = await openWith(["SA", "GB"]);
+  const page = await openWith(["riyadh", "london"]);
   assert.deepEqual(await datesOfKind(cellsOf(page, 0), "weekend"), [
     "2026-11-06",
     "2026-11-07",
@@ -119,7 +119,7 @@ test("ui_cal_002_weekend_cells_marked", async () => {
 });
 
 test("ui_cal_003_holiday_cells_use_other_colour", async () => {
-  const page = await openWith(["GB"]);
+  const page = await openWith(["london"]);
   await showDecember(page);
   assert.deepEqual(await datesOfKind(cellsOf(page, 0), "holiday"), ["2026-12-25"]);
   const holiday = cellsOf(page, 0).nth(24);
@@ -131,7 +131,7 @@ test("ui_cal_003_holiday_cells_use_other_colour", async () => {
 });
 
 test("ui_cal_004_today_column_highlighted", async () => {
-  const page = await openWith(["GB", "JP"]);
+  const page = await openWith(["london", "tokyo"]);
   for (const row of [0, 1]) {
     const today = await cellsOf(page, row).evaluateAll((nodes) =>
       nodes
@@ -147,7 +147,7 @@ test("ui_cal_004_today_column_highlighted", async () => {
 });
 
 test("ui_cal_005_previous_and_next_month_buttons", async () => {
-  const page = await openWith(["GB"]);
+  const page = await openWith(["london"]);
   await page.getByRole("button", { name: "Next month" }).click();
   assert.equal(await page.getByRole("heading", { name: "December 2026" }).count(), 1);
   await page.getByRole("button", { name: "Previous month" }).click();
@@ -157,7 +157,7 @@ test("ui_cal_005_previous_and_next_month_buttons", async () => {
 });
 
 test("ui_cal_006_holiday_card_opens_and_closes", async () => {
-  const page = await openWith(["GB", "US"]);
+  const page = await openWith(["london", "washington-dc"]);
   await showDecember(page);
   const card = page.getByRole("dialog", { name: "Holiday" });
   assert.equal(await card.count(), 0);
@@ -172,7 +172,7 @@ test("ui_cal_006_holiday_card_opens_and_closes", async () => {
 });
 
 test("ui_cal_007_weekend_holiday_cell_is_split", async () => {
-  const page = await openWith(["SA"]);
+  const page = await openWith(["riyadh"]);
   await showDecember(page);
   assert.deepEqual(await datesOfKind(cellsOf(page, 0), "split"), ["2026-12-25"]);
   const image = await cellsOf(page, 0)
@@ -185,18 +185,18 @@ test("ui_cal_007_weekend_holiday_cell_is_split", async () => {
 
 test("ui_lay_001_grid_rows_scroll_headers_stay_in_view", async () => {
   const page = await openWith([
-    "GB",
-    "US",
-    "JP",
-    "SA",
-    "DE",
-    "FR",
-    "IN",
-    "BR",
-    "AU",
-    "EG",
-    "CA",
-    "MX",
+    "london",
+    "washington-dc",
+    "tokyo",
+    "riyadh",
+    "berlin",
+    "paris",
+    "new-delhi",
+    "brasilia",
+    "canberra",
+    "cairo",
+    "bogota",
+    "mexico-city",
   ]);
   await page.setViewportSize({ width: 1280, height: 500 });
   const scroller = page.locator('[data-role="grid-scroll"]');

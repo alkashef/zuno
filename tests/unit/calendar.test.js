@@ -29,7 +29,7 @@ function holiday(date, name, regions = []) {
 }
 
 test("test_cal_001_one_row_per_place_one_cell_per_day", () => {
-  const settings = settingsWith([createPlace("a", "SA"), createPlace("b", "US")]);
+  const settings = settingsWith([createPlace("a", "riyadh"), createPlace("b", "washington-dc")]);
   const november = buildMonth(settings, { year: 2026, month: 11 }, {}, noon);
   assert.equal(november.length, 2);
   assert.equal(november[0].length, 30);
@@ -41,7 +41,7 @@ test("test_cal_001_one_row_per_place_one_cell_per_day", () => {
 });
 
 test("test_cal_002_weekend_cells_by_country", () => {
-  const settings = settingsWith([createPlace("a", "SA"), createPlace("b", "GB")]);
+  const settings = settingsWith([createPlace("a", "riyadh"), createPlace("b", "london")]);
   const [saudi, britain] = buildMonth(settings, { year: 2026, month: 11 }, {}, noon);
   const marked = (/** @type {import("../../src/domain/calendar.js").DayFacts[]} */ row) =>
     row.filter((cell) => cell.isWeekend).map((cell) => cell.date);
@@ -54,7 +54,7 @@ test("test_cal_002_weekend_cells_by_country", () => {
 });
 
 test("test_cal_003_holiday_cell_has_holiday_kind", () => {
-  const settings = settingsWith([createPlace("a", "US"), createPlace("b", "GB")]);
+  const settings = settingsWith([createPlace("a", "washington-dc"), createPlace("b", "london")]);
   const holidays = { US: [holiday("2026-12-25", "Christmas Day")] };
   const [american, british] = buildMonth(settings, { year: 2026, month: 12 }, holidays, noon);
   assert.equal(american[24].holidayName, "Christmas Day");
@@ -64,11 +64,11 @@ test("test_cal_003_holiday_cell_has_holiday_kind", () => {
 });
 
 test("test_cal_003_holiday_follows_the_place_region", () => {
-  const place = editPlace([createPlace("a", "US")], "a", { region: "US-CA" })[0];
+  const place = editPlace([createPlace("a", "washington-dc")], "a", { region: "US-CA" })[0];
   const holidays = { US: [holiday("2026-12-01", "Local Day", ["US-CA"])] };
   const withRegion = buildMonth(settingsWith([place]), { year: 2026, month: 12 }, holidays, noon);
   const national = buildMonth(
-    settingsWith([createPlace("a", "US")]),
+    settingsWith([createPlace("a", "washington-dc")]),
     { year: 2026, month: 12 },
     holidays,
     noon,
@@ -78,14 +78,11 @@ test("test_cal_003_holiday_follows_the_place_region", () => {
 });
 
 test("test_cal_004_today_uses_place_local_date", () => {
-  const settings = settingsWith([
-    { ...createPlace("a", "NZ"), zone: "Pacific/Auckland" },
-    { ...createPlace("b", "US"), zone: "America/Los_Angeles" },
-  ]);
+  const settings = settingsWith([createPlace("a", "sydney"), createPlace("b", "los-angeles")]);
   const instant = Date.UTC(2026, 10, 10, 20, 0);
-  const [auckland, losAngeles] = buildMonth(settings, { year: 2026, month: 11 }, {}, instant);
+  const [sydney, losAngeles] = buildMonth(settings, { year: 2026, month: 11 }, {}, instant);
   assert.deepEqual(
-    auckland.filter((cell) => cell.isToday).map((cell) => cell.date),
+    sydney.filter((cell) => cell.isToday).map((cell) => cell.date),
     ["2026-11-11"],
   );
   assert.deepEqual(
@@ -100,7 +97,7 @@ test("test_cal_004_today_uses_place_local_date", () => {
 });
 
 test("test_cal_007_holiday_on_weekend_is_split_ex_007", () => {
-  const settings = settingsWith([createPlace("a", "GB")]);
+  const settings = settingsWith([createPlace("a", "london")]);
   const holidays = { GB: [holiday("2026-11-21", "Invented Day")] };
   const cell = buildMonth(settings, { year: 2026, month: 11 }, holidays, noon)[0][20];
   assert.equal(cell.isWeekend, true);
@@ -108,7 +105,7 @@ test("test_cal_007_holiday_on_weekend_is_split_ex_007", () => {
 });
 
 test("test_hij_001_hijri_data_only_when_on_with_variant_and_adjustment", () => {
-  const place = createPlace("a", "SA");
+  const place = createPlace("a", "riyadh");
   const adjusted = editPlace([place], "a", { hijriAdjust: 1 })[0];
   const off = buildMonth(settingsWith([place], false), { year: 2026, month: 11 }, {}, noon);
   const on = buildMonth(

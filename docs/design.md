@@ -3,8 +3,9 @@
 How to build what `spec.md` says. If this file and the spec disagree, the spec wins.
 
 Review state: Draft. The user approved DEC-002, DEC-005 and DEC-011 in chat on 2026-11-17.
-The user approved DEC-015 to DEC-021 on 2026-11-18, in a dialog; the code does not implement them
-yet (milestones M21 to M28 in `docs/plan.md` do). The design as a whole is not yet approved: the
+The user approved DEC-015 to DEC-021 on 2026-11-18, in a dialog. M21 implemented DEC-015 and the
+version 2 record of DEC-016 (places by city); the code does not implement the rest yet (milestones
+M22 to M28 in `docs/plan.md` do). The design as a whole is not yet approved: the
 open items in section 5 remain.
 Spec baseline: `docs/spec.md` as approved on 2026-11-18, with the acceptance examples EX-011 to
 EX-021.
@@ -220,7 +221,7 @@ at implementation.
 | `domain/picker.js` | The picker model: the window of `pickerHours` hours from midnight of the selected day in the first place, one row of segments per place, local times and Hijri dates at the marker, the selected day after a day shift or a picked date, and the first and last date of the window. | `zones`, `hijri`, `weekends`, `holidays` | PCK-001 to PCK-009, DEC-019 |
 | `controller.js` | The workflows. Applies an action to the state, asks `api.js` for holidays, saves settings and the user's holidays, exports and imports the holidays file. Pure apart from its injected `api`, `storage`, `holidayStorage`, `files` and `clock`. | `domain/*` | all workflows |
 | `views/*.js` | One view per screen part (theme, header, notices, map, picker, day selector, month grid, legend, settings, empty page). `views/theme.js` applies the saved theme to the root element (DEC-009). Each owns its own DOM, clones `<template>` elements, and sends events up. | `domain/format.js` types | |
-| `views/settings.js`, `views/settings-places.js` | The settings panel (M12: places). `settings.js` owns the panel, the working-hours lists (one choice every `workingHoursStepMinutes`, plus a saved time between two steps), the display switches, the theme choice, the add-by-country form, Escape and the focus return; `settings-places.js` owns the list of places (name, the city a display name hides, country, offset from UTC and, while Hijri is on, Hijri variant) and their editors. `main.js` passes both the lookup (`countries`, `zonesOf`, `placeFacts`, `zoneOffset`) and the list factory, because a view imports no other view and no domain module besides `format.js`. | `domain/format.js` | SET-001 to SET-005, SET-008 to SET-012 |
+| `views/settings.js`, `views/settings-places.js` | The settings panel (M12: places). `settings.js` owns the panel, the working-hours lists (one choice every `workingHoursStepMinutes`, plus a saved time between two steps), the display switches, the theme choice, the add form ("Add a place": the 55 cities of the list in the table's order, each shown as "city, country"), Escape and the focus return; `settings-places.js` owns the list of places (name, the city a display name hides, country, offset from UTC and, while Hijri is on, Hijri variant) and their editors (display name, region and, while Hijri is on, the Hijri variant and adjustment; no time-zone field). `main.js` passes both the lookup (`cities` from `listCities`, `placeFacts`, `offsetAt` from `zoneOffset`) and the list factory, because a view imports no other view and no domain module besides `format.js`. | `domain/format.js` | SET-001, SET-002, SET-004, SET-005, SET-008 to SET-013 |
 | `views/settings-holidays.js` | The Holidays section of the settings panel: the form that adds a holiday (country or territory of the list, date, name), the list of added holidays with a remove button each, the list of hidden holidays with a show button each, the Export and Import buttons, and the message that an imported file was refused. `main.js` passes its factory to `settings.js`. | `domain/format.js` | HOL-006 to HOL-012 |
 | `views/picker.js`, `views/day-selector.js` | The picker panel (M14). `picker.js` owns the panel: the hour axis (labelled with the first place's local time every `pickerAxisLabelEveryHours`, from midnight to the next midnight), one row per place with its name, offset from UTC and (when they apply) city and country, its local time, date and Hijri date (while Hijri is on) at the marker, and its coloured stretches with hour lines, and the marker line with its handle under the rows, moved by dragging or by arrow keys in steps of `pickerStepMinutes`. Each row's marker time sits just right of the marker line (just left when it does not fit), and the name takes the wider space that is left. The axis is sticky inside the scrolling rows, so it shares their width and stays in view (LAY-001). `day-selector.js` owns the previous-day and next-day buttons, the date button and its month calendar (Escape closes it and returns the focus). `main.js` passes `picker.js` the lookups it may not import (`localDateTime`, `zoneOffset`, `placeFacts`), the steps from `config.js` and the day-selector factory, and passes `day-selector.js` `monthWeeks`. | `domain/format.js` | PCK-001 to PCK-003, PCK-005 to PCK-007, LAY-001, DSP-001, DSP-002 |
 | `views/map.js` | The world map (M17): clones the static SVG outline (DEC-021) and draws one pin per place, rebuilt on every render so the tick updates the times. Each pin is placed by the CSS custom properties `--pin-left` and `--pin-top` and shows the place's name (following the country-name setting), time and date. `main.js` passes `placeName` and `placePin`. `layout.css` puts the map and the month grid in one left column, the map taking the height the grid leaves, and the picker as a full-height panel at the right edge (one column on narrow screens). On a short map the labels shrink (a container query in `map.css`). | none | MAP-001, CLK-001, CLK-003 |
@@ -233,11 +234,9 @@ Changes to the view rows above that DEC-015 to DEC-021 bring (each milestone rew
 the view it changes):
 
 - `views/settings.js`: the sections are Working hours, Display, Add a place, Places, Holidays, each
-  ending with a line. "Add a place" is a list of the 55 cities, each with its country, and sits
-  above the list of places.
-- `views/settings-places.js`: a place's editor has the display name, the region, the weekend days
-  (seven day boxes, the country's weekend ticked by default) and, while Hijri is on, the Hijri
-  variant and adjustment. It has no time-zone field.
+  ending with a line. "Add a place" sits above the list of places.
+- `views/settings-places.js`: a place's editor gets the weekend days (seven day boxes, the
+  country's weekend ticked by default) between the region and the Hijri fields.
 - `views/picker.js`: no heading; the resize handle on the panel's left edge; hour slots of the
   fixed width `--picker-slot`; the date beside the marker's time; the hover label; the picker's
   part of the legend at the bottom of the card.
@@ -412,14 +411,14 @@ invalid and is read as no saved settings (DEC-016).
   `removePlace`, `movePlace`, `editPlace`, `setWorkingHours`, `setShowCountry`, `setShowHijri`,
   `selectHoliday`, `toggleNotices`, `openSettings`, `closeSettings`. `setMarker` takes an
   `instant` (drag) or a `date` (a day picked in the calendar, PCK-007); `showMonth` takes an
-  `offset`; `addPlace` takes a `countryCode` (the controller makes the id, `place-N`); `removePlace`
+  `offset`; `addPlace` takes a `cityId` (the controller makes the id, `place-N`; a city not in the list is refused); `removePlace`
   a `placeId`; `movePlace` a `placeId` and an `offset` (-1 or 1); `editPlace` a `placeId` and
-  `changes` (zone, label, region, Hijri variant or adjustment); `setWorkingHours` a `start` and an
+  `changes` (label, region, Hijri variant or adjustment; the city, country and zone never change); `setWorkingHours` a `start` and an
   `end`; `setShowCountry` and `setShowHijri` a `value`. A refused change saves nothing.
   `selectHoliday` takes a `cell` (`{ placeId, date }`, or `null` to close the card).
   The page view also carries `regions` (region codes of each country's loaded holidays, from
   `listRegions`), which the settings panel lists per place (SET-006).
-  Actions added or changed by DEC-015 to DEC-019: `addPlace` takes a `cityId`; `editPlace` changes
+  Actions added or changed by DEC-016 to DEC-019: `editPlace` changes
   may hold `weekendDays`; `setPickerHours` takes `hours`; `setMarker` with an `instant` moves only
   the marker and with a `date` also sets the selected day; `shiftMarkerDay` shifts the selected day;
   `addHoliday` takes `countryCode`, `date` and `name`; `removeHoliday`, `hideHoliday` and
@@ -431,6 +430,13 @@ invalid and is read as no saved settings (DEC-016).
   `getState()` returns the state (settings or `null`, `now`, marker, month, holiday results, the
   selected holiday, the open panels) plus the models the views draw: `isEmpty`, `picker`, `grid`
   and `notices` (`countries`, `placeIds`).
+- `domain/cities`: `listCities() -> { id, name, country }[]` (in the table's order),
+  `cityOf(id) -> City | null` and `countryName(code) -> string` (throws `RangeError` for a code no
+  city has). `domain/places`: `createPlace(id, cityId) -> Place` (throws `RangeError` for a city
+  not in the list), `restorePlace(value) -> Place | null` (fills in the country and zone from the
+  city) and `isUnlistedPlace(value) -> boolean` (a city id that names no city of the list, SET-015);
+  `domain/settings.parseSettings(value) -> Settings | null` drops the unlisted places and refuses
+  any other fault and any version but 2.
 - `domain/picker.buildPicker(settings, marker, holidays) -> PickerRow[]`,
   `domain/picker.pickerWindow(settings, marker) -> { from, to } | null` (the window of PCK-006),
   `domain/picker.shiftMarkerDay(settings, marker, days) -> Marker` and
@@ -481,7 +487,7 @@ Keyboard and accessibility: every control is a real `<button>`, `<a>`, `<input>`
 every icon-only button has an `aria-label`; popovers close on Escape and return focus to the button
 that opened them.
 
-**Validation and errors.** Invalid input (a working-hours end before the start, no country chosen)
+**Validation and errors.** Invalid input (a working-hours end before the start, no city chosen)
 is refused by `domain/settings.js` and the view shows the field as invalid; it is not an error.
 Everything else follows DEC-006 and the top-level handler.
 

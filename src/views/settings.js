@@ -2,9 +2,9 @@
 /**
  * @module views/settings
  * Owns the settings panel: opens and closes it with `settingsOpen`, the working-hours lists, the
- * country-name and Hijri switches, the theme choice, the add-by-country form, the close button,
- * and Escape, and returns the keyboard focus to the button that opened it (SET-001, SET-002,
- * SET-004, SET-005, SET-010 to SET-012). It clones its markup from templates in index.html. It
+ * country-name and Hijri switches, the theme choice, the add form (the cities of the list, each with
+ * its country), the close button, and Escape, and returns the keyboard focus to the button that
+ * opened it (SET-001, SET-002, SET-004, SET-005, SET-010 to SET-013). It clones its markup from templates in index.html. It
  * does not draw the list of places (views/settings-places.js does, built by `deps.makeList`) and
  * it saves nothing (the controller does).
  */
@@ -72,25 +72,25 @@ function part(root, role) {
 /**
  * @param {PanelContext} ctx
  * @param {HTMLElement} panel
- * @returns {void} Lists every country in the add form.
+ * @returns {void} Lists every city of the list in the add form, each with its country (SET-013).
  */
-function fillCountries(ctx, panel) {
-  const select = /** @type {HTMLSelectElement} */ (part(panel, "country"));
-  for (const country of ctx.deps.lookup.countries) {
-    select.append(new Option(country.name, country.code));
+function fillCities(ctx, panel) {
+  const select = /** @type {HTMLSelectElement} */ (part(panel, "city"));
+  for (const city of ctx.deps.lookup.cities) {
+    select.append(new Option(`${city.name}, ${city.country}`, city.id));
   }
 }
 
 /**
  * @param {PanelContext} ctx
  * @param {HTMLElement} panel
- * @returns {void} Adds a place for the chosen country; no country chosen is refused and marked.
+ * @returns {void} Adds a place for the chosen city; no city chosen is refused and marked (SET-002).
  */
 function submitAdd(ctx, panel) {
-  const select = /** @type {HTMLSelectElement} */ (part(panel, "country"));
+  const select = /** @type {HTMLSelectElement} */ (part(panel, "city"));
   select.setAttribute("aria-invalid", String(select.value === ""));
   if (select.value === "") return;
-  void ctx.deps.dispatch({ type: "addPlace", countryCode: select.value });
+  void ctx.deps.dispatch({ type: "addPlace", cityId: select.value });
   select.value = "";
 }
 
@@ -206,7 +206,7 @@ function openPanel(ctx, view) {
     ctx.template.content.firstElementChild?.cloneNode(true)
   );
   session.opener = doc.activeElement;
-  fillCountries(ctx, panel);
+  fillCities(ctx, panel);
   setUpDisplay(ctx, panel, view);
   part(panel, "close").addEventListener("click", () => {
     void ctx.deps.dispatch({ type: "closeSettings" });

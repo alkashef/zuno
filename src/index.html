@@ -425,9 +425,9 @@
           <h3 id="settings-add-title" class="settings-heading">Add a place</h3>
           <form class="settings-add" data-role="add-form">
             <label class="settings-field">
-              <span class="settings-label">Country</span>
-              <select class="settings-input" data-role="country">
-                <option value="">Choose a country</option>
+              <span class="settings-label">City</span>
+              <select class="settings-input" data-role="city">
+                <option value="">Choose a city</option>
               </select>
             </label>
             <button type="submit" class="button button-primary settings-add-button">
@@ -442,7 +442,7 @@
               Add place
             </button>
           </form>
-          <p class="settings-hint">The new place uses the time zone of the country's capital.</p>
+          <p class="settings-hint">The new place uses the time zone of the city.</p>
         </section>
         <p class="settings-footer">
           Changes are saved in this browser and restored on your next visit.
@@ -508,13 +508,6 @@
               Shown instead of the city name on the map, in the picker and in the month view. Leave
               it blank to use the city name.
             </p>
-          </div>
-          <div class="settings-group" data-role="zone-field">
-            <label class="settings-field">
-              <span class="settings-label">Time zone</span>
-              <select class="settings-input" data-role="zone"></select>
-            </label>
-            <p class="settings-hint" data-role="zone-hint"></p>
           </div>
           <div class="settings-group">
             <label class="settings-field">

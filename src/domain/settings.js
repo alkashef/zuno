@@ -1,16 +1,17 @@
 // @ts-check
 /**
  * @module domain/settings
- * The settings shape, defaults and validation (SET-005, SET-007, SET-010 to SET-012, DEC-008).
- * Invalid input is refused by returning `null`; it is not an error.
+ * The settings shape, defaults and validation (SET-005, SET-007, SET-010 to SET-012, SET-015,
+ * DEC-016). Invalid input is refused by returning `null`; it is not an error. It does not check
+ * one place (domain/places.js does).
  */
-import { isPlace } from "./places.js";
+import { isUnlistedPlace, restorePlace } from "./places.js";
 
 /** @typedef {import("./places.js").Place} Place */
 
 /**
  * @typedef {object} Settings
- * @property {number} version Record version; 1 is the only one (DEC-008).
+ * @property {number} version Record version; 2 is the only one (DEC-016).
  * @property {Place[]} places In display order.
  * @property {number} workStartMinutes Minutes after midnight.
  * @property {number} workEndMinutes Minutes after midnight; after the start.
@@ -25,7 +26,7 @@ import { isPlace } from "./places.js";
 export const themes = Object.freeze(/** @type {const} */ (["light", "dark", "auto"]));
 
 /** The current record version. */
-export const settingsVersion = 1;
+export const settingsVersion = 2;
 
 const minutesPerDay = 24 * 60;
 
@@ -77,15 +78,17 @@ function isTheme(value) {
 }
 
 /**
- * @param {unknown} places
- * @returns {boolean} Whether it is a list of valid places with unique ids.
+ * Restores the saved places. A place whose city is not in the list is dropped (SET-015); any
+ * other fault refuses the whole list.
+ * @param {unknown} saved
+ * @returns {Place[] | null} The places, or `null` when the list is invalid or two ids repeat.
  */
-function isPlaceList(places) {
-  return (
-    Array.isArray(places) &&
-    places.every(isPlace) &&
-    new Set(places.map((place) => place.id)).size === places.length
-  );
+function restorePlaces(saved) {
+  if (!Array.isArray(saved)) return null;
+  const places = saved.filter((value) => !isUnlistedPlace(value)).map(restorePlace);
+  const valid = places.filter((place) => place !== null);
+  const unique = new Set(valid.map((place) => place.id)).size === places.length;
+  return valid.length === places.length && unique ? valid : null;
 }
 
 /**
@@ -101,21 +104,23 @@ function hasValidDisplay(record) {
 }
 
 /**
- * Checks a value read from storage. A record saved before the theme setting existed has no
- * `theme`; it gets Auto, the default (SET-012).
+ * Checks a value read from storage. A record without `theme` gets Auto, the default (SET-012).
+ * A place whose city is not in the list is dropped (SET-015).
  * @param {unknown} value
- * @returns {Settings | null} The settings when valid, else `null`. An unknown version is invalid.
+ * @returns {Settings | null} The settings when valid, else `null`. Any version but 2, such as a
+ *   version 1 record of places by country, is invalid (DEC-016).
  */
 export function parseSettings(value) {
   if (typeof value !== "object" || value === null) return null;
   /** @type {Record<string, unknown>} */
   const record = { theme: "auto", ...value };
+  const places = restorePlaces(record.places);
   const valid =
     record.version === settingsVersion &&
     isWorkingHours(record.workStartMinutes, record.workEndMinutes) &&
     hasValidDisplay(record) &&
-    isPlaceList(record.places);
-  return valid ? /** @type {Settings} */ (/** @type {unknown} */ (record)) : null;
+    places !== null;
+  return valid ? /** @type {Settings} */ (/** @type {unknown} */ ({ ...record, places })) : null;
 }
 
 /**

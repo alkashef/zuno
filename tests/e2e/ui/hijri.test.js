@@ -32,10 +32,10 @@ after(async () => {
  * @returns {Promise<Page>} The page opened with a Saudi place and a British place.
  */
 async function openWith(showHijri, hijriAdjust = 0) {
-  const saudi = { ...createPlace("place-1", "SA"), hijriAdjust };
+  const saudi = { ...createPlace("place-1", "riyadh"), hijriAdjust };
   const settings = {
     ...defaultSettings(540, 1020),
-    places: [saudi, createPlace("place-2", "GB")],
+    places: [saudi, createPlace("place-2", "london")],
     showHijri,
   };
   const { page } = await openPage(browser, built.url, { saved: settings });

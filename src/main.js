@@ -9,8 +9,8 @@ import * as clock from "./clock.js";
 import { config } from "./config.js";
 import { createController } from "./controller.js";
 import { monthWeeks } from "./domain/calendar.js";
-import { countryName, listCountries } from "./domain/countries.js";
-import { placeFacts, placeName, placePin, zonesOf } from "./domain/places.js";
+import { countryName, listCities } from "./domain/cities.js";
+import { placeFacts, placeName, placePin } from "./domain/places.js";
 import { parseSettings } from "./domain/settings.js";
 import { localDateTime, zoneOffset } from "./domain/zones.js";
 import { log } from "./log.js";
@@ -47,7 +47,7 @@ const controller = createController({
   clock,
   defaultHours: { start: config.defaultWorkStartMinutes, end: config.defaultWorkEndMinutes },
 });
-const lookup = { countries: listCountries(), zonesOf, placeFacts, offsetAt: zoneOffset };
+const lookup = { cities: listCities(), placeFacts, offsetAt: zoneOffset };
 const views = [
   createTheme(document),
   createHeader(document),

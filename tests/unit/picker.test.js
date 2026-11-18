@@ -74,9 +74,9 @@ function kindAt(row, instant) {
 
 test("test_pck_001_one_row_per_place", () => {
   const settings = settingsWith([
-    createPlace("a", "GB"),
-    createPlace("b", "US"),
-    createPlace("c", "JP"),
+    createPlace("a", "london"),
+    createPlace("b", "washington-dc"),
+    createPlace("c", "tokyo"),
   ]);
   const rows = buildPicker(settings, { instant: utc(2026, 11, 16, 15) }, {});
   assert.deepEqual(
@@ -89,9 +89,9 @@ test("test_pck_001_one_row_per_place", () => {
 
 test("test_pck_002_local_time_at_marker_ex_003", () => {
   const settings = settingsWith([
-    createPlace("london", "GB"),
-    createPlace("newYork", "US"),
-    createPlace("tokyo", "JP"),
+    createPlace("london", "london"),
+    createPlace("newYork", "washington-dc"),
+    createPlace("tokyo", "tokyo"),
   ]);
   const [london, newYork, tokyo] = buildPicker(settings, { instant: utc(2026, 11, 16, 15) }, {});
   assert.deepEqual(london.localDateTime, { year: 2026, month: 11, day: 16, hour: 15, minute: 0 });
@@ -102,7 +102,7 @@ test("test_pck_002_local_time_at_marker_ex_003", () => {
 });
 
 test("test_pck_003_working_and_non_working_segments_ex_008", () => {
-  const settings = settingsWith([createPlace("a", "GB")]);
+  const settings = settingsWith([createPlace("a", "london")]);
   const [row] = buildPicker(settings, { instant: utc(2026, 11, 16, 14) }, {});
   assert.equal(kindAt(row, utc(2026, 11, 16, 14)), DayKind.working);
   assert.equal(kindAt(row, utc(2026, 11, 16, 19)), DayKind.nonWorking);
@@ -114,7 +114,7 @@ test("test_pck_003_working_and_non_working_segments_ex_008", () => {
 });
 
 test("test_pck_003_working_hours_setting_moves_segments_set_005", () => {
-  const settings = { ...settingsWith([createPlace("a", "GB")]), workStartMinutes: 450 };
+  const settings = { ...settingsWith([createPlace("a", "london")]), workStartMinutes: 450 };
   const [row] = buildPicker(
     { ...settings, workEndMinutes: 960 },
     { instant: utc(2026, 11, 16, 14) },
@@ -128,7 +128,7 @@ test("test_pck_003_working_hours_setting_moves_segments_set_005", () => {
 });
 
 test("test_pck_003_window_crosses_midnight_for_another_place", () => {
-  const settings = settingsWith([createPlace("london", "GB"), createPlace("riyadh", "SA")]);
+  const settings = settingsWith([createPlace("london", "london"), createPlace("riyadh", "riyadh")]);
   const marker = { instant: utc(2026, 11, 19, 12) };
   const window = pickerWindow(settings, marker);
   assert.ok(window);
@@ -143,7 +143,7 @@ test("test_pck_003_window_crosses_midnight_for_another_place", () => {
 });
 
 test("test_pck_005_weekend_or_holiday_is_day_off_ex_009", () => {
-  const saudi = settingsWith([createPlace("a", "SA")]);
+  const saudi = settingsWith([createPlace("a", "riyadh")]);
   const friday = utc(2026, 11, 20, 11);
   const [riyadh] = buildPicker(saudi, { instant: friday }, {});
   assert.equal(kindAt(riyadh, friday), DayKind.dayOff);
@@ -151,7 +151,7 @@ test("test_pck_005_weekend_or_holiday_is_day_off_ex_009", () => {
     riyadh.segments.map((segment) => segment.kind),
     [DayKind.dayOff],
   );
-  const american = settingsWith([createPlace("a", "US")]);
+  const american = settingsWith([createPlace("a", "washington-dc")]);
   const christmas = { US: [{ date: "2026-12-25", name: "Christmas Day", regions: [] }] };
   const noonFriday = utc(2026, 12, 25, 17);
   assert.equal(
@@ -166,7 +166,7 @@ test("test_pck_005_weekend_or_holiday_is_day_off_ex_009", () => {
 
 test("test_pck_005_regional_holiday_follows_place_region", () => {
   const regional = { US: [{ date: "2026-12-01", name: "Local Day", regions: ["US-CA"] }] };
-  const national = createPlace("a", "US");
+  const national = createPlace("a", "washington-dc");
   const withRegion = editPlace([national], "a", { region: "US-CA" })[0];
   const noon = utc(2026, 12, 1, 17);
   const rowOf = (/** @type {import("../../src/domain/places.js").Place} */ place) =>
@@ -176,7 +176,7 @@ test("test_pck_005_regional_holiday_follows_place_region", () => {
 });
 
 test("test_pck_006_window_midnight_to_midnight_of_first_place_23_and_25_hour_days", () => {
-  const london = settingsWith([createPlace("a", "GB"), createPlace("b", "JP")]);
+  const london = settingsWith([createPlace("a", "london"), createPlace("b", "tokyo")]);
   assert.deepEqual(pickerWindow(london, { instant: utc(2026, 11, 16, 23, 59) }), {
     from: utc(2026, 11, 16, 0),
     to: utc(2026, 11, 17, 0),
@@ -186,7 +186,7 @@ test("test_pck_006_window_midnight_to_midnight_of_first_place_23_and_25_hour_day
   const autumn = pickerWindow(london, { instant: utc(2026, 10, 25, 12) });
   assert.deepEqual(autumn, { from: utc(2026, 10, 24, 23), to: utc(2026, 10, 26, 0) });
   assert.equal(autumn.to - autumn.from, 25 * hour);
-  const newYork = settingsWith([createPlace("a", "US")]);
+  const newYork = settingsWith([createPlace("a", "washington-dc")]);
   assert.deepEqual(pickerWindow(newYork, { instant: utc(2026, 3, 9, 3) }), {
     from: utc(2026, 3, 8, 5),
     to: utc(2026, 3, 9, 4),
@@ -196,7 +196,7 @@ test("test_pck_006_window_midnight_to_midnight_of_first_place_23_and_25_hour_day
 });
 
 test("test_pck_006_dst_change_day_splits_segments_at_new_offset", () => {
-  const settings = settingsWith([createPlace("a", "IL")]);
+  const settings = settingsWith([createPlace("a", "jerusalem")]);
   const marker = { instant: utc(2026, 10, 25, 10) };
   const window = pickerWindow(settings, marker);
   assert.deepEqual(window, { from: utc(2026, 10, 24, 21), to: utc(2026, 10, 25, 22) });
@@ -210,7 +210,7 @@ test("test_pck_006_dst_change_day_splits_segments_at_new_offset", () => {
 });
 
 test("test_pck_007_shift_day_keeps_time_of_day_in_first_place", () => {
-  const settings = settingsWith([createPlace("a", "GB"), createPlace("b", "JP")]);
+  const settings = settingsWith([createPlace("a", "london"), createPlace("b", "tokyo")]);
   const marker = { instant: utc(2026, 11, 16, 15) + 42_000 };
   assert.deepEqual(shiftMarkerDay(settings, marker, 1), {
     instant: utc(2026, 11, 17, 15) + 42_000,
@@ -235,13 +235,13 @@ test("test_pck_007_shift_day_keeps_time_of_day_in_first_place", () => {
 });
 
 test("test_pck_007_missing_time_moves_to_end_of_clock_change", () => {
-  const settings = settingsWith([createPlace("a", "GB")]);
+  const settings = settingsWith([createPlace("a", "london")]);
   const marker = { instant: utc(2026, 3, 28, 1, 30) };
   assert.deepEqual(shiftMarkerDay(settings, marker, 1), { instant: utc(2026, 3, 29, 1) });
 });
 
 test("test_hij_001_picker_rows_carry_hijri_date_only_when_on", () => {
-  const settings = settingsWith([createPlace("a", "SA")]);
+  const settings = settingsWith([createPlace("a", "riyadh")]);
   const marker = { instant: utc(2026, 11, 16, 9, 25) };
   assert.equal(buildPicker(settings, marker, {})[0].hijri, null);
   const on = buildPicker({ ...settings, showHijri: true }, marker, {});

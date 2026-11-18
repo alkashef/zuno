@@ -82,7 +82,7 @@ function holidaysInRow(controller, row) {
 
 test("test_pck_004_open_puts_marker_at_now", async () => {
   const start = utc(2026, 11, 17, 10);
-  const { controller } = setup(settingsWith([createPlace("a", "GB")]), start);
+  const { controller } = setup(settingsWith([createPlace("a", "london")]), start);
   await controller.dispatch({ type: "open" });
   const state = controller.getState();
   assert.equal(state.marker.instant, start);
@@ -108,7 +108,11 @@ test("test_set_007_saved_settings_with_no_places_show_empty_state", async () => 
 });
 
 test("test_hol_001_open_requests_each_country_year_once", async () => {
-  const places = [createPlace("a", "US"), createPlace("b", "US"), createPlace("c", "GB")];
+  const places = [
+    createPlace("a", "washington-dc"),
+    createPlace("b", "washington-dc"),
+    createPlace("c", "london"),
+  ];
   const { controller, calls } = setup(settingsWith(places), utc(2026, 11, 17, 10));
   await controller.dispatch({ type: "open" });
   await controller.dispatch({ type: "setMarker", instant: utc(2026, 11, 18, 10) });
@@ -117,7 +121,10 @@ test("test_hol_001_open_requests_each_country_year_once", async () => {
 });
 
 test("test_hol_001_marker_window_in_new_year_requests_that_year", async () => {
-  const { controller, calls } = setup(settingsWith([createPlace("a", "JP")]), utc(2026, 12, 31, 3));
+  const { controller, calls } = setup(
+    settingsWith([createPlace("a", "tokyo")]),
+    utc(2026, 12, 31, 3),
+  );
   await controller.dispatch({ type: "open" });
   assert.deepEqual(calls, ["JP-2026"]);
   await controller.dispatch({ type: "shiftMarkerDay", days: 1 });
@@ -126,7 +133,7 @@ test("test_hol_001_marker_window_in_new_year_requests_that_year", async () => {
 
 test("test_clk_003_tick_updates_time_but_not_marker", async () => {
   const start = utc(2026, 11, 17, 10);
-  const { controller, clock } = setup(settingsWith([createPlace("a", "GB")]), start);
+  const { controller, clock } = setup(settingsWith([createPlace("a", "london")]), start);
   await controller.dispatch({ type: "open" });
   clock.time = start + minute;
   await controller.dispatch({ type: "tick" });
@@ -146,7 +153,11 @@ test("test_ref_001_refresh_clears_and_refetches_holidays", async () => {
         : serviceRecord(`${year}-12-24`, "Christmas Eve", ["Public"]),
     ],
   });
-  const { controller, calls, clock } = setup(settingsWith([createPlace("a", "US")]), start, answer);
+  const { controller, calls, clock } = setup(
+    settingsWith([createPlace("a", "washington-dc")]),
+    start,
+    answer,
+  );
   await controller.dispatch({ type: "open" });
   assert.deepEqual(holidaysInRow(controller, 0), ["2026-12-25 Christmas Day"]);
   clock.time = start + hour;
@@ -162,7 +173,7 @@ test("test_ref_002_failed_country_listed_and_times_still_shown", async () => {
     countryCode === "GB"
       ? { status: "unavailable", reason: "offline" }
       : invented(countryCode, year, call);
-  const places = [createPlace("a", "US"), createPlace("b", "GB")];
+  const places = [createPlace("a", "washington-dc"), createPlace("b", "london")];
   const { controller } = setup(settingsWith(places), utc(2026, 12, 10, 12), answer);
   await controller.dispatch({ type: "open" });
   const state = controller.getState();
@@ -182,7 +193,7 @@ test("test_ref_002_failed_refresh_keeps_loaded_holidays", async () => {
   const answer = (countryCode, year, call) =>
     call === 1 ? invented(countryCode, year, call) : { status: "unavailable", reason: "offline" };
   const { controller } = setup(
-    settingsWith([createPlace("a", "US")]),
+    settingsWith([createPlace("a", "washington-dc")]),
     utc(2026, 12, 10, 12),
     answer,
   );
@@ -193,7 +204,7 @@ test("test_ref_002_failed_refresh_keeps_loaded_holidays", async () => {
 });
 
 test("test_hol_004_missing_region_listed_in_notices", async () => {
-  const places = editPlace([createPlace("a", "US"), createPlace("b", "GB")], "a", {
+  const places = editPlace([createPlace("a", "washington-dc"), createPlace("b", "london")], "a", {
     region: "US-CA",
   });
   const { controller } = setup(settingsWith(places), utc(2026, 12, 10, 12));
@@ -204,7 +215,7 @@ test("test_hol_004_missing_region_listed_in_notices", async () => {
 });
 
 test("test_pck_007_shift_day_and_pick_day", async () => {
-  const { controller } = setup(settingsWith([createPlace("a", "GB")]), utc(2026, 11, 16, 15));
+  const { controller } = setup(settingsWith([createPlace("a", "london")]), utc(2026, 11, 16, 15));
   await controller.dispatch({ type: "open" });
   await controller.dispatch({ type: "shiftMarkerDay", days: 1 });
   assert.equal(controller.getState().marker.instant, utc(2026, 11, 17, 15));
@@ -215,7 +226,7 @@ test("test_pck_007_shift_day_and_pick_day", async () => {
 });
 
 test("test_cal_005_show_previous_and_next_month", async () => {
-  const { controller } = setup(settingsWith([createPlace("a", "GB")]), utc(2026, 11, 17, 10));
+  const { controller } = setup(settingsWith([createPlace("a", "london")]), utc(2026, 11, 17, 10));
   await controller.dispatch({ type: "open" });
   await controller.dispatch({ type: "showMonth", offset: -1 });
   assert.deepEqual(controller.getState().month, { year: 2026, month: 10 });
@@ -228,7 +239,7 @@ test("test_cal_005_show_previous_and_next_month", async () => {
 
 test("test_cal_005_next_month_in_new_year_requests_that_year", async () => {
   const { controller, calls } = setup(
-    settingsWith([createPlace("a", "US")]),
+    settingsWith([createPlace("a", "washington-dc")]),
     utc(2026, 12, 10, 12),
   );
   await controller.dispatch({ type: "open" });
@@ -238,7 +249,10 @@ test("test_cal_005_next_month_in_new_year_requests_that_year", async () => {
 });
 
 test("test_cal_006_select_and_close_holiday_cell", async () => {
-  const { controller } = setup(settingsWith([createPlace("a", "US")]), utc(2026, 12, 10, 12));
+  const { controller } = setup(
+    settingsWith([createPlace("a", "washington-dc")]),
+    utc(2026, 12, 10, 12),
+  );
   await controller.dispatch({ type: "open" });
   await controller.dispatch({ type: "selectHoliday", cell: { placeId: "a", date: "2026-12-25" } });
   assert.deepEqual(controller.getState().selectedHoliday, {
@@ -251,14 +265,17 @@ test("test_cal_006_select_and_close_holiday_cell", async () => {
 });
 
 test("test_cal_006_non_holiday_cell_opens_no_card", async () => {
-  const { controller } = setup(settingsWith([createPlace("a", "US")]), utc(2026, 12, 10, 12));
+  const { controller } = setup(
+    settingsWith([createPlace("a", "washington-dc")]),
+    utc(2026, 12, 10, 12),
+  );
   await controller.dispatch({ type: "open" });
   await controller.dispatch({ type: "selectHoliday", cell: { placeId: "a", date: "2026-12-24" } });
   assert.equal(controller.getState().selectedHoliday, null);
 });
 
 test("test_controller_toggles_notices_and_settings_panel", async () => {
-  const { controller } = setup(settingsWith([createPlace("a", "GB")]), utc(2026, 11, 17, 10));
+  const { controller } = setup(settingsWith([createPlace("a", "london")]), utc(2026, 11, 17, 10));
   await controller.dispatch({ type: "open" });
   await controller.dispatch({ type: "toggleNotices" });
   assert.equal(controller.getState().noticesOpen, true);
@@ -272,7 +289,7 @@ test("test_controller_toggles_notices_and_settings_panel", async () => {
 
 test("test_controller_subscribers_hear_each_change_until_unsubscribed", async () => {
   const start = utc(2026, 11, 17, 10);
-  const { controller, clock } = setup(settingsWith([createPlace("a", "GB")]), start);
+  const { controller, clock } = setup(settingsWith([createPlace("a", "london")]), start);
   /** @type {number[]} */
   const heard = [];
   const unsubscribe = controller.subscribe((state) => heard.push(state.now));

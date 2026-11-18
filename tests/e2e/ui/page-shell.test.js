@@ -27,7 +27,7 @@ after(async () => {
 
 /** @returns {import("../../../src/domain/settings.js").Settings} Settings with one invented place. */
 function oneUsPlace() {
-  return { ...defaultSettings(540, 1020), places: [createPlace("place-1", "US")] };
+  return { ...defaultSettings(540, 1020), places: [createPlace("place-1", "washington-dc")] };
 }
 
 /**

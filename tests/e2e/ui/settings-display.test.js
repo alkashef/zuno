@@ -29,11 +29,11 @@ after(async () => {
 });
 
 /**
- * @param {string[]} countryCodes
- * @returns {import("../../../src/domain/settings.js").Settings} Settings with one place per code.
+ * @param {string[]} cityIds
+ * @returns {import("../../../src/domain/settings.js").Settings} Settings with one place per city id.
  */
-function savedPlaces(countryCodes) {
-  const places = countryCodes.map((code, index) => createPlace(`place-${index + 1}`, code));
+function savedPlaces(cityIds) {
+  const places = cityIds.map((cityId, index) => createPlace(`place-${index + 1}`, cityId));
   return { ...defaultSettings(540, 1020), places };
 }
 
@@ -55,7 +55,7 @@ function storedSettings(page) {
 }
 
 test("ui_set_005_working_hours_default_and_invalid_end_refused", async () => {
-  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["US"]) });
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["washington-dc"]) });
   await openSettings(page);
   const start = page.getByRole("combobox", { name: "Start", exact: true });
   const end = page.getByRole("combobox", { name: "End", exact: true });
@@ -71,7 +71,7 @@ test("ui_set_005_working_hours_default_and_invalid_end_refused", async () => {
 });
 
 test("ui_set_006_region_listed_by_code_and_empty_means_national", async () => {
-  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["US"]) });
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["washington-dc"]) });
   await page.route(`${config.holidayServiceBaseUrl}/Holidays/US/**`, (route) =>
     route.fulfill({
       contentType: "application/json",
@@ -95,7 +95,7 @@ test("ui_set_006_region_listed_by_code_and_empty_means_national", async () => {
 });
 
 test("ui_set_010_country_names_toggle", async () => {
-  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["SA"]) });
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["riyadh"]) });
   await openSettings(page);
   const toggle = page.getByLabel("Show country names");
   const countries = page.locator(".month-grid-place-country");
@@ -109,7 +109,7 @@ test("ui_set_010_country_names_toggle", async () => {
 });
 
 test("ui_set_011_hijri_toggle_off_by_default", async () => {
-  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["SA"]) });
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["riyadh"]) });
   await openSettings(page);
   const toggle = page.getByLabel("Show Hijri calendar");
   assert.equal(await toggle.isChecked(), false);
@@ -127,7 +127,7 @@ test("ui_set_011_hijri_toggle_off_by_default", async () => {
 });
 
 test("ui_hij_002_variant_choice_per_place", async () => {
-  const saved = { ...savedPlaces(["SA", "US"]), showHijri: true };
+  const saved = { ...savedPlaces(["riyadh", "washington-dc"]), showHijri: true };
   const { page } = await openPage(browser, built.url, { saved });
   await openSettings(page);
   await page.getByRole("button", { name: "Edit Riyadh" }).click();
@@ -146,7 +146,7 @@ test("ui_hij_002_variant_choice_per_place", async () => {
 });
 
 test("ui_hij_003_adjustment_range_minus_one_to_plus_one", async () => {
-  const saved = { ...savedPlaces(["SA"]), showHijri: true };
+  const saved = { ...savedPlaces(["riyadh"]), showHijri: true };
   const { page } = await openPage(browser, built.url, { saved });
   await openSettings(page);
   await page.getByRole("button", { name: "Edit Riyadh" }).click();
@@ -179,7 +179,7 @@ function pageBackground(page) {
 
 test("ui_set_012_theme_choice_overrides_the_system_and_is_saved", async () => {
   const { page } = await openPage(browser, built.url, {
-    saved: savedPlaces(["SA"]),
+    saved: savedPlaces(["riyadh"]),
     colorScheme: "dark",
   });
   await openSettings(page);
@@ -196,7 +196,7 @@ test("ui_set_012_theme_choice_overrides_the_system_and_is_saved", async () => {
 });
 
 test("ui_thm_001_saved_dark_theme_applies_on_open_over_a_light_system", async () => {
-  const saved = { ...savedPlaces(["SA"]), theme: /** @type {const} */ ("dark") };
+  const saved = { ...savedPlaces(["riyadh"]), theme: /** @type {const} */ ("dark") };
   const { page } = await openPage(browser, built.url, { saved, colorScheme: "light" });
   await page.locator('html[data-theme="dark"]').waitFor({ state: "attached" });
   assert.equal(await pageBackground(page), "rgb(7, 9, 13)");

@@ -1,11 +1,12 @@
 // @ts-check
-/** @module controller-settings.test Settings workflows through src/controller.js with fake api, storage and clock (SET-001 to SET-006, SET-008 to SET-012, HIJ-002, HIJ-003). */
+/** @module controller-settings.test Settings workflows through src/controller.js with fake api, storage and clock (SET-001, SET-002, SET-004 to SET-006, SET-008 to SET-013, SET-015, HIJ-002, HIJ-003). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { createController } from "../../src/controller.js";
-import { createPlace } from "../../src/domain/places.js";
-import { defaultSettings } from "../../src/domain/settings.js";
+import { createPlace, placeName } from "../../src/domain/places.js";
+import { defaultSettings, parseSettings } from "../../src/domain/settings.js";
+import { zoneOffset } from "../../src/domain/zones.js";
 
 /** @typedef {import("../../src/domain/settings.js").Settings} Settings */
 
@@ -53,8 +54,8 @@ test("test_set_001_add_and_remove_place_workflow", async () => {
   const { controller, calls } = setup();
   await controller.dispatch({ type: "open" });
   assert.equal(controller.getState().isEmpty, true);
-  await controller.dispatch({ type: "addPlace", countryCode: "GB" });
-  await controller.dispatch({ type: "addPlace", countryCode: "US" });
+  await controller.dispatch({ type: "addPlace", cityId: "london" });
+  await controller.dispatch({ type: "addPlace", cityId: "washington-dc" });
   assert.deepEqual(placeIds(controller), ["place-1", "place-2"]);
   assert.equal(controller.getState().isEmpty, false);
   assert.equal(controller.getState().picker.length, 2);
@@ -68,19 +69,19 @@ test("test_set_001_add_and_remove_place_workflow", async () => {
 test("test_set_001_new_place_after_removal_gets_an_unused_id", async () => {
   const { controller } = setup();
   await controller.dispatch({ type: "open" });
-  await controller.dispatch({ type: "addPlace", countryCode: "GB" });
-  await controller.dispatch({ type: "addPlace", countryCode: "US" });
+  await controller.dispatch({ type: "addPlace", cityId: "london" });
+  await controller.dispatch({ type: "addPlace", cityId: "washington-dc" });
   await controller.dispatch({ type: "removePlace", placeId: "place-1" });
-  await controller.dispatch({ type: "addPlace", countryCode: "JP" });
+  await controller.dispatch({ type: "addPlace", cityId: "tokyo" });
   assert.deepEqual(placeIds(controller), ["place-2", "place-3"]);
 });
 
 test("test_set_001_removed_place_keeps_holidays_another_place_uses", async () => {
   const { controller, calls } = setup();
   await controller.dispatch({ type: "open" });
-  await controller.dispatch({ type: "addPlace", countryCode: "US" });
-  await controller.dispatch({ type: "addPlace", countryCode: "US" });
-  await controller.dispatch({ type: "addPlace", countryCode: "GB" });
+  await controller.dispatch({ type: "addPlace", cityId: "washington-dc" });
+  await controller.dispatch({ type: "addPlace", cityId: "washington-dc" });
+  await controller.dispatch({ type: "addPlace", cityId: "london" });
   await controller.dispatch({ type: "removePlace", placeId: "place-1" });
   assert.deepEqual(Object.keys(controller.getState().holidayResults).sort(), ["GB", "US"]);
   await controller.dispatch({ type: "removePlace", placeId: "place-3" });
@@ -91,43 +92,57 @@ test("test_set_001_removed_place_keeps_holidays_another_place_uses", async () =>
 test("test_set_001_removing_a_place_closes_its_holiday_card", async () => {
   const { controller } = setup();
   await controller.dispatch({ type: "open" });
-  await controller.dispatch({ type: "addPlace", countryCode: "GB" });
+  await controller.dispatch({ type: "addPlace", cityId: "london" });
   await controller.dispatch({ type: "removePlace", placeId: "place-1" });
   assert.equal(controller.getState().selectedHoliday, null);
 });
 
-test("test_set_002_add_country_sets_capital_zone", async () => {
+test("test_set_002_add_city_sets_name_country_and_zone", async () => {
   const { controller } = setup();
   await controller.dispatch({ type: "open" });
-  await controller.dispatch({ type: "addPlace", countryCode: "US" });
-  await controller.dispatch({ type: "addPlace", countryCode: "SA" });
-  const zones = controller.getState().settings?.places.map((place) => place.zone);
-  assert.deepEqual(zones, ["America/New_York", "Asia/Riyadh"]);
+  await controller.dispatch({ type: "addPlace", cityId: "mumbai" });
+  const place = controller.getState().settings?.places[0];
+  assert.equal(place?.cityId, "mumbai");
+  assert.equal(place && placeName(place, true), "Mumbai, India");
+  assert.equal(place?.zone, "Asia/Kolkata");
+  assert.equal(place && zoneOffset(start, place.zone), 5.5 * 60 * 60 * 1000);
 });
 
-test("test_set_003_choose_other_city_zone", async () => {
-  const { controller } = setup();
+test("test_set_013_only_listed_cities_can_be_added", async () => {
+  const { controller, saves } = setup();
   await controller.dispatch({ type: "open" });
-  await controller.dispatch({ type: "addPlace", countryCode: "US" });
-  await controller.dispatch({
-    type: "editPlace",
-    placeId: "place-1",
-    changes: { zone: "America/Los_Angeles" },
-  });
-  assert.equal(controller.getState().settings?.places[0].zone, "America/Los_Angeles");
-  assert.equal(controller.getState().picker[0].localDateTime.hour, 2);
-  await controller.dispatch({
-    type: "editPlace",
-    placeId: "place-1",
-    changes: { zone: "Europe/London" },
-  });
-  assert.equal(controller.getState().settings?.places[0].zone, "America/Los_Angeles");
+  await controller.dispatch({ type: "addPlace", cityId: "nairobi" });
+  assert.deepEqual(saves, []);
+  assert.equal(controller.getState().settings, null);
+  assert.equal(controller.getState().isEmpty, true);
+});
+
+test("test_set_015_saved_place_outside_the_list_is_dropped", async () => {
+  const { countryCode, zone, ...london } = createPlace("place-1", "london");
+  const unlisted = { ...london, id: "place-2", cityId: "nairobi" };
+  const raw = { ...defaultSettings(540, 1020), places: [london, unlisted] };
+  const { controller } = setup({ store: { saved: parseSettings(raw) } });
+  await controller.dispatch({ type: "open" });
+  const places = controller.getState().settings?.places ?? [];
+  assert.deepEqual(
+    places.map((place) => placeName(place, false)),
+    ["London"],
+  );
+  assert.deepEqual([places[0].countryCode, places[0].zone], [countryCode, zone]);
+});
+
+test("test_set_015_version_1_record_is_read_as_no_saved_settings", async () => {
+  const raw = { ...defaultSettings(540, 1020), version: 1, places: [createPlace("a", "riyadh")] };
+  const { controller } = setup({ store: { saved: parseSettings(raw) } });
+  await controller.dispatch({ type: "open" });
+  assert.equal(controller.getState().settings, null);
+  assert.equal(controller.getState().isEmpty, true);
 });
 
 test("test_set_004_change_is_saved_and_restored_on_next_open", async () => {
   const first = setup();
   await first.controller.dispatch({ type: "open" });
-  await first.controller.dispatch({ type: "addPlace", countryCode: "SA" });
+  await first.controller.dispatch({ type: "addPlace", cityId: "riyadh" });
   await first.controller.dispatch({ type: "setShowHijri", value: true });
   assert.equal(first.saves.length, 2);
   const second = setup({ store: first.store });
@@ -159,7 +174,7 @@ test("test_set_005_hours_set_before_any_place_start_from_the_defaults", async ()
   const { controller } = setup();
   await controller.dispatch({ type: "open" });
   await controller.dispatch({ type: "setWorkingHours", start: 480, end: 960 });
-  await controller.dispatch({ type: "addPlace", countryCode: "GB" });
+  await controller.dispatch({ type: "addPlace", cityId: "london" });
   const settings = controller.getState().settings;
   assert.deepEqual([settings?.workStartMinutes, settings?.workEndMinutes], [480, 960]);
 });
@@ -167,7 +182,7 @@ test("test_set_005_hours_set_before_any_place_start_from_the_defaults", async ()
 test("test_set_006_choose_region", async () => {
   const { controller } = setup();
   await controller.dispatch({ type: "open" });
-  await controller.dispatch({ type: "addPlace", countryCode: "US" });
+  await controller.dispatch({ type: "addPlace", cityId: "washington-dc" });
   assert.equal(controller.getState().settings?.places[0].region, "");
   await controller.dispatch({
     type: "editPlace",
@@ -182,8 +197,8 @@ test("test_set_006_choose_region", async () => {
 test("test_set_008_move_place_reorders_picker_and_grid", async () => {
   const { controller } = setup();
   await controller.dispatch({ type: "open" });
-  for (const countryCode of ["GB", "US", "JP"]) {
-    await controller.dispatch({ type: "addPlace", countryCode });
+  for (const cityId of ["london", "washington-dc", "tokyo"]) {
+    await controller.dispatch({ type: "addPlace", cityId });
   }
   await controller.dispatch({ type: "movePlace", placeId: "place-3", offset: -1 });
   const state = controller.getState();
@@ -200,8 +215,8 @@ test("test_set_008_move_place_reorders_picker_and_grid", async () => {
 test("test_set_008_new_first_place_requests_its_window_years", async () => {
   const { controller, calls } = setup();
   await controller.dispatch({ type: "open" });
-  await controller.dispatch({ type: "addPlace", countryCode: "US" });
-  await controller.dispatch({ type: "addPlace", countryCode: "JP" });
+  await controller.dispatch({ type: "addPlace", cityId: "washington-dc" });
+  await controller.dispatch({ type: "addPlace", cityId: "tokyo" });
   await controller.dispatch({ type: "movePlace", placeId: "place-2", offset: -1 });
   assert.deepEqual(placeIds(controller), ["place-2", "place-1"]);
   assert.deepEqual([...calls].sort(), ["JP-2026", "US-2026"]);
@@ -210,7 +225,7 @@ test("test_set_008_new_first_place_requests_its_window_years", async () => {
 test("test_set_009_set_display_name", async () => {
   const { controller } = setup();
   await controller.dispatch({ type: "open" });
-  await controller.dispatch({ type: "addPlace", countryCode: "GB" });
+  await controller.dispatch({ type: "addPlace", cityId: "london" });
   await controller.dispatch({
     type: "editPlace",
     placeId: "place-1",
@@ -231,7 +246,7 @@ test("test_set_010_turn_on_country_names", async () => {
 test("test_set_011_turn_on_hijri", async () => {
   const { controller } = setup();
   await controller.dispatch({ type: "open" });
-  await controller.dispatch({ type: "addPlace", countryCode: "SA" });
+  await controller.dispatch({ type: "addPlace", cityId: "riyadh" });
   assert.equal(controller.getState().grid[0][0].hijri, null);
   await controller.dispatch({ type: "setShowHijri", value: true });
   assert.equal(controller.getState().settings?.showHijri, true);
@@ -241,8 +256,8 @@ test("test_set_011_turn_on_hijri", async () => {
 test("test_hij_002_choose_variant_per_place", async () => {
   const { controller } = setup();
   await controller.dispatch({ type: "open" });
-  await controller.dispatch({ type: "addPlace", countryCode: "SA" });
-  await controller.dispatch({ type: "addPlace", countryCode: "SA" });
+  await controller.dispatch({ type: "addPlace", cityId: "riyadh" });
+  await controller.dispatch({ type: "addPlace", cityId: "riyadh" });
   await controller.dispatch({
     type: "editPlace",
     placeId: "place-2",
@@ -257,7 +272,7 @@ test("test_hij_003_adjust_hijri_per_place", async () => {
     saved: {
       ...defaultSettings(540, 1020),
       showHijri: true,
-      places: [createPlace("a", "SA"), createPlace("b", "SA")],
+      places: [createPlace("a", "riyadh"), createPlace("b", "riyadh")],
     },
   });
   await controller.dispatch({ type: "open" });
