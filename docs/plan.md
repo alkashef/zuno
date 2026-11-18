@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                                             | Description                                                                                                          | Model  | Effort | Status   |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------ | ------ | -------- |
-| **M37** Smaller month header                          | The month buttons are 32 px and the header row takes 40 px, not 60 px                                                | sonnet | low    | open     |
 | **M38** Country names as the city list names them     | Hong Kong's territory reads "Hong Kong"                                                                              | sonnet | low    | open     |
 | **M39** Weekend equal to the country's is the default | A place whose ticked days equal its country's weekend stores no choice of its own                                    | sonnet | low    | open     |
 | **M40** Version in the settings panel                 | The settings footer shows "Version" and the build's date and time in UTC                                             | sonnet | medium | open     |
@@ -22,16 +21,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M37 — Smaller month header
-
-- **Refs:** CAL-005, DEC-020.
-- **Owner:** `src/month-grid.css`, `src/theme.css`.
-- **Tests first:** `ui_cal_005_month_buttons_are_32_px_and_the_header_row_takes_40_px`.
-- **Build:** add `--month-nav-size` (32 px) to `theme.css`. In the month grid's header the previous
-  and next buttons are squares of that size with `--icon-size-small` arrows, the title is
-  `--font-size-body`, and `--space-2` lies under the row. No other button changes.
-- **Gate:** the two buttons still change the month (the existing tests of CAL-005 pass unchanged).
 
 ### M38 — Country names as the city list names them
 

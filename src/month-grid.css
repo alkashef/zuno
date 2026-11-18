@@ -20,12 +20,23 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.month-grid-header .button-icon {
+  width: var(--month-nav-size);
+  min-height: var(--month-nav-size);
+  height: var(--month-nav-size);
+}
+
+.month-grid-header .icon {
+  width: var(--icon-size-small);
+  height: var(--icon-size-small);
 }
 
 .month-grid-title {
   min-width: var(--title-min-width);
-  font-size: var(--font-size-large);
+  font-size: var(--font-size-body);
   text-align: center;
 }
 

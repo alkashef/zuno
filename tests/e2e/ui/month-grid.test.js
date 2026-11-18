@@ -211,3 +211,17 @@ test("ui_lay_001_grid_rows_scroll_headers_stay_in_view", async () => {
   assert.ok(box !== null && head !== null);
   assert.ok(head.y >= box.y && head.y + head.height <= box.y + box.height);
 });
+
+test("ui_cal_005_month_buttons_are_32_px_and_the_header_row_takes_40_px", async () => {
+  const page = await openWith(["london"]);
+  const earlier = await page.locator('[data-role="earlier"]').boundingBox();
+  const later = await page.locator('[data-role="later"]').boundingBox();
+  const header = page.locator(".month-grid-header");
+  const box = await header.boundingBox();
+  const margin = await header.evaluate((node) =>
+    Number.parseFloat(node.ownerDocument.defaultView?.getComputedStyle(node).marginBottom ?? "-1"),
+  );
+  assert.deepEqual([earlier?.width, earlier?.height], [32, 32]);
+  assert.deepEqual([later?.width, later?.height], [32, 32]);
+  assert.equal((box?.height ?? 0) + margin, 40);
+});
