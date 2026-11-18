@@ -292,11 +292,10 @@ function bandCells(doc, days) {
       run = doc.createElement("th");
       run.scope = "colgroup";
       run.className = "month-grid-band";
-      run.colSpan = 0;
+      run.colSpan = 1;
       run.textContent = text;
       cells.push(run);
-    }
-    run.colSpan += 1;
+    } else run.colSpan += 1;
   }
   return cells;
 }

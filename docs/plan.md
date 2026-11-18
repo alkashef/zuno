@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M30** Month grid columns match the days | With Hijri on, the grid has one column per day again and the day cells keep their width | sonnet | medium | open |
 | **M31** Holiday table: generator and data | A script writes the public holidays of seven countries for 2026 to 2028 into `data/`, and a domain module reads them | opus | high | open |
 | **M32** Holiday table in the page | Places in the seven countries show the table's holidays, with no request to the service | sonnet | high | open |
 | **M33** Notice skips countries with added holidays | The "No holiday data" notice leaves out a country the user added a holiday for | sonnet | medium | open |
@@ -29,18 +28,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M30 — Month grid columns match the days
-
-- **Refs:** CAL-001, HIJ-001.
-- **Owner:** `src/views/month-grid.js`.
-- **Tests first:** `ui_cal_001_one_column_per_day_and_same_cell_width_with_hijri_on`,
-  `ui_hij_001_band_cells_span_exactly_the_days_of_the_month`.
-- **Build:** the cells of the Hijri month band span one column too many each (a cell's span starts
-  at 0, which the browser reads as 1, and then grows by one per day). Make each band cell span
-  exactly its days.
-- **Gate:** in November 2026 with Hijri on the grid has 30 day columns, the band's spans add up to
-  30, and a day cell is as wide as with Hijri off.
 
 ### M31 — Holiday table: generator and data
 
