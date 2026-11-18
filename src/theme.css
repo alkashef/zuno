@@ -94,9 +94,10 @@
   --map-label-gap-above: 28px;
   --map-label-gap-below: 8px;
   --grid-max-height: 300px;
+  --grid-min-height: 240px;
   --grid-min-width: 840px;
   --grid-place-width: 130px;
-  --grid-cell-height: 36px;
+  --grid-cell-height: 32px;
   --grid-band-height: 28px;
   --band-line-width: 2px;
   --today-outline-width: 2px;

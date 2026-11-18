@@ -1,6 +1,7 @@
 /**
- * The world map: its card (joined above the month grid, rounded at the top), the sea, the land
- * outline, and the pins, each a location icon with its label. It does not style the page shell
+ * The world map: its card (joined above the month grid, rounded at the top), the handle on the
+ * border between the map and the month grid (LAY-004), the sea, the land outline, and the pins, each
+ * a location icon with its label. It does not style the page shell
  * (layout.css) or the other views, and it holds no colour or size value of its own (theme.css
  * does).
  */
@@ -12,6 +13,34 @@
   border: var(--line-width) solid var(--color-line-card);
   border-radius: var(--radius-card) var(--radius-card) 0 0;
   background: var(--color-card);
+}
+
+/* The strip that changes the map's height, centred on the border between the map and the month grid
+   (LAY-004, DEC-028). It sits at the top of the grid's row and reaches up over the border. */
+.page > .map-resize {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  height: var(--resize-width);
+  align-items: center;
+  justify-content: center;
+  place-self: start stretch;
+  grid-column: 1;
+  grid-row: 2;
+  margin-top: calc(-0.5 * (var(--resize-width) + var(--line-width)));
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: row-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.map-resize-grip {
+  width: var(--grip-height);
+  height: var(--grip-width);
+  border-radius: var(--radius-round);
+  background: var(--color-line-control);
 }
 
 .map-view {

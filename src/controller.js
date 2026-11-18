@@ -33,6 +33,7 @@ import * as placeList from "./domain/places.js";
 import {
   defaultSettings,
   withDisplaySwitch,
+  withMapHeight,
   withPickerHours,
   withTheme,
   withWorkingHours,
@@ -57,6 +58,7 @@ import { localDateTime } from "./domain/zones.js";
 /** @typedef {import("./domain/picker.js").PickerRow} PickerRow */
 /** @typedef {import("./domain/places.js").Place} Place */
 /** @typedef {import("./domain/places.js").PlaceChanges} PlaceChanges */
+/** @typedef {import("./domain/settings.js").MapLimits} MapLimits */
 /** @typedef {import("./domain/settings.js").PickerLimits} PickerLimits */
 /** @typedef {import("./domain/settings.js").Settings} Settings */
 /** @typedef {import("./domain/user-holidays.js").UserHolidays} UserHolidays */
@@ -79,6 +81,7 @@ import { localDateTime } from "./domain/zones.js";
  * @property {readonly string[]} defaultCityIds The cities of the default places, in order
  *   (SET-014).
  * @property {PickerLimits} pickerLimits The hour slots the picker may show (LAY-003, DEC-019).
+ * @property {MapLimits} mapLimits The map heights the user may set (LAY-004, DEC-028).
  */
 
 /**
@@ -124,7 +127,7 @@ import { localDateTime } from "./domain/zones.js";
  *   | { type: "setWorkingHours", start: number, end: number }
  *   | { type: "setShowCountry", value: boolean } | { type: "setShowHijri", value: boolean }
  *   | { type: "setTheme", value: string } | { type: "setPickerHours", hours: number }
- *   | HolidayAction} Action
+ *   | { type: "setMapHeight", px: number | null } | HolidayAction} Action
  */
 
 /**
@@ -559,6 +562,16 @@ function setPickerHours(ctx, { hours }) {
 }
 
 /**
+ * @param {Context} ctx
+ * @param {Extract<Action, { type: "setMapHeight" }>} action
+ * @returns {Promise<void>} Sets the map's height; a height outside the limits is refused (LAY-004,
+ *   LAY-005, DEC-028).
+ */
+function setMapHeight(ctx, { px }) {
+  return commitSettings(ctx, withMapHeight(currentSettings(ctx), px, ctx.deps.mapLimits));
+}
+
+/**
  * @returns {Partial<Record<Action["type"], Handler>>} The handlers of the settings workflows.
  */
 function settingsHandlers() {
@@ -572,6 +585,7 @@ function settingsHandlers() {
     setShowHijri: displaySwitch("showHijri"),
     setTheme,
     setPickerHours,
+    setMapHeight,
   });
 }
 

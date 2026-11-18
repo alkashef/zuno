@@ -1,5 +1,5 @@
 // @ts-check
-/** @module controller-settings.test Settings workflows through src/controller.js with fake api, storage and clock (SET-001, SET-002, SET-004 to SET-006, SET-008 to SET-013, SET-015, HIJ-002, HIJ-003, LAY-003, EX-019). */
+/** @module controller-settings.test Settings workflows through src/controller.js with fake api, storage and clock (SET-001, SET-002, SET-004 to SET-006, SET-008 to SET-013, SET-015, HIJ-002, HIJ-003, LAY-003, LAY-005, EX-019). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -51,6 +51,7 @@ function setup({ saved = savedWithNoPlaces(), store = { saved } } = {}) {
     clock: { now: () => start },
     defaultHours: { start: 540, end: 1020 },
     pickerLimits: { defaultHours: 24, minHours: 24, maxHours: 48 },
+    mapLimits: { minHeight: 240, maxHeight: 900 },
     defaultCityIds: config.defaultCityIds,
   });
   return { controller, calls, store, saves };
@@ -175,8 +176,13 @@ test("test_set_013_only_listed_cities_can_be_added", async () => {
   assert.equal(controller.getState().isEmpty, true);
 });
 
-/** The whole day only: 24, 24, 24. */
-const wholeDay = { defaultHours: 24, minHours: 24, maxHours: 24 };
+/** The whole day only: 24, 24, 24; the map from 240 to 900 px. */
+const wholeDay = {
+  defaultHours: 24,
+  minHours: 24,
+  maxHours: 24,
+  mapLimits: { minHeight: 240, maxHeight: 900 },
+};
 
 test("test_set_015_saved_place_outside_the_list_is_dropped", async () => {
   const { countryCode, zone, ...london } = createPlace("place-1", "london");
@@ -389,7 +395,12 @@ test("test_set_016_user_chooses_a_places_weekend_days", async () => {
 });
 
 test("test_lay_003_picker_hours_are_saved_and_restored", async () => {
-  const limits = { defaultHours: 24, minHours: 24, maxHours: 48 };
+  const limits = {
+    defaultHours: 24,
+    minHours: 24,
+    maxHours: 48,
+    mapLimits: { minHeight: 240, maxHeight: 900 },
+  };
   const saved = { ...defaultSettings(540, 1020), places: [createPlace("a", "tokyo")] };
   const { controller, store, saves } = setup({ saved });
   await controller.dispatch({ type: "open" });
@@ -409,4 +420,22 @@ test("test_lay_003_picker_hours_are_saved_and_restored", async () => {
   const window = state.pickerWindow;
   assert.ok(window);
   assert.equal(window.to - window.from, 30 * 60 * 60 * 1000);
+});
+
+test("test_lay_005_setting_the_map_height_saves_it", async () => {
+  const saved = { ...defaultSettings(540, 1020), places: [createPlace("a", "tokyo")] };
+  const { controller, store, saves } = setup({ saved });
+  await controller.dispatch({ type: "open" });
+  await controller.dispatch({ type: "setMapHeight", px: 520 });
+  assert.equal(saves.length, 1);
+  assert.equal(saves[0].mapHeight, 520);
+  for (const px of [239, 901, 520.5]) {
+    await controller.dispatch({ type: "setMapHeight", px });
+  }
+  assert.equal(saves.length, 1);
+  const reloaded = setup({
+    store: { saved: parseSettings(JSON.parse(JSON.stringify(store.saved)), wholeDay) },
+  });
+  await reloaded.controller.dispatch({ type: "open" });
+  assert.equal(reloaded.controller.getState().settings?.mapHeight, 520);
 });

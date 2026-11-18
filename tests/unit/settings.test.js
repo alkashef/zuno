@@ -1,5 +1,5 @@
 // @ts-check
-/** @module settings.test Unit tests for src/domain/settings.js (SET-005, SET-007, SET-010 to SET-012, SET-015, LAY-003). */
+/** @module settings.test Unit tests for src/domain/settings.js (SET-005, SET-007, SET-010 to SET-012, SET-015, LAY-003 to LAY-005). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -12,6 +12,7 @@ import {
   defaultSettings,
   parseSettings,
   withDisplaySwitch,
+  withMapHeight,
   withPickerHours,
   withTheme,
   withWorkingHours,
@@ -19,11 +20,15 @@ import {
 
 const fresh = () => defaultSettings(config.defaultWorkStartMinutes, config.defaultWorkEndMinutes);
 
-/** The picker hour limits from config (LAY-002, DEC-019). */
+/** The map height limits from config (LAY-004, DEC-028). */
+const mapLimits = { minHeight: config.mapMinHeight, maxHeight: config.mapMaxHeight };
+
+/** The picker hour limits and the map height limits from config (LAY-002, DEC-019, DEC-028). */
 const limits = {
   defaultHours: config.pickerDefaultHours,
   minHours: config.pickerMinHours,
   maxHours: config.pickerMaxHours,
+  mapLimits,
 };
 
 test("test_set_005_default_hours_9am_to_5pm_and_start_before_end", () => {
@@ -160,4 +165,29 @@ test("test_lay_003_picker_hours_are_whole_numbers_within_the_limits", () => {
   assert.equal(withPickerHours(settings, 26.5, limits), null);
   assert.equal(withPickerHours(settings, "30", limits), null);
   assert.equal(defaultSettings(540, 1020, [], 30).pickerHours, 30);
+});
+
+test("test_lay_004_map_height_is_whole_pixels_within_the_limits", () => {
+  const settings = fresh();
+  assert.equal(settings.mapHeight, null);
+  assert.deepEqual(withMapHeight(settings, 500, mapLimits), { ...settings, mapHeight: 500 });
+  assert.equal(withMapHeight(settings, config.mapMinHeight, mapLimits)?.mapHeight, 240);
+  assert.equal(withMapHeight(settings, config.mapMaxHeight, mapLimits)?.mapHeight, 900);
+  assert.equal(withMapHeight(settings, null, mapLimits)?.mapHeight, null);
+  assert.equal(withMapHeight(settings, 239, mapLimits), null);
+  assert.equal(withMapHeight(settings, 901, mapLimits), null);
+  assert.equal(withMapHeight(settings, 500.5, mapLimits), null);
+  assert.equal(withMapHeight(settings, "500", mapLimits), null);
+});
+
+test("test_lay_005_saved_map_height_outside_the_limits_reads_as_null", () => {
+  const { mapHeight, ...older } = { ...fresh(), places: [createPlace("a", "tokyo")] };
+  assert.equal(mapHeight, null);
+  assert.deepEqual(parseSettings(older, limits), { ...older, mapHeight: null });
+  assert.equal(parseSettings({ ...older, mapHeight: 500 }, limits)?.mapHeight, 500);
+  for (const outside of [239, 901, 500.5, "500", -1]) {
+    const parsed = parseSettings({ ...older, mapHeight: outside }, limits);
+    assert.deepEqual(parsed?.places, older.places, `the places stay for ${outside}`);
+    assert.equal(parsed?.mapHeight, null, String(outside));
+  }
 });

@@ -2,7 +2,7 @@
 /**
  * @module domain/settings
  * The settings shape, defaults and validation (SET-005, SET-007, SET-010 to SET-012, SET-014, SET-015,
- * LAY-003, DEC-016, DEC-019). Invalid input is refused by returning `null`; it is not an error. It
+ * LAY-003, LAY-005, DEC-016, DEC-019, DEC-028). Invalid input is refused by returning `null`; it is not an error. It
  * does not check one place (domain/places.js does).
  */
 import { createPlace, isUnlistedPlace, restorePlace } from "./places.js";
@@ -19,6 +19,8 @@ import { createPlace, isUnlistedPlace, restorePlace } from "./places.js";
  * @property {boolean} showHijri The Hijri calendar is on (SET-011).
  * @property {Theme} theme The chosen theme (SET-012, THM-001).
  * @property {number} pickerHours Hour slots of the picker window (PCK-006, LAY-003, DEC-019).
+ * @property {number | null} mapHeight The map card's height in pixels, or `null` when the map takes
+ *   the height the month grid leaves (LAY-004, LAY-005, DEC-028).
  */
 
 /**
@@ -26,6 +28,17 @@ import { createPlace, isUnlistedPlace, restorePlace } from "./places.js";
  * @property {number} defaultHours For settings that do not say.
  * @property {number} minHours The fewest.
  * @property {number} maxHours The most.
+ */
+
+/**
+ * @typedef {object} MapLimits The map card heights the user may set (from config, DEC-028).
+ * @property {number} minHeight The lowest, in pixels.
+ * @property {number} maxHeight The highest, in pixels.
+ */
+
+/**
+ * @typedef {PickerLimits & { mapLimits: MapLimits }} SettingsLimits Every limit a saved record is
+ *   checked against.
  */
 
 /** @typedef {"auto" | "light" | "dark"} Theme */
@@ -74,14 +87,27 @@ function isPickerHours(value, limits) {
 }
 
 /**
+ * @param {unknown} value
+ * @param {MapLimits} limits
+ * @returns {value is number} Whether it is a whole number of pixels within the limits.
+ */
+function isMapHeight(value, limits) {
+  return (
+    Number.isInteger(value) &&
+    /** @type {number} */ (value) >= limits.minHeight &&
+    /** @type {number} */ (value) <= limits.maxHeight
+  );
+}
+
+/**
  * @param {number} workStartMinutes Default start (from config).
  * @param {number} workEndMinutes Default end (from config).
  * @param {readonly string[]} [cityIds] The cities of the default places, in order (from config);
  *   none when left out.
  * @param {number} [pickerHours] Hour slots of the picker (from config); the whole day when left
  *   out (PCK-006).
- * @returns {Settings} Settings with one place per city id, country names and Hijri off, and the
- *   theme on Auto (SET-007, SET-010 to SET-012, SET-014).
+ * @returns {Settings} Settings with one place per city id, country names and Hijri off, the
+ *   theme on Auto, and no map height of the user's (SET-007, SET-010 to SET-012, SET-014, DEC-028).
  */
 export function defaultSettings(
   workStartMinutes,
@@ -98,6 +124,7 @@ export function defaultSettings(
     showHijri: false,
     theme: "auto",
     pickerHours,
+    mapHeight: null,
   };
 }
 
@@ -139,11 +166,22 @@ function hasValidDisplay(record, limits) {
 }
 
 /**
+ * @param {unknown} value A saved map height.
+ * @param {MapLimits} limits
+ * @returns {number | null} The height when it is a whole number within the limits, else `null`
+ *   (DEC-028).
+ */
+function savedMapHeight(value, limits) {
+  return isMapHeight(value, limits) ? value : null;
+}
+
+/**
  * Checks a value read from storage. A record without `theme` gets Auto, the default (SET-012), and
- * one without `pickerHours` gets the default hours (LAY-003). A place whose city is not in the list
- * is dropped (SET-015).
+ * one without `pickerHours` gets the default hours (LAY-003). A `mapHeight` that is missing or
+ * outside the map limits reads as `null`, so the places are kept (LAY-005, DEC-028). A place whose
+ * city is not in the list is dropped (SET-015).
  * @param {unknown} value
- * @param {PickerLimits} limits The picker hour limits (from config); required.
+ * @param {SettingsLimits} limits The picker hour and map height limits (from config); required.
  * @returns {Settings | null} The settings when valid, else `null`. Any version but 2, such as a
  *   version 1 record of places by country, is invalid (DEC-016), and so are hours outside the limits.
  * @throws {TypeError} When `limits` is missing.
@@ -154,12 +192,15 @@ export function parseSettings(value, limits) {
   /** @type {Record<string, unknown>} */
   const record = { theme: "auto", pickerHours: limits.defaultHours, ...value };
   const places = restorePlaces(record.places);
+  const mapHeight = savedMapHeight(record.mapHeight, limits.mapLimits);
   const valid =
     record.version === settingsVersion &&
     isWorkingHours(record.workStartMinutes, record.workEndMinutes) &&
     hasValidDisplay(record, limits) &&
     places !== null;
-  return valid ? /** @type {Settings} */ (/** @type {unknown} */ ({ ...record, places })) : null;
+  return valid
+    ? /** @type {Settings} */ (/** @type {unknown} */ ({ ...record, places, mapHeight }))
+    : null;
 }
 
 /**
@@ -206,4 +247,16 @@ export function withTheme(settings, value) {
  */
 export function withPickerHours(settings, hours, limits) {
   return isPickerHours(hours, limits) ? { ...settings, pickerHours: hours } : null;
+}
+
+/**
+ * Sets the map card's height (LAY-004, LAY-005, DEC-028).
+ * @param {Settings} settings
+ * @param {unknown} px A whole number of pixels, or `null` for the height the month grid leaves.
+ * @param {MapLimits} limits The map height limits (from config).
+ * @returns {Settings | null} New settings, or `null` when the value is neither `null` nor a whole
+ *   number within the limits.
+ */
+export function withMapHeight(settings, px, limits) {
+  return px === null || isMapHeight(px, limits) ? { ...settings, mapHeight: px } : null;
 }

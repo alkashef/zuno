@@ -69,6 +69,7 @@ function setup(saved, start, answer = invented) {
     clock: { now: () => clock.time },
     defaultHours: { start: 540, end: 1020 },
     pickerLimits: { defaultHours: 24, minHours: 24, maxHours: 48 },
+    mapLimits: { minHeight: 240, maxHeight: 900 },
     defaultCityIds: [],
   });
   return { controller, calls, clock };

@@ -33,6 +33,7 @@ function setup(cityIds, start) {
     clock: { now: () => start.getTime() },
     defaultHours: { start: 540, end: 1020 },
     pickerLimits: { defaultHours: 24, minHours: 24, maxHours: 48 },
+    mapLimits: { minHeight: 240, maxHeight: 900 },
     defaultCityIds: [],
   });
   return { controller, requests };

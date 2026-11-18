@@ -1,5 +1,5 @@
 // @ts-check
-/** @module canvas-layout.test Headless-browser tests of the main page layout against the "Zuno UI" canvas in Chromium (MAP-001, PCK-001, PCK-002, CAL-001, LAY-001). */
+/** @module canvas-layout.test Headless-browser tests of the main page layout against the "Zuno UI" canvas in Chromium (MAP-001, PCK-001, PCK-002, CAL-001, LAY-001, DEC-020). */
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
@@ -95,8 +95,8 @@ test("ui_map_001_map_and_month_grid_share_the_left_column_without_a_gap", async 
     assert.ok(Math.abs(map.y + map.height - grid.y) <= 1, `map meets the month grid at ${size}`);
     assert.ok(Math.abs(map.x - grid.x) <= 1 && Math.abs(map.width - grid.width) <= 1, size);
     const margin = viewport.width - (picker.x + picker.width);
-    assert.ok(margin > 0, `the picker card is not flush to the page edge at ${size}`);
-    assert.ok(Math.abs(map.x - margin) <= 1, `equal side margins at ${size}`);
+    assert.ok(Math.abs(margin) <= 1, `the picker card is flush to the page edge at ${size}`);
+    assert.ok(Math.abs(map.x) <= 1, `the map is flush to the page edge at ${size}`);
     assert.ok(Math.abs(picker.y - (header.y + header.height)) <= 1, `picker under header ${size}`);
     assert.ok(Math.abs(map.y - picker.y) <= 1, `map starts level with the picker at ${size}`);
     assert.ok(grid.y + grid.height >= picker.y + picker.height - 1, `no gap under grid ${size}`);
@@ -204,10 +204,10 @@ test("ui_dec_020_picker_is_a_card_with_no_heading_and_the_date_sits_beside_the_t
   for (const side of ["Top", "Right", "Bottom", "Left"]) {
     assert.equal(await styleOf(page, ".picker", `border${side}Width`), "1px", side);
   }
-  assert.ok(padding > 0);
-  assert.ok(Math.abs(picker.x + picker.width - (viewports[1].width - padding)) <= 1);
-  assert.ok(Math.abs(picker.x - (map.x + map.width) - 20) <= 1, "a 20 px gap between the cards");
-  assert.ok(Math.abs(area.y + area.height - (picker.y + picker.height) - 20) <= 1, "page bottom");
+  assert.equal(padding, 0);
+  assert.ok(Math.abs(picker.x + picker.width - viewports[1].width) <= 1);
+  assert.ok(Math.abs(picker.x - (map.x + map.width)) <= 1, "no gap between the cards");
+  assert.ok(Math.abs(area.y + area.height - (picker.y + picker.height)) <= 1, "page bottom");
   const [handle] = await boxesOf(page, '[data-role="resize"]');
   assert.ok(Math.abs(handle.x + handle.width / 2 - (picker.x + 0.5)) <= 1, "handle on the border");
   const [row] = await boxesOf(page, '[data-role="row"]');
@@ -301,4 +301,25 @@ test("ui_dec_021_each_place_is_a_location_icon_with_its_tip_on_the_place", async
     assert.ok(!others.some((icon) => overlaps(pin.label, icon)), "a label covers another icon");
     assert.ok(!overlaps(pin.label, pin.icon), "a label covers its own icon");
   }
+});
+
+test("ui_dec_020_cards_run_edge_to_edge_and_month_cells_are_32_px", async () => {
+  const page = await openSixPlaces(viewports[0]);
+  const [area] = await boxesOf(page, '[data-role="page"]');
+  const [map] = await boxesOf(page, '[data-role="map"]');
+  const [grid] = await boxesOf(page, '[data-role="month-grid"]');
+  const [picker] = await boxesOf(page, '[data-role="picker"]');
+  assert.ok(Math.abs(map.x) <= 1 && Math.abs(grid.x) <= 1, "left edge");
+  assert.ok(Math.abs(picker.x + picker.width - viewports[0].width) <= 1, "right edge");
+  assert.ok(Math.abs(picker.x - (map.x + map.width)) <= 1, "no gap before the picker");
+  const bottom = area.y + area.height;
+  assert.ok(Math.abs(grid.y + grid.height - bottom) <= 1, "the grid reaches the page bottom");
+  assert.ok(Math.abs(picker.y + picker.height - bottom) <= 1, "the picker reaches the bottom");
+  const [cell] = await boxesOf(page, '[data-role="cell"]');
+  assert.ok(Math.abs(cell.height - 32) <= 0.5, `a cell is ${cell.height} px tall`);
+  const header = await page.locator('[data-role="header"]').evaluate((element) => {
+    const style = element.ownerDocument.defaultView?.getComputedStyle(element);
+    return [style?.paddingLeft, style?.paddingRight];
+  });
+  assert.deepEqual(header, ["32px", "32px"]);
 });

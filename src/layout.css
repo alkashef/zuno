@@ -1,7 +1,8 @@
 /**
  * The layout of the page shell: the header row, the page area (the map joined above the month grid
- * as one card on the left, the picker as its own card on the right, a card gap between them), the
- * empty page and the error screen with their corners. It does not style the views themselves (each
+ * as one card on the left, the picker as its own card on the right, the cards edge to edge with no
+ * gap; DEC-020), the map's row when the user set its height (DEC-028), the empty page and the error
+ * screen with their corners. It does not style the views themselves (each
  * has its own sheet), and it holds no colour or size value of its own (theme.css does).
  */
 body {
@@ -42,8 +43,14 @@ body {
   flex: 1;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-rows: 1fr auto;
-  column-gap: var(--space-card);
-  padding: 0 var(--space-page) var(--space-card);
+  column-gap: 0;
+  padding: 0;
+}
+
+/* The user's map height (LAY-004, DEC-028): the map's row is fixed and the month grid gets the rest,
+   never less than its minimum. */
+.page[data-map-height] {
+  grid-template-rows: var(--map-height) minmax(var(--grid-min-height), 1fr);
 }
 
 .page > .map {
@@ -75,7 +82,6 @@ body {
     width: auto;
     grid-column: 1;
     grid-row: 3;
-    margin-top: var(--space-card);
   }
 
   .page > .picker > .picker-scroll {
@@ -91,7 +97,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: var(--space-marker);
-  margin-top: var(--space-page);
+  margin: var(--space-page) var(--space-page) var(--space-card);
   padding: var(--space-empty) var(--space-4);
   border: var(--line-width) dashed var(--color-line-input);
   border-radius: var(--radius-card);

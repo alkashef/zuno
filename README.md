@@ -5,7 +5,10 @@
 A timer app that tracks time across time zones: a world map with a location icon and the local time
 for each place, a month grid of weekends and public holidays, and a meeting-time picker for the
 places you add. The map and the month grid are one rounded card, the picker is a card beside it, and
-each of those two cards ends with a legend of its colours. Each place is a city from a fixed list
+each of those two cards ends with a legend of its colours. The cards fill the window from edge to
+edge. Drag the picker's left edge to show more hours, and drag the border between the map and the
+month grid (or focus it and press the up and down arrow keys) to give the map more or less room;
+the browser remembers both. Each place is a city from a fixed list
 of 55 cities, and you can choose its weekend days (the default is its country's weekend). The
 settings panel holds the places,
 the working hours, the display switches and the theme (Light, Dark, or Auto, which follows your

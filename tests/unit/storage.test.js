@@ -8,8 +8,13 @@ import { defaultSettings, parseSettings } from "../../src/domain/settings.js";
 import { parseUserHolidays } from "../../src/domain/user-holidays.js";
 import { createStorage } from "../../src/storage.js";
 
-/** The whole day only: 24, 24, 24. */
-const wholeDay = { defaultHours: 24, minHours: 24, maxHours: 24 };
+/** The whole day only: 24, 24, 24; the map from 240 to 900 px. */
+const wholeDay = {
+  defaultHours: 24,
+  minHours: 24,
+  maxHours: 24,
+  mapLimits: { minHeight: 240, maxHeight: 900 },
+};
 
 /** @returns {{ store: { getItem: (k: string) => string | null, setItem: (k: string, v: string) => void }, data: Map<string, string> }} */
 function fakeStore() {

@@ -27,6 +27,7 @@ import { createHeader } from "./views/header.js";
 import { createHijriNote } from "./views/hijri-note.js";
 import { createLegend } from "./views/legend.js";
 import { createMap } from "./views/map.js";
+import { createMapResize } from "./views/map-resize.js";
 import { createMonthGrid } from "./views/month-grid.js";
 import { createNotices } from "./views/notices.js";
 import { createPicker } from "./views/picker.js";
@@ -53,12 +54,13 @@ const pickerLimits = {
   minHours: config.pickerMinHours,
   maxHours: config.pickerMaxHours,
 };
+const mapLimits = { minHeight: config.mapMinHeight, maxHeight: config.mapMaxHeight };
 const controller = createController({
   api: { getHolidays },
   holidayTable: { isTableCountry, tableHolidays },
   storage: createStorage({
     store: localStorage,
-    parse: (value) => parseSettings(value, pickerLimits),
+    parse: (value) => parseSettings(value, { ...pickerLimits, mapLimits }),
   }),
   holidayStorage: createStorage({
     store: localStorage,
@@ -71,6 +73,7 @@ const controller = createController({
   defaultHours: { start: config.defaultWorkStartMinutes, end: config.defaultWorkEndMinutes },
   defaultCityIds: config.defaultCityIds,
   pickerLimits,
+  mapLimits,
 });
 const lookup = {
   cities: listCities(),
@@ -85,6 +88,10 @@ const views = [
   createEmptyPage(document),
   createNotices(document, { dispatch: controller.dispatch, placeName, countryName }),
   createMap(document, { placeName, pinOf: placePin }),
+  createMapResize(document, {
+    dispatch: controller.dispatch,
+    limits: { ...mapLimits, stepPx: config.mapHeightStepPx },
+  }),
   createMonthGrid(document, {
     dispatch: controller.dispatch,
     placeFacts,
