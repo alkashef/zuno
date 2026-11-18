@@ -158,8 +158,33 @@ function readTextColours(page) {
     const doc = body.ownerDocument;
     const win = /** @type {Window} */ (doc.defaultView);
     const textNode = 3;
+    const canvas = doc.createElement("canvas").getContext("2d");
+    /** @param {string} css @param {string} under @returns {string} The colour `css` over `under`. */
+    const laidOver = (css, under) => {
+      if (canvas === null) throw new Error("no canvas");
+      canvas.fillStyle = under;
+      canvas.fillRect(0, 0, 1, 1);
+      canvas.fillStyle = css;
+      canvas.fillRect(0, 0, 1, 1);
+      const [r, g, b] = canvas.getImageData(0, 0, 1, 1).data;
+      return `rgb(${r}, ${g}, ${b})`;
+    };
+    /** @param {Element} element @returns {string[]} A map label's colour over the land and the sea. */
+    const mapLabelBackgrounds = (element) => {
+      const label = element.closest(".map-pin-label");
+      const land = doc.querySelector(".map-land");
+      const sea = doc.querySelector(".map-view");
+      if (label === null || land === null || sea === null) return [];
+      const own = win.getComputedStyle(label).backgroundColor;
+      return [
+        laidOver(own, win.getComputedStyle(land).fill),
+        laidOver(own, win.getComputedStyle(sea).backgroundColor),
+      ];
+    };
     /** @param {Element} element @returns {string[]} The colours the text may sit on. */
     const backgroundsOf = (element) => {
+      const onLabel = mapLabelBackgrounds(element);
+      if (onLabel.length > 0) return onLabel;
       for (let node = element; node.parentElement !== null; node = node.parentElement) {
         const style = win.getComputedStyle(node);
         if (style.backgroundImage.includes("rgb")) {

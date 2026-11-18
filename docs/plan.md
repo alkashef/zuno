@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                                             | Description                                                                                                          | Model  | Effort | Status   |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------ | ------ | -------- |
-| **M35** Half-transparent map labels                   | The map shows through the city labels, and their text stays readable                                                 | sonnet | low    | open     |
 | **M36** Hijri day look and "Day" label                | The Hijri day has no chip and regular weight, a darker shade on tinted cells, and the corner reads "Day"             | sonnet | medium | open     |
 | **M37** Smaller month header                          | The month buttons are 32 px and the header row takes 40 px, not 60 px                                                | sonnet | low    | open     |
 | **M38** Country names as the city list names them     | Hong Kong's territory reads "Hong Kong"                                                                              | sonnet | low    | open     |
@@ -24,18 +23,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M35 — Half-transparent map labels
-
-- **Refs:** MAP-001, DEC-020.
-- **Owner:** `src/map.css`, `src/theme.css`.
-- **Tests first:** `ui_map_001_label_background_is_the_card_colour_at_half_strength`,
-  `ui_map_001_label_text_contrast_over_land_and_over_sea`.
-- **Build:** add `--color-map-label` to `theme.css` (the card colour mixed with `transparent` at
-  50%) and use it as the background of a map label.
-- **Gate:** in both themes every text of a label has at least 4.5:1 against the label's colour laid
-  over the land colour and over the sea colour. If one does not, stop as blocked and report the
-  ratios.
 
 ### M36 — Hijri day look and "Day" label
 

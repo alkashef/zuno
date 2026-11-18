@@ -108,3 +108,72 @@ test("ui_map_001_outline_is_drawn_and_pins_stay_on_their_places", async () => {
     [],
   );
 });
+
+/**
+ * @param {"light" | "dark"} colorScheme
+ * @returns {Promise<{ background: string, ratios: number[] }>} The label's computed background and
+ *   the lowest contrast of each of its texts over the land and over the sea.
+ */
+async function labelColours(colorScheme) {
+  const { page } = await openPage(browser, built.url, { colorScheme, saved: twoPlaces() });
+  await page.locator('[data-role="pin"]').first().waitFor();
+  return page.locator("body").evaluate((body) => {
+    const doc = body.ownerDocument;
+    const win = /** @type {Window} */ (doc.defaultView);
+    const canvas = doc.createElement("canvas").getContext("2d");
+    if (canvas === null) throw new Error("no canvas");
+    /** @param {string} css @returns {number[]} The red, green, blue and alpha of a CSS colour. */
+    const rgba = (css) => {
+      canvas.clearRect(0, 0, 1, 1);
+      canvas.fillStyle = css;
+      canvas.fillRect(0, 0, 1, 1);
+      return [...canvas.getImageData(0, 0, 1, 1).data];
+    };
+    /** @param {number[]} c @returns {number} Relative luminance. */
+    const lum = (c) => {
+      const [r = 0, g = 0, b = 0] = c.slice(0, 3).map((v) => {
+        const u = v / 255;
+        return u <= 0.03928 ? u / 12.92 : ((u + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    /** @param {Element | null} el @param {string} prop @returns {string} */
+    const style = (el, prop) => {
+      if (el === null) throw new Error("missing element");
+      return win.getComputedStyle(el).getPropertyValue(prop);
+    };
+    const label = doc.querySelector(".map-pin-label");
+    const over = rgba(style(label, "background-color"));
+    const alpha = (over[3] ?? 0) / 255;
+    const backs = [
+      rgba(style(doc.querySelector(".map-land"), "fill")),
+      rgba(style(doc.querySelector(".map-view"), "background-color")),
+    ];
+    const ratios = ["name", "time", "date"].map((role) => {
+      const text = lum(rgba(style(doc.querySelector(`[data-role="pin-${role}"]`), "color")));
+      return Math.min(
+        ...backs.map((back) => {
+          const mixed = [0, 1, 2].map((i) => (over[i] ?? 0) * alpha + (back[i] ?? 0) * (1 - alpha));
+          const [high = 0, low = 0] = [text, lum(mixed)].sort((a, b) => b - a);
+          return (high + 0.05) / (low + 0.05);
+        }),
+      );
+    });
+    return { background: style(label, "background-color"), ratios };
+  });
+}
+
+test("ui_map_001_label_background_is_the_card_colour_at_half_strength", async () => {
+  const light = await labelColours("light");
+  const dark = await labelColours("dark");
+  assert.equal(light.background, "color(srgb 1 1 1 / 0.5)");
+  assert.equal(dark.background, "color(srgb 0.0627451 0.0745098 0.101961 / 0.5)");
+});
+
+test("ui_map_001_label_text_contrast_over_land_and_over_sea", async () => {
+  for (const scheme of /** @type {const} */ (["light", "dark"])) {
+    const { ratios } = await labelColours(scheme);
+    assert.equal(ratios.length, 3);
+    for (const ratio of ratios) assert.ok(ratio >= 4.5, `${scheme}: ${ratios.join(", ")}`);
+  }
+});

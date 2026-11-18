@@ -95,7 +95,7 @@
   padding: var(--space-1) var(--space-row);
   border: var(--line-width) solid var(--color-line-control);
   border-radius: var(--radius-small);
-  background: var(--color-card);
+  background: var(--color-map-label);
   box-shadow: var(--shadow-small);
   color: var(--color-text);
   transform: translate(
