@@ -108,6 +108,20 @@ test("ui_set_010_country_names_toggle", async () => {
   assert.deepEqual(await page.locator(".settings-place-name").allTextContents(), ["Riyadh"]);
 });
 
+test("ui_dsp_004_hong_kong_place_and_city_list_ex_025", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["hong-kong"]) });
+  await openSettings(page);
+  await page.getByLabel("Show country names").check();
+  assert.deepEqual(await page.locator(".month-grid-place-country").allTextContents(), [
+    "Hong Kong",
+  ]);
+  const labels = await page
+    .getByRole("combobox", { name: "City", exact: true })
+    .locator("option")
+    .allTextContents();
+  assert.ok(labels.includes("Hong Kong, Hong Kong"));
+});
+
 test("ui_set_011_hijri_toggle_off_by_default", async () => {
   const { page } = await openPage(browser, built.url, { saved: savedPlaces(["riyadh"]) });
   await openSettings(page);

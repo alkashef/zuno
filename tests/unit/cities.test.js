@@ -121,6 +121,22 @@ test("test_nfr_003_country_names_are_english", () => {
   assert.throws(() => countryName("ZZ"), RangeError);
 });
 
+test("test_dsp_004_every_country_name_matches_the_city_list", () => {
+  const rows = specCityRows();
+  assert.equal(rows.length, 55);
+  rows.forEach((row, index) => {
+    assert.equal(countryName(cityTable[index].countryCode), row.country, row.city);
+  });
+});
+
+test("test_dsp_004_hong_kong_ex_025", () => {
+  assert.equal(countryName("HK"), "Hong Kong");
+  assert.deepEqual(
+    listCities().find((city) => city.id === "hong-kong"),
+    { id: "hong-kong", name: "Hong Kong", country: "Hong Kong" },
+  );
+});
+
 test("test_hol_006_country_list_has_each_country_of_the_city_table_once_by_name", () => {
   const countries = listCountries();
   assert.equal(countries.length, Object.keys(specCountryCodes).length);

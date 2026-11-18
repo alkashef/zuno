@@ -18,6 +18,13 @@ import { cityTable } from "../../data/cities.js";
 
 const regionNames = new Intl.DisplayNames("en", { type: "region" });
 
+/** Names the city list gives a territory that `Intl` names differently (DSP-004, DEC-015). */
+const territoryNames = Object.freeze(
+  /** @type {Record<string, string>} */ ({
+    HK: "Hong Kong",
+  }),
+);
+
 /**
  * @param {unknown} id
  * @returns {City | null} The city with this id, or `null` when the list has none (SET-013).
@@ -49,7 +56,7 @@ export function countryName(code) {
   if (!isListedCountry(code)) {
     throw new RangeError(`No city of the list has the country code: ${code}`);
   }
-  return regionNames.of(code) ?? code;
+  return territoryNames[code] ?? regionNames.of(code) ?? code;
 }
 
 /**

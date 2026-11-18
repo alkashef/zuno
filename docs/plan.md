@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                                             | Description                                                                                                          | Model  | Effort | Status   |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------ | ------ | -------- |
-| **M38** Country names as the city list names them     | Hong Kong's territory reads "Hong Kong"                                                                              | sonnet | low    | open     |
 | **M39** Weekend equal to the country's is the default | A place whose ticked days equal its country's weekend stores no choice of its own                                    | sonnet | low    | open     |
 | **M40** Version in the settings panel                 | The settings footer shows "Version" and the build's date and time in UTC                                             | sonnet | medium | open     |
 | **M41** No 24-hour fallback in the settings reader    | `parseSettings` needs its limits; no default in code                                                                 | sonnet | low    | open     |
@@ -21,16 +20,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M38 — Country names as the city list names them
-
-- **Refs:** DSP-004, SET-010, EX-025, DEC-015.
-- **Owner:** `src/domain/cities.js`.
-- **Tests first:** `test_dsp_004_every_country_name_matches_the_city_list`,
-  `test_dsp_004_hong_kong_ex_025`, `ui_dsp_004_hong_kong_place_and_city_list_ex_025`.
-- **Build:** `countryName` first looks in `territoryNames`, a frozen object with `HK`: "Hong Kong",
-  then asks `Intl`.
-- **Gate:** the names of all 55 rows equal the country column of the spec's section 9.
 
 ### M39 — Weekend equal to the country's is the default
 
