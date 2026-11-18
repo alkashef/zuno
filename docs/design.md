@@ -5,8 +5,8 @@ How to build what `spec.md` says. If this file and the spec disagree, the spec w
 Review state: Approved. The user approved the design as a whole on 2026-11-18, in a dialog,
 including DEC-023 to DEC-027 and the changed DEC-005, DEC-015 and DEC-020. The code implements
 DEC-001 to DEC-022 (milestones up to M29), the holiday table of DEC-024 (M31, M32) and the
-coastlines of DEC-026 (M34) and the version of DEC-025 (M40). DEC-023
-and DEC-027 are not built yet: `docs/plan.md` holds their milestones.
+coastlines of DEC-026 (M34), the version of DEC-025 (M40) and the Pages workflow of DEC-023
+(M43). DEC-027 is not built yet: `docs/plan.md` holds its milestone.
 Spec baseline: `docs/spec.md` as approved on 2026-11-18, with the acceptance examples EX-011 to
 EX-026.
 Visual reference (not code to copy): the "Zuno UI" canvas,

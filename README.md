@@ -34,6 +34,7 @@ Plain JavaScript, HTML and CSS, bundled into one file by esbuild 0.28.2. Browser
 | `config/` | `.env` (never committed) and `.env.example`. |
 | `scripts/` | `build.mjs` (the build), `make-holiday-table.mjs` (generates the holiday table), `make-map.mjs` (downloads the coastline data and generates the map's outline), `check.py` (the checks), `milestones-runner.py`, `cleanup.py`, setup scripts. |
 | `.claude/` | Claude Code settings, including the hook that checks each edit. |
+| `.github/` | `workflows/pages.yml`: builds the page and publishes it to GitHub Pages on every push to `main`. |
 | `.githooks/` | `pre-commit`: refuses a commit unless the checks pass. |
 | `.vscode/` | Shared editor settings. |
 
@@ -94,6 +95,18 @@ committed, so you need the commands only to change them. The generated file is n
 node scripts/make-map.mjs --download   # fetches ne_110m_land.geojson into data/ (the only network use)
 node scripts/make-map.mjs              # writes data/map-outline.svg from it
 ```
+
+## How to publish
+
+Every push to `main` publishes the page to GitHub Pages: the workflow in
+`.github/workflows/pages.yml` builds `dist/zuno.html` and deploys it as the site's `index.html`.
+The repository's Settings, Pages must have the source "GitHub Actions". The site's address is
+https://alkashef.github.io/zuno/. To publish again without a new commit, run the workflow "Publish
+to GitHub Pages" from the repository's Actions tab.
+
+The same file also runs from the local desktop: build it and open `dist/zuno.html` in a browser.
+The page on GitHub Pages and a copy opened from disk each keep their own saved settings and
+holidays; use the Holidays section's export and import to carry holidays from one to the other.
 
 ## How to test
 
