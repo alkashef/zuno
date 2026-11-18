@@ -113,7 +113,6 @@ test("ui_dec_020_cards_and_controls_have_the_designs_corner_radii", async () => 
     [".settings-option", "8px"],
     [".map-pin-label", "8px"],
     [".picker-track", "8px"],
-    [".month-grid-hijri", "6px"],
     [".settings-move-button", "6px"],
     [".legend-swatch", "4px"],
     [".notices-card", "12px"],

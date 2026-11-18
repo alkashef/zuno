@@ -147,6 +147,7 @@ test("ui_nfr_003_all_visible_text_is_english", async () => {
  * @property {string} text A short description of the element.
  * @property {string} colour Its computed text colour.
  * @property {string[]} backgrounds The computed colours it may sit on (more than one on a gradient).
+ * @property {boolean} hijriDay Whether it is a month-grid Hijri day (DEC-027 accepts 3:1 on the holiday colour).
  */
 
 /**
@@ -206,7 +207,12 @@ function readTextColours(page) {
       if (own === "" || box.width === 0 || box.height === 0) continue;
       const text = `${element.tagName.toLowerCase()} "${own.slice(0, 30)}"`;
       const colour = win.getComputedStyle(element).color;
-      found.push({ text, colour, backgrounds: backgroundsOf(element) });
+      found.push({
+        text,
+        colour,
+        backgrounds: backgroundsOf(element),
+        hijriDay: element.getAttribute("data-role") === "hijri-day",
+      });
     }
     return found;
   });
@@ -227,13 +233,16 @@ function luminance(css) {
 
 /**
  * @param {TextColours} entry
- * @returns {number} The lowest WCAG contrast ratio of the text over its possible backgrounds.
+ * @returns {number} The lowest WCAG contrast ratio of the text over its possible backgrounds, scaled so
+ *   that 4.5 means "meets its floor": a Hijri day on the light holiday colour needs 3:1 only (DEC-027).
  */
 function lowestRatio(entry) {
   const text = luminance(entry.colour);
   const ratios = entry.backgrounds.map((background) => {
     const [high = 0, low = 0] = [text, luminance(background)].sort((a, b) => b - a);
-    return (high + 0.05) / (low + 0.05);
+    const ratio = (high + 0.05) / (low + 0.05);
+    const onLightHoliday = background === "rgb(255, 107, 107)";
+    return entry.hijriDay && onLightHoliday ? (ratio * 4.5) / 3 : ratio;
   });
   return Math.min(...ratios);
 }

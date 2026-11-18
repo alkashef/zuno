@@ -144,16 +144,14 @@
 }
 
 .month-grid-hijri {
-  padding: var(--space-chip) var(--space-hairline);
-  border-radius: var(--radius-chip);
   color: var(--color-hijri);
   font-size: var(--font-size-tiny);
-  font-weight: var(--font-weight-strong);
+  font-weight: normal;
   line-height: 1;
 }
 
 .month-grid-cell:not([data-kind="plain"]) .month-grid-hijri {
-  background: var(--color-chip);
+  color: var(--color-hijri-on-tint);
 }
 
 .month-grid-band-row + tr > th {
@@ -284,10 +282,6 @@
   font-size: var(--font-size-small);
   font-weight: normal;
   white-space: normal;
-}
-
-.month-grid-corner-hijri {
-  color: var(--color-hijri);
 }
 
 .month-grid-place-name,

@@ -126,3 +126,133 @@ test("ui_dsp_003_hijri_format_in_picker_and_card", async () => {
   const card = page.locator('[data-role="card-hijri"]');
   assert.equal(await card.textContent(), "16-Rajab-1448");
 });
+
+/**
+ * @param {"light" | "dark"} colorScheme
+ * @returns {Promise<Page>} The page opened on December 2026 with a Cairo place and a British place.
+ */
+async function openDecember(colorScheme) {
+  const settings = {
+    ...defaultSettings(540, 1020),
+    places: [createPlace("place-1", "cairo"), createPlace("place-2", "london")],
+    showHijri: true,
+  };
+  const { page } = await openPage(browser, built.url, { saved: settings, colorScheme });
+  await page.locator('[data-role="grid-row"]').first().waitFor();
+  await page.getByRole("button", { name: "Next month" }).click();
+  await page.getByRole("heading", { name: "December 2026" }).waitFor();
+  return page;
+}
+
+/**
+ * @param {string} css A computed `rgb(...)` colour.
+ * @returns {number} Its WCAG relative luminance.
+ */
+function luminanceOf(css) {
+  const channels = (css.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+  const [r = 0, g = 0, b = 0] = channels.map((value) => {
+    const unit = value / 255;
+    return unit <= 0.03928 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/**
+ * @param {string} first
+ * @param {string} second
+ * @returns {number} The WCAG contrast ratio of two `rgb(...)` colours.
+ */
+function ratioOf(first, second) {
+  const [high = 0, low = 0] = [luminanceOf(first), luminanceOf(second)].sort((a, b) => b - a);
+  return (high + 0.05) / (low + 0.05);
+}
+
+/**
+ * @typedef {object} HijriLook
+ * @property {string} kind The cell's kind.
+ * @property {string} colour The Hijri day's colour.
+ * @property {string} background The Hijri day's own background colour.
+ * @property {string} weight The Hijri day's font weight.
+ * @property {string[]} under The colours the Hijri day sits on.
+ */
+
+/**
+ * @param {Page} page
+ * @returns {Promise<HijriLook[]>} The look of the Hijri day in each kind of cell, over all places.
+ */
+async function readHijriLooks(page) {
+  const [first = []] = await page.locator("body").evaluateAll((bodies) => {
+    const row = bodies[0];
+    const win = /** @type {Window} */ (row.ownerDocument.defaultView);
+    /** @param {Element} cell @returns {string[]} The colours behind a cell. */
+    const under = (cell) => {
+      for (let node = cell; node.parentElement !== null; node = node.parentElement) {
+        const style = win.getComputedStyle(node);
+        if (style.backgroundImage.includes("rgb")) {
+          return style.backgroundImage.match(/rgba?\([^)]*\)/g) ?? [];
+        }
+        if (/^rgb\(|, 1\)$/.test(style.backgroundColor)) return [style.backgroundColor];
+      }
+      return [];
+    };
+    const kinds = new Set();
+    /** @type {HijriLook[]} */
+    const looks = [];
+    for (const cell of row.querySelectorAll('[data-role="grid-row"] [data-role="cell"]')) {
+      const kind = cell.getAttribute("data-kind") ?? "";
+      const day = cell.querySelector('[data-role="hijri-day"]');
+      if (day === null || kinds.has(kind)) continue;
+      kinds.add(kind);
+      const style = win.getComputedStyle(day);
+      const [background = "", ...rest] = [style.backgroundColor, ...under(cell)];
+      looks.push({
+        kind,
+        colour: style.color,
+        background,
+        weight: style.fontWeight,
+        under: rest,
+      });
+    }
+    return [looks];
+  });
+  return first;
+}
+
+test("ui_hij_001_hijri_day_has_no_background_and_regular_weight", async () => {
+  for (const colorScheme of /** @type {const} */ (["light", "dark"])) {
+    const looks = await readHijriLooks(await openDecember(colorScheme));
+    assert.deepEqual(looks.map((look) => look.kind).sort(), [
+      "holiday",
+      "plain",
+      "split",
+      "weekend",
+    ]);
+    for (const look of looks) {
+      assert.equal(look.background, "rgba(0, 0, 0, 0)", `${colorScheme} ${look.kind}: background`);
+      assert.equal(look.weight, "400", `${colorScheme} ${look.kind}: weight`);
+    }
+  }
+});
+
+test("ui_hij_001_hijri_day_colour_on_weekend_and_holiday_cells", async () => {
+  const onTint = { light: "rgb(143, 26, 91)", dark: "rgb(43, 20, 100)" };
+  const plain = { light: "rgb(192, 38, 124)", dark: "rgb(199, 174, 255)" };
+  const minimum = { light: 3, dark: 4.5 };
+  for (const colorScheme of /** @type {const} */ (["light", "dark"])) {
+    for (const look of await readHijriLooks(await openDecember(colorScheme))) {
+      const expected = look.kind === "plain" ? plain[colorScheme] : onTint[colorScheme];
+      assert.equal(look.colour, expected, `${colorScheme} ${look.kind}: colour`);
+      const ratios = look.under.map((under) => ratioOf(look.colour, under));
+      const floor = look.kind === "plain" || look.kind === "weekend" ? 4.5 : minimum[colorScheme];
+      for (const ratio of ratios)
+        assert.ok(ratio >= floor, `${colorScheme} ${look.kind}: ${ratio}`);
+    }
+  }
+});
+
+test("ui_cal_001_corner_label_reads_day_with_hijri_on_and_off", async () => {
+  const on = await openDecember("light");
+  assert.equal(await on.locator(".month-grid-corner").last().textContent(), "Day");
+  const off = await openWith(false);
+  assert.equal(await off.locator(".month-grid-corner").last().textContent(), "Day");
+});

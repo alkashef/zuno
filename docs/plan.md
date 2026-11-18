@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                                             | Description                                                                                                          | Model  | Effort | Status   |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------ | ------ | -------- |
-| **M36** Hijri day look and "Day" label                | The Hijri day has no chip and regular weight, a darker shade on tinted cells, and the corner reads "Day"             | sonnet | medium | open     |
 | **M37** Smaller month header                          | The month buttons are 32 px and the header row takes 40 px, not 60 px                                                | sonnet | low    | open     |
 | **M38** Country names as the city list names them     | Hong Kong's territory reads "Hong Kong"                                                                              | sonnet | low    | open     |
 | **M39** Weekend equal to the country's is the default | A place whose ticked days equal its country's weekend stores no choice of its own                                    | sonnet | low    | open     |
@@ -23,25 +22,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M36 — Hijri day look and "Day" label
-
-- **Refs:** HIJ-001, DSP-003, CAL-001, DEC-027, DEC-020.
-- **Owner:** `src/month-grid.css`, `src/theme.css`, `src/views/month-grid.js`.
-- **Tests first:** `ui_hij_001_hijri_day_has_no_background_and_regular_weight`,
-  `ui_hij_001_hijri_day_colour_on_weekend_and_holiday_cells`,
-  `ui_cal_001_corner_label_reads_day_with_hijri_on_and_off`.
-- **Build:** as DEC-027 says: no chip, weight `normal`, `--color-hijri-on-tint` (`#8F1A5B` light,
-  `#2B1464` dark) on weekend, holiday and split cells; `--color-chip` leaves `theme.css`. The corner
-  label of the day header reads "Day" whether Hijri is on or off.
-- **Gate:** measured contrast of the Hijri day: at least 4.5:1 on the card and on the weekend
-  colour in both themes and on the dark holiday colour, and at least 3:1 on the light holiday
-  colour. Report the measured ratios.
-- **Approval:** User, 2026-11-18, dialogs (decision 2, "Slightly darker everywhere"; decision 3,
-  "Regular weight"; decision 4, "Day only"; and the plan): the milestone may change the existing
-  contrast test so that the Hijri day on the holiday colour needs 3:1 instead of 4.5:1, and the
-  existing tests that expect the chip or the label "Day and Hijri day". Name each changed test in
-  the report. Nothing else.
 
 ### M37 — Smaller month header
 

@@ -347,13 +347,7 @@ function buildHead(doc, days) {
   const row = doc.createElement("tr");
   const corner = doc.createElement("th");
   corner.className = "month-grid-corner";
-  if (days[0].hijri === null) corner.textContent = "Day";
-  else {
-    const hijri = doc.createElement("span");
-    hijri.className = "month-grid-corner-hijri";
-    hijri.textContent = "Hijri day";
-    corner.append("Day and ", hijri);
-  }
+  corner.textContent = "Day";
   row.append(corner, ...days.map((day) => buildDayHead(doc, day.date)));
   return row;
 }
