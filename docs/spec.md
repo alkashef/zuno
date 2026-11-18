@@ -116,7 +116,8 @@ chosen time across all places.
 | SET-011 | The system shall provide a setting that turns the Hijri calendar on or off, with the Hijri calendar off by default. | Must | Confirmed | Not every team needs the Hijri calendar. | User decision (2026-11-17) | SCN-002 | EX-010 |
 | PCK-007 | When the user chooses the previous day, the next day, or a day in a calendar, the system shall move the marker to that date and keep the marker's time of day in the first place. | Must | Confirmed | Meetings are planned for days other than today. | User decision (2026-11-17) | SCN-001 | |
 | LAY-001 | While the places do not all fit in the picker or in the month grid, the system shall make that list scroll vertically and keep the hour axis or the day headers in view. | Must | Confirmed | The page must stay usable with many places. | User decision (2026-11-17) | SCN-001, SCN-002 | |
-| THM-001 | The system shall show a light theme or a dark theme according to the operating system's colour-scheme setting. | Must | Confirmed | Comfortable reading in any lighting. | User decision (2026-11-17) | SCN-001, SCN-002 | |
+| THM-001 | The system shall show the light theme or the dark theme that the theme setting (SET-012) chooses, and, while that setting is Auto, the theme that the operating system's colour-scheme setting asks for. | Must | Confirmed | Comfortable reading in any lighting. | User decision (2026-11-17); changed by user request (2026-11-18) | SCN-001, SCN-002 | |
+| SET-012 | The system shall provide a theme setting with the choices Light, Dark and Auto, with Auto as the default. | Must | Confirmed | Some users want a different theme from their system's. | User request (2026-11-18, "add the dark/light to the settings, follow the canvas") | SCN-001, SCN-002 | |
 
 ## 5. Non-functional requirements
 
@@ -170,6 +171,9 @@ SET-009, SET-010, SET-011, PCK-007, LAY-001 and THM-001; changed requirements HI
 HIJ-003 and CAL-006; EX-010 now says the Hijri calendar is on. The user also decided on 2026-11-17,
 in a dialog, that HIJ-004 becomes an information button beside the Hijri month band and that
 DSP-003 allows the two-digit day in a month-grid cell.
+
+Changes requested by the user on 2026-11-18, in chat: new requirement SET-012 and changed
+requirement THM-001 (a Light, Dark or Auto theme setting in the settings panel).
 
 The design settled the two items once deferred to it: the source of each country's weekend days
 (DEC-003) and the holiday service (DEC-005, approved separately by the user).

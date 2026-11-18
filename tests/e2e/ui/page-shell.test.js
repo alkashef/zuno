@@ -75,13 +75,15 @@ test("ui_ref_001_refresh_button_refetches_holidays", async () => {
   await page.getByRole("button", { name: "Refresh" }).click();
   await answered;
   assert.deepEqual(holidayRequests, ["US-2026", "US-2026"]);
-  assert.equal(await updated.textContent(), "Updated 10:40 AM");
+  assert.equal(await updated.textContent(), "Updated 10:40 AM · 16-Nov-26");
 });
 
-test("ui_shell_title_stays_global_timer_until_ui_locked", async () => {
+test("ui_shell_title_is_zuno_with_subtitle_and_no_logo", async () => {
   const { page } = await openPage(browser, built.url);
-  assert.equal(await page.title(), "Global Timer");
-  assert.equal(await page.getByRole("heading", { level: 1 }).textContent(), "Global Timer");
+  assert.equal(await page.title(), "Zuno");
+  assert.equal(await page.getByRole("heading", { level: 1 }).textContent(), "Zuno");
+  assert.equal(await page.locator(".header-subtitle").textContent(), "Many time zones, One team!");
+  assert.equal(await page.locator("header img, .header-logo").count(), 0);
 });
 
 test("ui_shell_unexpected_error_shows_message_and_stack_on_screen", async () => {

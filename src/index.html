@@ -4,24 +4,29 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!--zuno:csp-->
-    <title>Global Timer</title>
+    <title>Zuno</title>
     <!--zuno:style-->
   </head>
   <body>
     <header class="header" data-role="header">
-      <span class="header-logo" aria-hidden="true"></span>
-      <h1 class="header-title">Global Timer</h1>
+      <div class="header-brand">
+        <h1 class="header-title">Zuno</h1>
+        <p class="header-subtitle">Many time zones, One team!</p>
+      </div>
       <p class="header-updated" data-role="updated"></p>
       <span class="notices" data-role="notices">
         <button
           type="button"
-          class="button notices-button"
+          class="button button-icon notices-button"
           data-action="toggleNotices"
           aria-label="Notices"
           aria-haspopup="dialog"
           aria-expanded="false"
         >
-          i
+          <svg class="icon notices-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8h.01M11 12h1v5h1" />
+          </svg>
           <span class="notices-badge" data-role="notices-badge" hidden></span>
         </button>
         <div
@@ -31,36 +36,59 @@
           aria-label="Notices"
           hidden
         >
+          <p class="notices-title">Some holiday data is missing.</p>
           <ul class="notices-list" data-role="notices-list"></ul>
         </div>
       </span>
-      <button type="button" class="button" data-action="refresh">Refresh</button>
-      <button type="button" class="button" data-action="openSettings">Settings</button>
+      <button type="button" class="button" data-action="refresh">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" />
+        </svg>
+        Refresh
+      </button>
+      <button type="button" class="button" data-action="openSettings">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 6h9M19 6h1M4 12h1M11 12h9M4 18h11M21 18h-1" />
+          <circle cx="16" cy="6" r="2.5" />
+          <circle cx="8" cy="12" r="2.5" />
+          <circle cx="18" cy="18" r="2.5" />
+        </svg>
+        Settings
+      </button>
     </header>
     <main class="page" data-role="page"></main>
 
     <template id="legend-template">
       <footer class="legend" data-role="legend" aria-label="Legend">
+        <span class="legend-title">Legend</span>
         <ul class="legend-list">
           <li class="legend-item">
-            <span class="legend-swatch legend-swatch-weekend" data-role="legend-swatch"></span>
-            <span data-role="legend-name">Weekend</span>
-          </li>
-          <li class="legend-item">
-            <span class="legend-swatch legend-swatch-holiday" data-role="legend-swatch"></span>
-            <span data-role="legend-name">Public holiday</span>
-          </li>
-          <li class="legend-item">
             <span class="legend-swatch legend-swatch-working" data-role="legend-swatch"></span>
-            <span data-role="legend-name">Working hours</span>
+            <span data-role="legend-name">Working hours (picker)</span>
           </li>
           <li class="legend-item">
             <span class="legend-swatch legend-swatch-non-working" data-role="legend-swatch"></span>
-            <span data-role="legend-name">Non-working hours</span>
+            <span data-role="legend-name">Non-working hours (picker)</span>
           </li>
           <li class="legend-item">
             <span class="legend-swatch legend-swatch-day-off" data-role="legend-swatch"></span>
-            <span data-role="legend-name">Day off</span>
+            <span data-role="legend-name">Day off: weekend or holiday (picker)</span>
+          </li>
+          <li class="legend-item">
+            <span class="legend-swatch legend-swatch-weekend" data-role="legend-swatch"></span>
+            <span data-role="legend-name">Weekend (month view)</span>
+          </li>
+          <li class="legend-item">
+            <span class="legend-swatch legend-swatch-holiday" data-role="legend-swatch"></span>
+            <span data-role="legend-name">Public holiday (month view)</span>
+          </li>
+          <li class="legend-item">
+            <span class="legend-swatch legend-swatch-split" data-role="legend-swatch"></span>
+            <span data-role="legend-name">Weekend and holiday (month view)</span>
+          </li>
+          <li class="legend-item">
+            <span class="legend-swatch legend-swatch-today" data-role="legend-swatch"></span>
+            <span data-role="legend-name">Today (month view)</span>
           </li>
         </ul>
       </footer>
@@ -72,27 +100,42 @@
 
     <template id="empty-page-template">
       <section class="empty" data-role="empty" aria-labelledby="empty-title">
-        <h2 id="empty-title">No places yet</h2>
-        <p>Add a place to see its local time, weekends and public holidays.</p>
-        <button type="button" class="button" data-action="openSettings">Add a place</button>
+        <span class="empty-icon" aria-hidden="true">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" />
+          </svg>
+        </span>
+        <h2 id="empty-title" class="empty-title">No places yet</h2>
+        <p class="empty-text">
+          Add a place to see its local time, its weekends and its public holidays.
+        </p>
+        <button type="button" class="button button-primary empty-add" data-action="openSettings">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Add a place
+        </button>
       </section>
     </template>
 
     <template id="map-template">
       <section class="map" data-role="map" aria-label="World map">
-        <svg
-          class="map-outline"
-          viewBox="0 0 360 180"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <path
-            class="map-land"
-            d="M12 24 L40 20 L85 18 L118 30 L125 40 L113 45 L104 52 L99 59 L100 65 L90 61 L83 63 L83 70 L93 69 L97 80 L102 82 L88 75 L75 70 L68 60 L62 57 L56 50 L55 41 L45 32 L30 30 L15 30 Z M107 12 L130 8 L160 8 L165 22 L145 32 L132 30 L118 28 Z M100 90 L103 82 L118 80 L130 90 L145 96 L141 105 L132 116 L122 128 L115 132 L112 145 L106 140 L108 120 L110 108 L99 96 Z M171 52 L171 47 L178 42 L184 38 L190 35 L185 28 L195 21 L210 19 L240 20 L280 12 L320 18 L360 22 L350 30 L340 35 L320 40 L310 48 L302 52 L302 60 L290 70 L286 80 L280 77 L280 88 L275 74 L268 68 L260 80 L253 70 L248 66 L237 65 L238 67 L232 74 L223 77 L215 62 L215 55 L208 53 L206 50 L192 48 L183 47 L175 54 Z M163 69 L170 60 L174 54 L190 53 L212 59 L215 62 L223 78 L231 78 L220 93 L220 105 L213 116 L200 125 L195 118 L192 107 L189 91 L189 86 L172 86 L163 76 Z M294 112 L310 102 L322 101 L333 116 L326 129 L315 125 L295 124 Z M176 38 L181 34 L182 40 L177 42 Z M322 52 L326 48 L330 52 L326 60 Z M280 88 L300 92 L296 94 L282 92 Z M352 130 L356 126 L358 134 Z M0 160 L360 160 L360 180 L0 180 Z"
-          />
-        </svg>
-        <ol class="map-pins" data-role="pins"></ol>
+        <div class="map-view" data-role="map-view">
+          <svg
+            class="map-outline"
+            viewBox="0 20 720 276"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              class="map-land"
+              d="M24 48 L36 40 L60 38 L80 40 L104 40 L130 44 L170 36 L190 42 L196 52 L174 62 L172 66 L190 70 L200 76 L204 66 L206 56 L220 60 L230 60 L238 68 L248 76 L240 86 L228 90 L220 94 L220 98 L212 100 L208 110 L198 118 L200 128 L196 128 L194 120 L182 120 L172 122 L166 128 L166 138 L172 144 L178 142 L186 138 L184 148 L192 150 L194 160 L202 162 L206 164 L200 166 L190 160 L184 154 L176 150 L168 148 L150 140 L142 130 L134 118 L126 116 L118 110 L112 100 L112 86 L104 78 L92 64 L80 60 L64 58 L54 64 L44 66 L32 70 L44 64 L36 60 L28 56 Z M240 28 L216 24 L240 20 L300 20 L320 28 L316 40 L280 50 L272 60 L260 56 L250 44 Z M206 164 L216 156 L236 160 L256 170 L260 180 L272 184 L290 190 L290 198 L282 210 L278 224 L264 232 L254 248 L244 250 L246 256 L236 258 L230 264 L226 272 L222 282 L224 288 L216 286 L210 276 L214 260 L218 240 L220 216 L208 208 L198 192 L200 182 L204 174 Z M348 108 L342 106 L342 94 L356 92 L352 84 L364 78 L376 72 L378 66 L382 70 L388 72 L400 70 L404 60 L412 60 L420 60 L404 50 L410 48 L396 54 L394 60 L382 62 L370 60 L370 56 L388 46 L404 40 L420 40 L442 46 L448 44 L472 44 L496 42 L506 36 L520 34 L560 26 L584 32 L620 38 L640 36 L680 40 L700 40 L720 44 L720 50 L700 60 L686 64 L672 78 L680 58 L660 62 L646 62 L634 72 L642 76 L640 86 L630 94 L620 96 L618 110 L612 110 L610 102 L602 100 L604 106 L598 110 L604 118 L602 130 L594 136 L580 140 L576 138 L572 144 L578 156 L570 162 L562 154 L560 164 L566 176 L560 172 L556 160 L556 148 L548 146 L544 136 L536 136 L520 150 L516 164 L506 148 L504 138 L494 132 L484 130 L474 128 L472 126 L460 120 L456 120 L460 128 L464 132 L472 128 L478 136 L466 146 L450 154 L446 150 L438 138 L430 124 L428 120 L430 112 L432 108 L420 108 L414 106 L412 100 L406 106 L402 104 L398 96 L390 92 L384 90 L386 96 L392 104 L384 98 L378 92 L366 94 L358 106 Z M348 108 L380 106 L382 114 L400 118 L420 118 L426 118 L424 120 L428 128 L434 138 L438 148 L446 156 L462 156 L456 170 L442 184 L440 200 L440 210 L430 224 L426 232 L418 246 L404 248 L396 248 L390 234 L384 216 L386 200 L378 182 L378 172 L370 168 L354 170 L344 172 L334 164 L326 152 L326 138 L334 126 L340 120 L342 114 Z M588 224 L604 216 L620 204 L632 204 L634 212 L644 202 L652 218 L666 232 L662 248 L652 258 L640 256 L630 248 L620 244 L608 248 L590 248 L586 232 Z M350 80 L362 78 L364 74 L356 68 L356 64 L350 62 L348 68 L354 72 L350 76 Z M340 76 L348 76 L348 70 L340 72 Z M312 50 L332 50 L328 52 L316 54 Z M620 118 L624 112 L632 112 L640 110 L644 100 L642 96 L640 100 L632 106 L624 110 L620 114 Z M640 96 L650 94 L644 90 Z M550 170 L572 192 L568 192 L550 176 Z M578 178 L594 166 L598 178 L592 188 L580 186 Z M570 192 L588 196 L572 194 Z M622 182 L642 186 L660 200 L642 198 L630 188 Z M704 248 L716 256 L710 264 L704 262 Z M696 272 L708 262 L702 270 Z M448 230 L460 210 L458 204 L448 214 Z"
+            />
+          </svg>
+          <ol class="map-pins" data-role="pins"></ol>
+        </div>
       </section>
     </template>
 
@@ -110,12 +153,26 @@
     <template id="month-grid-template">
       <section class="month-grid" data-role="month-grid" aria-labelledby="month-grid-title">
         <div class="month-grid-header">
-          <button type="button" class="button" data-role="earlier" aria-label="Previous month">
-            &#x2039;
+          <button
+            type="button"
+            class="button button-icon"
+            data-role="earlier"
+            aria-label="Previous month"
+          >
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M15 6l-6 6 6 6" />
+            </svg>
           </button>
           <h2 id="month-grid-title" class="month-grid-title" data-role="title"></h2>
-          <button type="button" class="button" data-role="later" aria-label="Next month">
-            &#x203A;
+          <button
+            type="button"
+            class="button button-icon"
+            data-role="later"
+            aria-label="Next month"
+          >
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M9 6l6 6-6 6" />
+            </svg>
           </button>
         </div>
         <div class="month-grid-scroll" data-role="grid-scroll">
@@ -129,12 +186,25 @@
 
     <template id="month-grid-card-template">
       <div class="month-grid-card" role="dialog" aria-label="Holiday">
-        <p class="month-grid-card-name" data-role="card-name"></p>
-        <p data-role="card-date"></p>
-        <p class="month-grid-card-hijri" data-role="card-hijri" hidden></p>
-        <button type="button" class="button" data-role="card-close" aria-label="Close holiday">
-          &#x2715;
-        </button>
+        <div class="month-grid-card-title">
+          <span class="month-grid-card-swatch" aria-hidden="true"></span>
+          <p class="month-grid-card-name" data-role="card-name"></p>
+          <button
+            type="button"
+            class="month-grid-card-close"
+            data-role="card-close"
+            aria-label="Close holiday"
+          >
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+        <p class="month-grid-card-facts">
+          <span data-role="card-date"></span>
+          <span class="month-grid-card-hijri" data-role="card-hijri" hidden></span>
+          <span>Public holiday</span>
+        </p>
       </div>
     </template>
 
@@ -142,13 +212,16 @@
       <span class="hijri-note" data-role="hijri-note">
         <button
           type="button"
-          class="button hijri-note-button"
+          class="hijri-note-button"
           data-role="note-button"
           aria-label="About Hijri dates"
           aria-haspopup="dialog"
           aria-expanded="false"
         >
-          i
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8h.01M11 12h1v5h1" />
+          </svg>
         </button>
         <div
           class="hijri-note-card"
@@ -164,10 +237,13 @@
 
     <template id="picker-template">
       <section class="picker" data-role="picker" aria-labelledby="picker-title">
-        <h2 id="picker-title" class="picker-title">Time picker</h2>
+        <h2 id="picker-title" class="picker-title">Meeting time</h2>
         <div data-role="day-selector-slot"></div>
         <div class="picker-scroll" data-role="scroll">
-          <div class="picker-axis" data-role="axis">
+          <div class="picker-axis" data-role="axis"></div>
+          <div class="picker-content" data-role="content">
+            <ul class="picker-rows" data-role="rows"></ul>
+            <div class="picker-line"></div>
             <div
               class="picker-handle"
               data-role="handle"
@@ -176,10 +252,6 @@
               aria-label="Chosen time"
             ></div>
           </div>
-          <div class="picker-content">
-            <ul class="picker-rows" data-role="rows"></ul>
-            <div class="picker-line"></div>
-          </div>
         </div>
       </section>
     </template>
@@ -187,10 +259,18 @@
     <template id="picker-row-template">
       <li class="picker-row" data-role="row">
         <div class="picker-info" data-role="info">
-          <span class="picker-name" data-role="name"></span>
-          <span data-role="local-date"></span>
-          <span class="picker-hijri" data-role="local-hijri" hidden></span>
-          <span data-role="local-time"></span>
+          <div class="picker-who" data-role="who">
+            <p class="picker-name-line">
+              <span class="picker-name" data-role="name"></span>
+              <span class="picker-zone" data-role="zone"></span>
+            </p>
+            <p class="picker-sub" data-role="sub" hidden></p>
+          </div>
+          <div class="picker-mark" data-role="mark">
+            <span class="picker-time" data-role="local-time"></span>
+            <span class="picker-date" data-role="local-date"></span>
+            <span class="picker-hijri" data-role="local-hijri" hidden></span>
+          </div>
         </div>
         <div class="picker-track" data-role="track"></div>
       </li>
@@ -198,8 +278,15 @@
 
     <template id="day-selector-template">
       <div class="day-selector" data-role="day-selector">
-        <button type="button" class="button" data-role="previous" aria-label="Previous day">
-          &#x2039;
+        <button
+          type="button"
+          class="button button-icon"
+          data-role="previous"
+          aria-label="Previous day"
+        >
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M15 6l-6 6 6 6" />
+          </svg>
         </button>
         <button
           type="button"
@@ -208,8 +295,10 @@
           aria-haspopup="dialog"
           aria-expanded="false"
         ></button>
-        <button type="button" class="button" data-role="next" aria-label="Next day">
-          &#x203A;
+        <button type="button" class="button button-icon" data-role="next" aria-label="Next day">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M9 6l6 6-6 6" />
+          </svg>
         </button>
       </div>
     </template>
@@ -217,24 +306,33 @@
     <template id="calendar-template">
       <div class="calendar" data-role="calendar" role="dialog" aria-label="Choose a day">
         <div class="calendar-header">
-          <button type="button" class="button" data-role="earlier" aria-label="Earlier month">
-            &#x2039;
+          <button
+            type="button"
+            class="calendar-step"
+            data-role="earlier"
+            aria-label="Earlier month"
+          >
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M15 6l-6 6 6 6" />
+            </svg>
           </button>
           <h3 class="calendar-title" data-role="title"></h3>
-          <button type="button" class="button" data-role="later" aria-label="Later month">
-            &#x203A;
+          <button type="button" class="calendar-step" data-role="later" aria-label="Later month">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M9 6l6 6-6 6" />
+            </svg>
           </button>
         </div>
         <table class="calendar-table">
           <thead>
             <tr>
+              <th scope="col">Su</th>
               <th scope="col">Mo</th>
               <th scope="col">Tu</th>
               <th scope="col">We</th>
               <th scope="col">Th</th>
               <th scope="col">Fr</th>
               <th scope="col">Sa</th>
-              <th scope="col">Su</th>
             </tr>
           </thead>
           <tbody data-role="weeks"></tbody>
@@ -245,87 +343,219 @@
     <template id="settings-panel-template">
       <aside class="settings" data-role="settings" role="dialog" aria-labelledby="settings-title">
         <div class="settings-header">
-          <h2 id="settings-title">Settings</h2>
-          <button type="button" class="button" data-role="close" aria-label="Close settings">
-            &#x2715;
+          <h2 id="settings-title" class="settings-title">Settings</h2>
+          <button
+            type="button"
+            class="button button-icon"
+            data-role="close"
+            aria-label="Close settings"
+          >
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
           </button>
         </div>
-        <h3>Working hours</h3>
-        <div class="settings-hours">
-          <label class="settings-field">
-            Working hours start
-            <input type="time" class="settings-input" data-role="work-start" required />
-          </label>
-          <label class="settings-field">
-            Working hours end
-            <input type="time" class="settings-input" data-role="work-end" required />
-          </label>
-        </div>
-        <h3>Display</h3>
-        <div class="settings-display">
+        <section class="settings-section" aria-labelledby="settings-hours-title">
+          <h3 id="settings-hours-title" class="settings-heading">Working hours</h3>
+          <div class="settings-pair">
+            <label class="settings-field">
+              <span class="settings-label">Start</span>
+              <select class="settings-input" data-role="work-start"></select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label">End</span>
+              <select class="settings-input" data-role="work-end"></select>
+            </label>
+          </div>
+          <p class="settings-hint settings-hint-large">
+            One setting for all places. It colours the working hours in the meeting-time picker.
+          </p>
+        </section>
+        <section
+          class="settings-section settings-section-tight"
+          aria-labelledby="settings-display-title"
+        >
+          <h3 id="settings-display-title" class="settings-heading">Display</h3>
           <label class="settings-check">
             <input type="checkbox" data-role="show-country" />
-            Show names of countries
+            Show country names
           </label>
+          <p class="settings-hint settings-hint-close">
+            Off by default. When on, the country appears next to each place.
+          </p>
           <label class="settings-check">
             <input type="checkbox" data-role="show-hijri" />
-            Show Hijri calendar
+            <span class="settings-hijri">Show Hijri calendar</span>
           </label>
-        </div>
-        <h3>Places</h3>
-        <ul class="settings-places" data-role="places"></ul>
-        <form class="settings-add" data-role="add-form">
-          <label class="settings-field">
-            Country
-            <select class="settings-input" data-role="country">
-              <option value="">Choose a country</option>
-            </select>
-          </label>
-          <button type="submit" class="button">Add place</button>
-        </form>
+          <p class="settings-hint settings-hint-close">
+            Off by default. When off, no Hijri dates are shown and the Hijri options for each place
+            are not used.
+          </p>
+          <fieldset class="settings-choice" data-role="theme">
+            <legend class="settings-label settings-legend">Theme</legend>
+            <div class="settings-options">
+              <label class="settings-option">
+                <input type="radio" name="settings-theme" value="light" />
+                Light
+              </label>
+              <label class="settings-option">
+                <input type="radio" name="settings-theme" value="dark" />
+                Dark
+              </label>
+              <label class="settings-option">
+                <input type="radio" name="settings-theme" value="auto" />
+                Auto
+              </label>
+            </div>
+          </fieldset>
+          <p class="settings-hint">Auto follows the light or dark setting of your system.</p>
+        </section>
+        <section class="settings-section" aria-labelledby="settings-places-title">
+          <h3 id="settings-places-title" class="settings-heading">Places</h3>
+          <p class="settings-hint settings-hint-large">
+            The first place is the reference for the meeting-time picker. Use the arrows to change
+            the order.
+          </p>
+          <ul class="settings-places" data-role="places"></ul>
+        </section>
+        <section
+          class="settings-section settings-section-tight"
+          aria-labelledby="settings-add-title"
+        >
+          <h3 id="settings-add-title" class="settings-heading">Add a place</h3>
+          <form class="settings-add" data-role="add-form">
+            <label class="settings-field">
+              <span class="settings-label">Country</span>
+              <select class="settings-input" data-role="country">
+                <option value="">Choose a country</option>
+              </select>
+            </label>
+            <button type="submit" class="button button-primary settings-add-button">
+              <svg
+                class="icon settings-add-icon"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Add place
+            </button>
+          </form>
+          <p class="settings-hint">The new place uses the time zone of the country's capital.</p>
+        </section>
+        <p class="settings-footer">
+          Changes are saved in this browser and restored on your next visit.
+        </p>
       </aside>
     </template>
 
     <template id="settings-place-template">
       <li class="settings-place">
         <div class="settings-place-row">
-          <span class="settings-place-name" data-role="name"></span>
-          <span class="settings-place-time" data-role="time"></span>
-          <button type="button" class="button" data-role="up">&#x2191;</button>
-          <button type="button" class="button" data-role="down">&#x2193;</button>
-          <button type="button" class="button" data-role="toggle" aria-expanded="false">
-            &#x270E;
+          <div class="settings-move">
+            <button type="button" class="settings-move-button" data-role="up">
+              <svg
+                class="icon settings-move-icon"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M6 15l6-6 6 6" />
+              </svg>
+            </button>
+            <button type="button" class="settings-move-button" data-role="down">
+              <svg
+                class="icon settings-move-icon"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+          </div>
+          <div class="settings-place-text">
+            <p class="settings-place-name" data-role="name"></p>
+            <p class="settings-place-facts">
+              <span data-role="facts"></span
+              ><span class="settings-place-hijri" data-role="hijri" hidden></span>
+            </p>
+          </div>
+          <button
+            type="button"
+            class="button button-icon settings-toggle"
+            data-role="toggle"
+            aria-expanded="false"
+          >
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
           </button>
-          <button type="button" class="button" data-role="remove">&#x2715;</button>
+          <button type="button" class="button button-icon settings-remove" data-role="remove">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+            </svg>
+          </button>
         </div>
         <div class="settings-place-edit" data-role="edit" hidden>
-          <label class="settings-field">
-            Display name
-            <input type="text" class="settings-input" data-role="label" />
-          </label>
-          <label class="settings-field" data-role="zone-field">
-            City time zone
-            <select class="settings-input" data-role="zone"></select>
-          </label>
-          <label class="settings-field">
-            Region
-            <select class="settings-input" data-role="region"></select>
-          </label>
-          <label class="settings-field" data-role="variant-field">
-            Hijri variant
-            <select class="settings-input" data-role="variant">
-              <option value="umalqura">Umm al-Qura</option>
-              <option value="tabular">Tabular</option>
-            </select>
-          </label>
-          <label class="settings-field" data-role="adjust-field">
-            Hijri adjustment
-            <select class="settings-input" data-role="adjust">
-              <option value="-1">-1</option>
-              <option value="0">0</option>
-              <option value="1">+1</option>
-            </select>
-          </label>
+          <div class="settings-group">
+            <label class="settings-field">
+              <span class="settings-label">Display name</span>
+              <input type="text" class="settings-input" data-role="label" />
+            </label>
+            <p class="settings-hint">
+              Shown instead of the city name on the map, in the picker and in the month view. Leave
+              it blank to use the city name.
+            </p>
+          </div>
+          <div class="settings-group" data-role="zone-field">
+            <label class="settings-field">
+              <span class="settings-label">Time zone</span>
+              <select class="settings-input" data-role="zone"></select>
+            </label>
+            <p class="settings-hint" data-role="zone-hint"></p>
+          </div>
+          <div class="settings-group">
+            <label class="settings-field">
+              <span class="settings-label">Region for holidays (optional)</span>
+              <select class="settings-input" data-role="region"></select>
+            </label>
+            <p class="settings-hint">With no region, only national holidays are used.</p>
+          </div>
+          <div class="settings-group settings-group-hijri" data-role="hijri-fields">
+            <div class="settings-pair">
+              <label class="settings-field">
+                <span class="settings-label settings-hijri">Hijri calendar</span>
+                <select class="settings-input" data-role="variant">
+                  <option value="umalqura">Umm al-Qura</option>
+                  <option value="tabular">Tabular</option>
+                </select>
+              </label>
+              <fieldset class="settings-choice">
+                <legend class="settings-label settings-legend settings-hijri">
+                  Hijri date adjustment
+                </legend>
+                <div class="settings-options">
+                  <label class="settings-option">
+                    <input type="radio" data-role="adjust" value="-1" />
+                    &minus;1
+                  </label>
+                  <label class="settings-option">
+                    <input type="radio" data-role="adjust" value="0" />
+                    0
+                  </label>
+                  <label class="settings-option">
+                    <input type="radio" data-role="adjust" value="1" />
+                    +1
+                  </label>
+                </div>
+              </fieldset>
+            </div>
+            <p class="settings-hint settings-hijri">
+              Days added to the calculated Hijri date, to match local moon sighting.
+            </p>
+          </div>
         </div>
       </li>
     </template>

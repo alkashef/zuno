@@ -4,14 +4,16 @@
  * Owns the time picker panel: the hour axis of the reference window, one row per place with its
  * local date and time and its stretches of working, non-working and day-off time, and the marker,
  * moved by dragging or with the arrow keys (PCK-001 to PCK-003, PCK-005, PCK-006, DSP-001,
- * DSP-002, LAY-001). It clones its markup from templates in index.html. It does not own the day
+ * DSP-002, LAY-001). It keeps each row's marker time beside the marker line and its name clear of
+ * both. It clones its markup from templates in index.html. It does not own the day
  * selector (views/day-selector.js, built by `deps.makeDaySelector`), computes no window or kind of
  * time (domain/picker.js does) and picks no colour (picker.css does, from theme.css).
  */
-import { formatDate, formatHijri, formatTime } from "../domain/format.js";
+import { formatDate, formatHijri, formatOffset, formatTime } from "../domain/format.js";
 
 /** @typedef {import("../domain/picker.js").PickerRow} PickerRow */
 /** @typedef {import("../domain/places.js").Place} Place */
+/** @typedef {{ name: string, city: string | null, country: string | null }} PlaceFacts */
 /** @typedef {import("../domain/zones.js").LocalDateTime} LocalDateTime */
 /** @typedef {import("../controller.js").Action} Action */
 /** @typedef {import("./day-selector.js").DaySelectorView} DaySelectorView */
@@ -29,7 +31,10 @@ import { formatDate, formatHijri, formatTime } from "../domain/format.js";
  * @property {(action: Action) => Promise<void>} dispatch The controller's `dispatch`.
  * @property {(instant: number, zone: string) => LocalDateTime} localAt The local time of an instant
  *   in a zone (main.js passes it, because a view imports no other domain module).
- * @property {(place: Place, showCountry: boolean) => string} placeName
+ * @property {(instant: number, zone: string) => number} offsetAt A zone's offset from UTC at an
+ *   instant, in milliseconds.
+ * @property {(place: Place, showCountry: boolean) => PlaceFacts} placeFacts The place's name and,
+ *   where they apply, its city and country.
  * @property {{ stepMinutes: number, axisLabelEveryHours: number }} steps How far one arrow key press
  *   and the drag move the marker, and how often the axis is labelled (from config).
  * @property {(slot: HTMLElement) => { render: (view: DaySelectorView) => void }} makeDaySelector
@@ -123,18 +128,28 @@ function drawSegments(track, row, range) {
 }
 
 /**
+ * @typedef {object} RowText What a row says about its place.
+ * @property {PlaceFacts} facts
+ * @property {string} offset The place's offset from UTC at the marker, for example `UTC+3`.
+ */
+
+/**
  * @param {PanelContext} ctx
  * @param {PickerRow} row
- * @param {string} name The name shown for the place.
+ * @param {RowText} text
  * @param {Range} range
- * @returns {HTMLElement} One row: the name, the local date (and Hijri date while Hijri is on),
- *   the time, and the track.
+ * @returns {HTMLElement} One row: the name, offset and details of the place, the local time and
+ *   date at the marker (and Hijri date while Hijri is on), and the track.
  */
-function buildRow(ctx, row, name, range) {
+function buildRow(ctx, row, text, range) {
   const item = /** @type {HTMLElement} */ (
     ctx.rowTemplate.content.firstElementChild?.cloneNode(true)
   );
-  part(item, "name").textContent = name;
+  part(item, "name").textContent = text.facts.name;
+  part(item, "zone").textContent = text.offset;
+  const sub = part(item, "sub");
+  sub.textContent = [text.facts.city, text.facts.country].filter(Boolean).join(" · ");
+  sub.hidden = sub.textContent === "";
   part(item, "local-date").textContent = formatDate(row.localDateTime);
   part(item, "local-time").textContent = formatTime(row.localDateTime);
   const hijri = part(item, "local-hijri");
@@ -154,7 +169,11 @@ function drawRows(ctx, view, range) {
   const places = view.settings?.places ?? [];
   const showCountry = view.settings?.showCountry ?? false;
   const items = view.picker.map((row, index) => {
-    const item = buildRow(ctx, row, ctx.deps.placeName(places[index], showCountry), range);
+    const text = {
+      facts: ctx.deps.placeFacts(places[index], showCountry),
+      offset: formatOffset(ctx.deps.offsetAt(view.marker.instant, places[index].zone)),
+    };
+    const item = buildRow(ctx, row, text, range);
     item.dataset.reference = String(index === 0);
     return item;
   });
@@ -186,8 +205,9 @@ function drawTicks(ctx, view, range) {
   const axis = part(ctx.root, "axis");
   const zone = view.settings?.places[0]?.zone ?? "UTC";
   const every = ctx.deps.steps.axisLabelEveryHours;
-  const hourCount = Math.floor((range.to - range.from) / msPerHour);
-  const ticks = Array.from({ length: hourCount }, (_, hour) => hour)
+  const hourCount = Math.round((range.to - range.from) / msPerHour);
+  ctx.root.style.setProperty("--hour-count", String(hourCount));
+  const ticks = Array.from({ length: hourCount + 1 }, (_, hour) => hour)
     .filter((hour) => hour % every === 0)
     .map((hour) => {
       const text = formatTime(ctx.deps.localAt(range.from + hour * msPerHour, zone));
@@ -218,6 +238,54 @@ function drawMarker(ctx, view, range) {
 }
 
 /**
+ * @typedef {object} InfoLayout Where a row's name and marker time go, in pixels from the row's
+ *   left edge.
+ * @property {number} markLeft
+ * @property {number} nameLeft
+ * @property {number} nameWidth
+ * @property {"start" | "end"} nameSide Whether the name sits at the row's start or its end.
+ */
+
+/**
+ * @param {{ width: number, x: number, markWidth: number, gap: number }} room The row's width, the
+ *   marker's position, the widest marker time, and the space kept around the marker and the time.
+ * @returns {InfoLayout} The time just right of the marker when it fits there, else just left of
+ *   it; the name in the wider of the two spaces the marker and the time leave.
+ */
+function infoLayout({ width, x, markWidth, gap }) {
+  const markRight = x + gap + markWidth <= width;
+  const markLeft = markRight ? x + gap : x - gap - markWidth;
+  const before = markRight ? x - gap : markLeft - gap;
+  const afterStart = markRight ? markLeft + markWidth + gap : x + gap;
+  if (before >= width - afterStart) {
+    return { markLeft, nameLeft: 0, nameWidth: Math.max(0, before), nameSide: "start" };
+  }
+  return { markLeft, nameLeft: afterStart, nameWidth: width - afterStart, nameSide: "end" };
+}
+
+/**
+ * @param {PanelContext} ctx
+ * @returns {void} Places every row's marker time beside the marker and its name clear of both,
+ *   through the custom properties `--mark-left`, `--name-left` and `--name-width`.
+ */
+function arrangeInfo(ctx) {
+  const content = part(ctx.root, "content");
+  const marks = [...content.querySelectorAll('[data-role="mark"]')];
+  const { from, to } = ctx.memo.range;
+  const width = content.clientWidth;
+  const layout = infoLayout({
+    width,
+    x: ((ctx.memo.marker - from) / (to - from)) * width,
+    markWidth: Math.max(0, ...marks.map((mark) => mark.getBoundingClientRect().width)),
+    gap: Number.parseFloat(getComputedStyle(content).getPropertyValue("--space-marker")),
+  });
+  content.style.setProperty("--mark-left", `${layout.markLeft}px`);
+  content.style.setProperty("--name-left", `${layout.nameLeft}px`);
+  content.style.setProperty("--name-width", `${layout.nameWidth}px`);
+  content.dataset.nameSide = layout.nameSide;
+}
+
+/**
  * @param {PanelContext} ctx
  * @param {PickerView} view
  * @returns {void} Brings the panel up to date; the rows and axis are redrawn only when they changed.
@@ -228,10 +296,12 @@ function update(ctx, view) {
   ctx.memo.marker = view.marker.instant;
   drawMarker(ctx, view, range);
   const signature = JSON.stringify([view.picker, view.settings]);
-  if (signature === ctx.memo.signature) return;
-  ctx.memo.signature = signature;
-  drawRows(ctx, view, range);
-  drawTicks(ctx, view, range);
+  if (signature !== ctx.memo.signature) {
+    ctx.memo.signature = signature;
+    drawRows(ctx, view, range);
+    drawTicks(ctx, view, range);
+  }
+  arrangeInfo(ctx);
 }
 
 /**
@@ -265,7 +335,8 @@ function instantAt(ctx, clientX) {
  */
 function startDrag(ctx, event) {
   const target = event.target instanceof Element ? event.target : null;
-  const onTrack = target?.closest('[data-role="axis"], [data-role="rows"]') ?? null;
+  const onTrack =
+    target?.closest('[data-role="axis"], [data-role="rows"], [data-role="handle"]') ?? null;
   if (event.button !== 0 || target === null || onTrack === null) return;
   ctx.memo.dragging = true;
   ctx.root.setPointerCapture(event.pointerId);
@@ -315,6 +386,7 @@ function buildPanel(doc, deps) {
   const memo = { signature: "", range: { from: 0, to: 1 }, marker: 0, dragging: false };
   const ctx = { root, rowTemplate: templateOf(doc, "picker-row-template"), deps, memo };
   bindMarker(ctx);
+  new ResizeObserver(() => arrangeInfo(ctx)).observe(part(root, "content"));
   return { ctx, daySelector: deps.makeDaySelector(part(root, "day-selector-slot")) };
 }
 

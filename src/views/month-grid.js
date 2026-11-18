@@ -7,11 +7,18 @@
  * index.html. It decides no cell kind (domain/calendar.js does), loads no holiday (the controller
  * does, through `deps.dispatch`) and picks no colour (month-grid.css does, from theme.css).
  */
-import { formatDate, formatHijri, formatHijriMonth, formatMonth } from "../domain/format.js";
+import {
+  formatDate,
+  formatHijri,
+  formatHijriMonth,
+  formatMonth,
+  formatWeekday,
+} from "../domain/format.js";
 
 /** @typedef {import("../domain/calendar.js").DayFacts} DayFacts */
 /** @typedef {import("../domain/hijri.js").HijriDate} HijriDate */
 /** @typedef {import("../domain/places.js").Place} Place */
+/** @typedef {{ name: string, city: string | null, country: string | null }} PlaceFacts */
 /** @typedef {import("../controller.js").Action} Action */
 
 /**
@@ -26,7 +33,8 @@ import { formatDate, formatHijri, formatHijriMonth, formatMonth } from "../domai
 /**
  * @typedef {object} Deps
  * @property {(action: Action) => Promise<void>} dispatch The controller's `dispatch`.
- * @property {(place: Place, showCountry: boolean) => string} placeName
+ * @property {(place: Place, showCountry: boolean) => PlaceFacts} placeFacts The place's name and,
+ *   while country names are on, its country.
  * @property {(doc: Document) => { root: HTMLElement }} makeHijriNote Builds the information button
  *   and card beside the Hijri month band (views/hijri-note.js, passed in by main.js).
  */
@@ -123,7 +131,6 @@ function holidayButton(doc, placeId, day) {
   button.dataset.role = "holiday";
   button.dataset.placeId = placeId;
   button.dataset.date = day.date;
-  button.textContent = dayNumber(day.date);
   appendHijriDay(doc, button, day);
   button.setAttribute("aria-label", `${day.holidayName}, ${dateText(day.date)}`);
   return button;
@@ -142,10 +149,8 @@ function buildCell(doc, placeId, day) {
   cell.dataset.kind = cellKind(day);
   cell.dataset.today = String(day.isToday);
   cell.dataset.date = day.date;
-  if (day.holidayName === null) {
-    cell.textContent = dayNumber(day.date);
-    appendHijriDay(doc, cell, day);
-  } else cell.append(holidayButton(doc, placeId, day));
+  if (day.holidayName === null) appendHijriDay(doc, cell, day);
+  else cell.append(holidayButton(doc, placeId, day));
   return cell;
 }
 
@@ -177,6 +182,19 @@ function hijriOf(days, date) {
 }
 
 /**
+ * @param {Document} doc
+ * @param {string} className
+ * @param {string} text
+ * @returns {HTMLSpanElement} A span of that class holding the text.
+ */
+function textSpan(doc, className, text) {
+  const span = doc.createElement("span");
+  span.className = className;
+  span.textContent = text;
+  return span;
+}
+
+/**
  * @param {GridContext} ctx
  * @param {MonthGridView} view
  * @param {number} index The place's position.
@@ -191,9 +209,11 @@ function buildRowHeader(ctx, view, index) {
   header.scope = "row";
   header.className = "month-grid-place";
   header.dataset.role = "place";
-  const name = doc.createElement("span");
-  name.textContent = ctx.deps.placeName(place, view.settings?.showCountry ?? false);
-  header.append(name);
+  const facts = ctx.deps.placeFacts(place, view.settings?.showCountry ?? false);
+  header.append(textSpan(doc, "month-grid-place-name", facts.name));
+  if (facts.country !== null) {
+    header.append(textSpan(doc, "month-grid-place-country", facts.country));
+  }
   if (view.selectedHoliday?.placeId === place.id)
     header.append(
       buildCard(ctx, view.selectedHoliday, hijriOf(view.grid[index], view.selectedHoliday.date)),
@@ -212,10 +232,14 @@ function buildRow(ctx, view, index) {
   const row = doc.createElement("tr");
   row.dataset.role = "grid-row";
   const placeId = /** @type {{ places: Place[] }} */ (view.settings).places[index].id;
-  row.append(
-    buildRowHeader(ctx, view, index),
-    ...view.grid[index].map((day) => buildCell(doc, placeId, day)),
-  );
+  const cells = view.grid[index].map((day) => buildCell(doc, placeId, day));
+  const selected = view.selectedHoliday;
+  for (const cell of cells) {
+    cell.dataset.selected = String(
+      selected?.placeId === placeId && selected.date === cell.dataset.date,
+    );
+  }
+  row.append(buildRowHeader(ctx, view, index), ...cells);
   return row;
 }
 
@@ -257,9 +281,29 @@ function buildBand(ctx, days) {
   row.dataset.role = "hijri-band";
   const corner = doc.createElement("th");
   corner.className = "month-grid-corner";
-  corner.append(ctx.note);
+  corner.append("Hijri month", ctx.note);
   row.append(corner, ...bandCells(doc, days));
   return row;
+}
+
+/**
+ * @param {Document} doc
+ * @param {string} date `YYYY-MM-DD`.
+ * @returns {HTMLTableCellElement} The column header of one day: its number and its weekday.
+ */
+function buildDayHead(doc, date) {
+  const head = doc.createElement("th");
+  head.scope = "col";
+  head.className = "month-grid-day";
+  const number = doc.createElement("span");
+  number.className = "month-grid-day-number";
+  number.textContent = dayNumber(date);
+  const [year, month, day] = date.split("-").map(Number);
+  const weekday = doc.createElement("span");
+  weekday.className = "month-grid-weekday";
+  weekday.textContent = formatWeekday({ year, month, day });
+  head.append(number, weekday);
+  return head;
 }
 
 /**
@@ -271,15 +315,14 @@ function buildHead(doc, days) {
   const row = doc.createElement("tr");
   const corner = doc.createElement("th");
   corner.className = "month-grid-corner";
-  corner.textContent = "Place";
-  const heads = days.map((day) => {
-    const head = doc.createElement("th");
-    head.scope = "col";
-    head.className = "month-grid-day";
-    head.textContent = dayNumber(day.date);
-    return head;
-  });
-  row.append(corner, ...heads);
+  if (days[0].hijri === null) corner.textContent = "Day";
+  else {
+    const hijri = doc.createElement("span");
+    hijri.className = "month-grid-corner-hijri";
+    hijri.textContent = "Hijri day";
+    corner.append("Day and ", hijri);
+  }
+  row.append(corner, ...days.map((day) => buildDayHead(doc, day.date)));
   return row;
 }
 

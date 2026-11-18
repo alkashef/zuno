@@ -8,9 +8,10 @@ export const config = Object.freeze({
   holidayRequestTimeoutMs: 10000,
   clockTickMs: 60000,
   pickerStepMinutes: 15,
-  pickerAxisLabelEveryHours: 4,
+  pickerAxisLabelEveryHours: 6,
   storageKey: "zuno.settings",
   defaultWorkStartMinutes: 540,
   defaultWorkEndMinutes: 1020,
+  workingHoursStepMinutes: 60,
   logLevel: "warn",
 });

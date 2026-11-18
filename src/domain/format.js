@@ -2,7 +2,8 @@
 /**
  * @module domain/format
  * Formats a local date as dd-mmm-yy and a local time as 12-hour text (DSP-001, DSP-002, EX-005,
- * EX-006), a Hijri date as dd-month-yyyy (DSP-003) and a month title (PCK-007). It does not compute local times
+ * EX-006), minutes after midnight as 12-hour text, a Hijri date as dd-month-yyyy (DSP-003), a month title (PCK-007), a weekday as two
+ * English letters (NFR-003) and an offset from UTC. It does not compute local times or offsets
  * (domain/zones.js does) or Hijri dates (domain/hijri.js does).
  */
 
@@ -15,6 +16,17 @@
  */
 function twoDigits(value) {
   return String(value).padStart(2, "0");
+}
+
+/**
+ * @param {number} hour 0 to 23.
+ * @param {number} minute 0 to 59.
+ * @returns {string} The time as 12-hour text with an uppercase suffix and no leading zero.
+ */
+function clockText(hour, minute) {
+  const suffix = hour < 12 ? "AM" : "PM";
+  const twelve = hour % 12 === 0 ? 12 : hour % 12;
+  return `${twelve}:${twoDigits(minute)} ${suffix}`;
 }
 
 /**
@@ -33,9 +45,16 @@ export function formatDate(local) {
  * (DSP-002).
  */
 export function formatTime(local) {
-  const suffix = local.hour < 12 ? "AM" : "PM";
-  const hour = local.hour % 12 === 0 ? 12 : local.hour % 12;
-  return `${hour}:${twoDigits(local.minute)} ${suffix}`;
+  return clockText(local.hour, local.minute);
+}
+
+/**
+ * @param {number} minutes Minutes after midnight, 0 to 1440.
+ * @returns {string} The time of day as 12-hour text, for example `9:00 AM` (DSP-002); 1440, the
+ *   midnight that ends the day, is `12:00 AM`.
+ */
+export function formatMinutes(minutes) {
+  return clockText(Math.floor(minutes / 60) % 24, minutes % 60);
 }
 
 /**
@@ -67,16 +86,39 @@ export function formatMonth(monthRef) {
 
 /**
  * @param {number} instant UTC milliseconds.
- * @returns {string} The time of day in the browser's own time zone as 12-hour text, for example
- * `9:25 AM` (the "Updated" time, DSP-002).
+ * @returns {string} The time of day and the date in the browser's own time zone, for example
+ * `9:25 AM · 16-Nov-26` (the "Updated" time, DSP-001, DSP-002).
  */
 export function formatClock(instant) {
   const date = new Date(instant);
-  return formatTime({
+  const local = {
     year: date.getFullYear(),
     month: date.getMonth() + 1,
     day: date.getDate(),
     hour: date.getHours(),
     minute: date.getMinutes(),
-  });
+  };
+  return `${formatTime(local)} · ${formatDate(local)}`;
+}
+
+/**
+ * @param {{ year: number, month: number, day: number }} date A calendar date, `month` 1 to 12.
+ * @returns {string} The first two letters of the weekday's English name, for example `Mo`
+ *   (NFR-003).
+ */
+export function formatWeekday(date) {
+  const names = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "UTC" });
+  return names.format(Date.UTC(date.year, date.month - 1, date.day)).slice(0, 2);
+}
+
+/**
+ * @param {number} offset An offset from UTC in milliseconds, east positive.
+ * @returns {string} The offset as `UTC` with a sign and whole hours, and minutes when there are
+ *   any, for example `UTC+3`, `UTC+5:30` or `UTC−5` (with a minus sign, U+2212).
+ */
+export function formatOffset(offset) {
+  const minutes = Math.round(Math.abs(offset) / 60000);
+  const sign = offset < 0 ? "−" : "+";
+  const rest = minutes % 60 === 0 ? "" : `:${twoDigits(minutes % 60)}`;
+  return `UTC${sign}${Math.floor(minutes / 60)}${rest}`;
 }

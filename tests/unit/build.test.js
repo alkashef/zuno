@@ -70,8 +70,10 @@ test("test_nfr_001_csp_allows_only_holiday_host_and_inline_hashes", async () => 
   assert.deepEqual(csp["style-src"], [sha256Source(innerTexts(html, "style")[0])]);
 });
 
-test("test_pkg_001_logo_is_inlined_as_data_uri_and_csp_allows_data_images", async () => {
+test("test_pkg_001_icons_are_inlined_as_data_uris_and_csp_allows_data_images", async () => {
   const html = await buildToText();
-  assert.match(innerTexts(html, "style")[0], /url\(["']?data:image\/jpeg;base64,/);
+  const style = innerTexts(html, "style")[0];
+  assert.match(style, /url\(["']?data:image\/svg\+xml,/);
+  assert.doesNotMatch(style, /url\((?!["']?data:)/);
   assert.deepEqual(cspDirectives(html)["img-src"], ["data:"]);
 });

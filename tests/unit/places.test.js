@@ -9,8 +9,8 @@ import {
   editPlace,
   isPlace,
   movePlace,
-  placeClock,
   placeName,
+  placeFacts,
   placePin,
   removePlace,
   zonesOf,
@@ -87,11 +87,6 @@ test("test_set_003_zones_of_lists_capital_first_then_other_zones", () => {
   );
 });
 
-test("test_set_002_place_clock_shows_local_time_of_capital_zone", () => {
-  const place = createPlace("a", "SA");
-  assert.equal(placeClock(place, Date.UTC(2026, 10, 16, 9, 25)), "12:25 PM");
-});
-
 test("test_map_001_place_pin_gives_map_percentages_time_and_date", () => {
   const place = createPlace("a", "SA");
   const pin = placePin(place, Date.UTC(2026, 10, 16, 21, 30));
@@ -106,4 +101,14 @@ test("test_map_001_place_pin_uses_the_chosen_zone_coordinates", () => {
   const west = { ...capital, zone: "America/Los_Angeles" };
   const instant = Date.UTC(2026, 10, 16, 9, 25);
   assert.ok(placePin(west, instant).left < placePin(capital, instant).left);
+});
+
+test("test_set_009_place_facts_split_name_city_and_country", () => {
+  const riyadh = { ...createPlace("a", "SA"), label: "Sam K." };
+  assert.deepEqual(placeFacts(riyadh, false), { name: "Sam K.", city: "Riyadh", country: null });
+  assert.deepEqual(placeFacts(createPlace("b", "GB"), true), {
+    name: "London",
+    city: null,
+    country: "United Kingdom",
+  });
 });

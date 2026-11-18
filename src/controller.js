@@ -17,7 +17,12 @@ import {
 } from "./domain/holidays.js";
 import { buildPicker, markerOnDate, pickerWindow, shiftMarkerDay } from "./domain/picker.js";
 import * as placeList from "./domain/places.js";
-import { defaultSettings, withDisplaySwitch, withWorkingHours } from "./domain/settings.js";
+import {
+  defaultSettings,
+  withDisplaySwitch,
+  withTheme,
+  withWorkingHours,
+} from "./domain/settings.js";
 import { localDateTime } from "./domain/zones.js";
 
 /** @typedef {import("./domain/calendar.js").DayFacts} DayFacts */
@@ -87,7 +92,8 @@ import { localDateTime } from "./domain/zones.js";
  *   | { type: "movePlace", placeId: string, offset: number }
  *   | { type: "editPlace", placeId: string, changes: Partial<Omit<Place, "id" | "countryCode">> }
  *   | { type: "setWorkingHours", start: number, end: number }
- *   | { type: "setShowCountry", value: boolean } | { type: "setShowHijri", value: boolean }} Action
+ *   | { type: "setShowCountry", value: boolean } | { type: "setShowHijri", value: boolean }
+ *   | { type: "setTheme", value: string }} Action
  */
 
 /** @typedef {{ countryCode: string, year: number }} CountryYear */
@@ -525,6 +531,15 @@ function displaySwitch(name) {
 }
 
 /**
+ * @param {Context} ctx
+ * @param {Extract<Action, { type: "setTheme" }>} action
+ * @returns {Promise<void>} Chooses the theme; a value that is not a theme choice is refused (SET-012).
+ */
+function setTheme(ctx, { value }) {
+  return commitSettings(ctx, withTheme(currentSettings(ctx), value));
+}
+
+/**
  * @returns {Partial<Record<Action["type"], Handler>>} The handlers of the settings workflows.
  */
 function settingsHandlers() {
@@ -536,6 +551,7 @@ function settingsHandlers() {
     setWorkingHours,
     setShowCountry: displaySwitch("showCountry"),
     setShowHijri: displaySwitch("showHijri"),
+    setTheme,
   });
 }
 

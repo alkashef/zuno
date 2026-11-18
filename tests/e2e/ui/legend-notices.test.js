@@ -40,20 +40,28 @@ test("ui_leg_001_legend_names_every_colour", async () => {
   await legend.waitFor();
   const names = await legend.locator('[data-role="legend-name"]').allTextContents();
   assert.deepEqual(names, [
-    "Weekend",
-    "Public holiday",
-    "Working hours",
-    "Non-working hours",
-    "Day off",
+    "Working hours (picker)",
+    "Non-working hours (picker)",
+    "Day off: weekend or holiday (picker)",
+    "Weekend (month view)",
+    "Public holiday (month view)",
+    "Weekend and holiday (month view)",
+    "Today (month view)",
   ]);
-  const swatches = await legend
-    .locator('[data-role="legend-swatch"]')
-    .evaluateAll((all) =>
-      all.map(
-        (swatch) => swatch.ownerDocument.defaultView?.getComputedStyle(swatch).backgroundColor,
-      ),
-    );
-  assert.equal(new Set(swatches).size, 5, swatches.join(" | "));
+  const swatches = await legend.locator('[data-role="legend-swatch"]').evaluateAll((all) =>
+    all.map((swatch) => {
+      const style = swatch.ownerDocument.defaultView?.getComputedStyle(swatch);
+      return {
+        colour: style?.backgroundColor,
+        image: style?.backgroundImage,
+        ring: style?.outlineStyle,
+      };
+    }),
+  );
+  const colours = swatches.slice(0, 5).map((swatch) => swatch.colour);
+  assert.equal(new Set(colours).size, 5, colours.join(" | "));
+  assert.match(swatches[5].image ?? "", /linear-gradient/);
+  assert.equal(swatches[6].ring, "solid");
   const box = await legend.boundingBox();
   const viewport = page.viewportSize();
   assert.ok(box !== null && viewport !== null);

@@ -1,17 +1,29 @@
 /**
- * The world map: the sea, the land outline, and the pins with their labels. It does not style the
- * page shell (layout.css) or the other views, and it holds no colour or size value of its own
- * (theme.css does).
+ * The world map: its card, the sea, the land outline, and the pins with their labels. It does not
+ * style the page shell (layout.css) or the other views, and it holds no colour or size value of its
+ * own (theme.css does).
  */
 .map {
-  position: relative;
-  min-height: var(--map-min-height);
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: var(--space-card);
   border: var(--line-width) solid var(--color-line-card);
+  background: var(--color-card);
+}
+
+.map-view {
+  position: relative;
+  container-type: size;
+  min-height: var(--map-min-height);
+  flex: 1;
+  overflow: hidden;
   background: var(--color-map-sea);
 }
 
 .map-outline {
   position: absolute;
+  display: block;
   inset: 0;
   width: 100%;
   height: 100%;
@@ -19,11 +31,22 @@
 
 .map-land {
   fill: var(--color-map-land);
+  stroke: var(--color-map-coast);
+  stroke-linejoin: round;
+  stroke-width: 0.8;
 }
 
+/*
+ * A pin's position is a share of the whole world (latitude 90 to -90, 360 outline units high). The
+ * outline shows only latitude 80 to -58 (units 20 to 296), so the pin layer reaches past the view
+ * by the two hidden bands.
+ */
 .map-pins {
   position: absolute;
-  inset: 0;
+  top: calc(-20 / 276 * 100%);
+  right: 0;
+  left: 0;
+  height: calc(360 / 276 * 100%);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -39,23 +62,70 @@
   display: block;
   width: var(--map-pin-size);
   height: var(--map-pin-size);
-  border: var(--line-width) solid var(--color-card);
+  border: var(--map-pin-border) solid var(--color-card);
   background: var(--color-marker);
+  box-shadow: 0 0 0 var(--line-width) var(--color-marker);
   transform: translate(-50%, -50%);
 }
 
 .map-pin-label {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: flex;
   flex-direction: column;
-  padding: var(--space-1) var(--space-2);
-  border: var(--line-width) solid var(--color-line-card);
+  padding: var(--space-1) var(--space-row);
+  border: var(--line-width) solid var(--color-line-control);
   background: var(--color-card);
+  box-shadow: var(--shadow-small);
   color: var(--color-text);
-  font-size: var(--font-size-small);
-  transform: translate(var(--space-2), calc(-100% - var(--space-1)));
+  transform: translate(var(--space-marker), calc(-50% + var(--label-shift, 0px)));
   white-space: nowrap;
 }
 
+.map-pin[data-side="above"] .map-pin-label {
+  transform: translate(calc(-50% + var(--label-shift, 0px)), calc(-100% - var(--space-marker)));
+}
+
+.map-pin[data-side="below"] .map-pin-label {
+  transform: translate(calc(-50% + var(--label-shift, 0px)), var(--space-marker));
+}
+
+.map-pin[data-side="left"] .map-pin-label {
+  transform: translate(calc(-100% - var(--space-marker)), calc(-50% + var(--label-shift, 0px)));
+}
+
 .map-pin-name {
+  color: var(--color-text-label);
+  font-size: var(--font-size-caption);
+  line-height: 1.3;
+}
+
+.map-pin-time {
+  font-size: var(--font-size-time);
   font-weight: bold;
+  line-height: 1.2;
+}
+
+.map-pin-date {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-tiny);
+  line-height: 1.3;
+}
+
+/* A short map has no room for the full labels, so they shrink to fit more pins without overlap. */
+@container (height < 260px) {
+  .map-pin-label {
+    padding: var(--space-hairline) var(--space-tight);
+  }
+
+  .map-pin-name,
+  .map-pin-date {
+    font-size: var(--font-size-tiny);
+    line-height: 1.2;
+  }
+
+  .map-pin-time {
+    font-size: var(--font-size-body);
+  }
 }

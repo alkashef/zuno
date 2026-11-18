@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * @module domain/settings
- * The settings shape, defaults and validation (SET-005, SET-007, SET-010, SET-011, DEC-008).
+ * The settings shape, defaults and validation (SET-005, SET-007, SET-010 to SET-012, DEC-008).
  * Invalid input is refused by returning `null`; it is not an error.
  */
 import { isPlace } from "./places.js";
@@ -16,7 +16,13 @@ import { isPlace } from "./places.js";
  * @property {number} workEndMinutes Minutes after midnight; after the start.
  * @property {boolean} showCountry Country names next to place names (SET-010).
  * @property {boolean} showHijri The Hijri calendar is on (SET-011).
+ * @property {Theme} theme The chosen theme (SET-012, THM-001).
  */
+
+/** @typedef {"auto" | "light" | "dark"} Theme */
+
+/** The theme choices (SET-012): follow the operating system, or always light or always dark. */
+export const themes = Object.freeze(/** @type {const} */ (["light", "dark", "auto"]));
 
 /** The current record version. */
 export const settingsVersion = 1;
@@ -47,7 +53,8 @@ export function isWorkingHours(start, end) {
 /**
  * @param {number} workStartMinutes Default start (from config).
  * @param {number} workEndMinutes Default end (from config).
- * @returns {Settings} Settings with no places, country names and Hijri off (SET-007, SET-010, SET-011).
+ * @returns {Settings} Settings with no places, country names and Hijri off, and the theme on Auto
+ *   (SET-007, SET-010 to SET-012).
  */
 export function defaultSettings(workStartMinutes, workEndMinutes) {
   return {
@@ -57,7 +64,16 @@ export function defaultSettings(workStartMinutes, workEndMinutes) {
     workEndMinutes,
     showCountry: false,
     showHijri: false,
+    theme: "auto",
   };
+}
+
+/**
+ * @param {unknown} value
+ * @returns {value is Theme} Whether it is one of the theme choices (SET-012).
+ */
+function isTheme(value) {
+  return themes.some((theme) => theme === value);
 }
 
 /**
@@ -73,20 +89,33 @@ function isPlaceList(places) {
 }
 
 /**
- * Checks a value read from storage.
+ * @param {Record<string, unknown>} record
+ * @returns {boolean} Whether both display switches are true or false and the theme is a choice.
+ */
+function hasValidDisplay(record) {
+  return (
+    typeof record.showCountry === "boolean" &&
+    typeof record.showHijri === "boolean" &&
+    isTheme(record.theme)
+  );
+}
+
+/**
+ * Checks a value read from storage. A record saved before the theme setting existed has no
+ * `theme`; it gets Auto, the default (SET-012).
  * @param {unknown} value
  * @returns {Settings | null} The settings when valid, else `null`. An unknown version is invalid.
  */
 export function parseSettings(value) {
   if (typeof value !== "object" || value === null) return null;
-  const record = /** @type {Record<string, unknown>} */ (value);
+  /** @type {Record<string, unknown>} */
+  const record = { theme: "auto", ...value };
   const valid =
     record.version === settingsVersion &&
     isWorkingHours(record.workStartMinutes, record.workEndMinutes) &&
-    typeof record.showCountry === "boolean" &&
-    typeof record.showHijri === "boolean" &&
+    hasValidDisplay(record) &&
     isPlaceList(record.places);
-  return valid ? /** @type {Settings} */ (record) : null;
+  return valid ? /** @type {Settings} */ (/** @type {unknown} */ (record)) : null;
 }
 
 /**
@@ -111,4 +140,14 @@ export function withWorkingHours(settings, start, end) {
   return isWorkingHours(start, end)
     ? { ...settings, workStartMinutes: start, workEndMinutes: end }
     : null;
+}
+
+/**
+ * Chooses the theme (SET-012).
+ * @param {Settings} settings
+ * @param {unknown} value
+ * @returns {Settings | null} New settings, or `null` when the value is not a theme choice.
+ */
+export function withTheme(settings, value) {
+  return isTheme(value) ? { ...settings, theme: value } : null;
 }

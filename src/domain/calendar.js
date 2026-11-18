@@ -108,7 +108,7 @@ export function buildMonth(settings, monthRef, holidays, nowInstant) {
 }
 
 /**
- * The days of a month laid out in weeks, Monday first, for the day selector's calendar (PCK-007).
+ * The days of a month laid out in weeks, Sunday first, for the day selector's calendar (PCK-007).
  * @param {MonthRef} monthRef
  * @returns {(number | null)[][]} Weeks of seven entries; a day number, or `null` before the 1st and
  *   after the last day.
@@ -116,8 +116,7 @@ export function buildMonth(settings, monthRef, holidays, nowInstant) {
 export function monthWeeks(monthRef) {
   const { year, month } = monthRef;
   const dayCount = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const firstWeekday = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
-  const padding = (firstWeekday + 6) % 7;
+  const padding = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
   const cells = [
     ...Array(padding).fill(null),
     ...Array.from({ length: dayCount }, (_, index) => index + 1),

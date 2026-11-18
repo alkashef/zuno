@@ -3,7 +3,7 @@
  * @module views/header
  * Owns the header's "Updated" time: shows when the times were last recomputed (REF-001). It does
  * not react to clicks (views/actions.js does) and does not compute the time (domain/format.js
- * does). The logo, title and buttons are static markup in index.html.
+ * does). The title, subtitle and buttons are static markup in index.html.
  */
 import { formatClock } from "../domain/format.js";
 

@@ -5,34 +5,48 @@
  */
 .legend {
   position: sticky;
-  z-index: 4;
+  z-index: 5;
   bottom: 0;
+  display: flex;
   width: 100%;
-  padding: var(--space-2) var(--space-4);
+  align-items: center;
+  gap: var(--space-legend);
+  padding: var(--space-control) var(--space-page);
   border-top: var(--line-width) solid var(--color-line-card);
   background: var(--color-card);
+  box-shadow: var(--shadow-up);
+  font-size: var(--font-size-caption);
+}
+
+.legend-title {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-tiny);
+  font-weight: bold;
+  letter-spacing: var(--letter-spacing-caps);
+  text-transform: uppercase;
 }
 
 .legend-list {
   display: flex;
+  min-width: 0;
+  flex: 1;
   flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
+  gap: var(--space-tight) var(--space-legend);
   margin: 0;
   padding: 0;
-  font-size: var(--font-size-small);
   list-style: none;
 }
 
 .legend-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-tight);
 }
 
 .legend-swatch {
-  width: var(--space-3);
-  height: var(--space-3);
-  border: var(--line-width) solid var(--color-line-control);
+  width: var(--swatch-size);
+  height: var(--swatch-size);
+  border: var(--line-width) solid var(--color-line-swatch);
 }
 
 .legend-swatch-weekend {
@@ -55,43 +69,79 @@
   background: var(--color-day-off);
 }
 
+.legend-swatch-split {
+  background: linear-gradient(135deg, var(--color-weekend) 50%, var(--color-holiday) 50%);
+}
+
+.legend-swatch-today {
+  background: var(--color-card);
+  outline: var(--today-outline-width) solid var(--color-today);
+  outline-offset: calc(-1 * var(--line-width));
+}
+
 .notices {
   position: relative;
 }
 
 .notices-button {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
+  position: relative;
+}
+
+.notices-icon {
+  width: var(--icon-size-large);
+  height: var(--icon-size-large);
 }
 
 .notices-badge {
-  min-width: var(--space-4);
+  position: absolute;
+  top: var(--badge-offset);
+  right: var(--badge-offset);
+  display: flex;
+  min-width: var(--badge-size);
+  height: var(--badge-size);
+  align-items: center;
+  justify-content: center;
   padding: 0 var(--space-1);
-  background: var(--color-danger);
-  color: var(--color-card);
-  font-size: var(--font-size-small);
-  text-align: center;
+  background: var(--color-text);
+  color: var(--color-on-text);
+  font-size: var(--font-size-tiny);
+  font-weight: bold;
+}
+
+.notices-badge[hidden] {
+  display: none;
 }
 
 .notices-card {
   position: absolute;
-  z-index: 5;
-  top: 100%;
+  z-index: 10;
+  top: calc(100% + var(--space-row));
   right: 0;
-  width: max-content;
-  max-width: 20rem;
-  padding: var(--space-2) var(--space-3);
+  display: flex;
+  width: var(--notices-width);
+  flex-direction: column;
+  gap: var(--space-tight);
+  padding: var(--space-marker) var(--space-3);
   border: var(--line-width) solid var(--color-line-control);
   background: var(--color-card);
+  box-shadow: var(--shadow-large);
   color: var(--color-text);
+}
+
+.notices-card[hidden] {
+  display: none;
+}
+
+.notices-title {
+  font-weight: bold;
 }
 
 .notices-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-tight);
   margin: 0;
   padding: 0;
+  color: var(--color-text-secondary);
   list-style: none;
 }

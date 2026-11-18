@@ -2,7 +2,8 @@
 /**
  * @module views/legend
  * Owns the legend: a banner fixed to the bottom of the page that names every colour the page uses
- * for weekends, public holidays, working hours, non-working hours and days off (LEG-001). It
+ * for working hours, non-working hours and days off in the picker, and for weekends, public
+ * holidays, both at once and today in the month grid (LEG-001). It
  * clones its markup from a `<template>` in index.html, shows only while places are saved, and
  * picks no colour (legend.css does).
  */

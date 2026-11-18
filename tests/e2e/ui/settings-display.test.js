@@ -1,5 +1,5 @@
 // @ts-check
-/** @module settings-display.test Headless-browser tests of the hours, display and Hijri parts of the settings panel in Chromium (SET-005, SET-006, SET-010, SET-011, HIJ-002, HIJ-003). */
+/** @module settings-display.test Headless-browser tests of the hours, display and Hijri parts of the settings panel in Chromium (SET-005, SET-006, SET-010 to SET-012, HIJ-002, HIJ-003, THM-001). */
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
@@ -57,16 +57,17 @@ function storedSettings(page) {
 test("ui_set_005_working_hours_default_and_invalid_end_refused", async () => {
   const { page } = await openPage(browser, built.url, { saved: savedPlaces(["US"]) });
   await openSettings(page);
-  const start = page.getByLabel("Working hours start");
-  const end = page.getByLabel("Working hours end");
-  assert.equal(await start.inputValue(), "09:00");
-  assert.equal(await end.inputValue(), "17:00");
-  await end.fill("08:00");
+  const start = page.getByRole("combobox", { name: "Start", exact: true });
+  const end = page.getByRole("combobox", { name: "End", exact: true });
+  assert.equal(await start.inputValue(), "540");
+  assert.equal(await start.locator("option:checked").textContent(), "9:00 AM");
+  assert.equal(await end.locator("option:checked").textContent(), "5:00 PM");
+  await end.selectOption({ label: "8:00 AM" });
   assert.equal(await end.getAttribute("aria-invalid"), "true");
   assert.equal((await storedSettings(page)).workEndMinutes, 1020);
-  await end.fill("18:30");
+  await end.selectOption({ label: "6:00 PM" });
   assert.equal(await end.getAttribute("aria-invalid"), "false");
-  assert.equal((await storedSettings(page)).workEndMinutes, 1110);
+  assert.equal((await storedSettings(page)).workEndMinutes, 1080);
 });
 
 test("ui_set_006_region_listed_by_code_and_empty_means_national", async () => {
@@ -81,9 +82,9 @@ test("ui_set_006_region_listed_by_code_and_empty_means_national", async () => {
   await page.getByRole("button", { name: "Refresh" }).click();
   await openSettings(page);
   await page.getByRole("button", { name: "Edit Washington, D.C." }).click();
-  const region = page.getByLabel("Region");
+  const region = page.getByLabel("Region for holidays (optional)");
   assert.deepEqual(await region.locator("option").allTextContents(), [
-    "National holidays only",
+    "None (national holidays only)",
     "US-CA",
   ]);
   assert.equal(await region.inputValue(), "");
@@ -96,13 +97,14 @@ test("ui_set_006_region_listed_by_code_and_empty_means_national", async () => {
 test("ui_set_010_country_names_toggle", async () => {
   const { page } = await openPage(browser, built.url, { saved: savedPlaces(["SA"]) });
   await openSettings(page);
-  const toggle = page.getByLabel("Show names of countries");
+  const toggle = page.getByLabel("Show country names");
+  const countries = page.locator(".month-grid-place-country");
   assert.equal(await toggle.isChecked(), false);
+  assert.equal(await countries.count(), 0);
   await toggle.check();
-  assert.deepEqual(await page.locator(".settings-place-name").allTextContents(), [
-    "Riyadh, Saudi Arabia",
-  ]);
+  assert.deepEqual(await countries.allTextContents(), ["Saudi Arabia"]);
   await toggle.uncheck();
+  assert.equal(await countries.count(), 0);
   assert.deepEqual(await page.locator(".settings-place-name").allTextContents(), ["Riyadh"]);
 });
 
@@ -112,9 +114,15 @@ test("ui_set_011_hijri_toggle_off_by_default", async () => {
   const toggle = page.getByLabel("Show Hijri calendar");
   assert.equal(await toggle.isChecked(), false);
   await page.getByRole("button", { name: "Edit Riyadh" }).click();
-  assert.equal(await page.getByLabel("Hijri variant").count(), 0);
+  assert.equal(
+    await page.getByRole("combobox", { name: "Hijri calendar", exact: true }).count(),
+    0,
+  );
   await toggle.check();
-  assert.equal(await page.getByLabel("Hijri variant").isVisible(), true);
+  assert.equal(
+    await page.getByRole("combobox", { name: "Hijri calendar", exact: true }).isVisible(),
+    true,
+  );
   assert.equal((await storedSettings(page)).showHijri, true);
 });
 
@@ -125,9 +133,11 @@ test("ui_hij_002_variant_choice_per_place", async () => {
   await page.getByRole("button", { name: "Edit Riyadh" }).click();
   const variant = page
     .locator(".settings-place", { hasText: "Riyadh" })
-    .getByLabel("Hijri variant");
+    .getByRole("combobox", { name: "Hijri calendar", exact: true });
   assert.equal(await variant.inputValue(), "umalqura");
   await variant.selectOption({ label: "Tabular" });
+  const riyadh = page.locator(".settings-place", { hasText: "Riyadh" });
+  assert.equal(await riyadh.locator('[data-role="hijri"]').textContent(), "Tabular");
   const places = (await storedSettings(page)).places;
   assert.deepEqual(
     places.map((place) => place.hijriVariant),
@@ -140,11 +150,54 @@ test("ui_hij_003_adjustment_range_minus_one_to_plus_one", async () => {
   const { page } = await openPage(browser, built.url, { saved });
   await openSettings(page);
   await page.getByRole("button", { name: "Edit Riyadh" }).click();
-  const adjust = page.getByLabel("Hijri adjustment");
-  assert.deepEqual(await adjust.locator("option").allTextContents(), ["-1", "0", "+1"]);
-  assert.equal(await adjust.inputValue(), "0");
-  await adjust.selectOption("1");
+  const adjust = page.getByRole("group", { name: "Hijri date adjustment" });
+  const choices = adjust.getByRole("radio");
+  assert.deepEqual(
+    await choices.evaluateAll((all) =>
+      all.map((radio) => radio.parentElement?.textContent?.trim()),
+    ),
+    ["−1", "0", "+1"],
+  );
+  assert.equal(await adjust.getByRole("radio", { name: "0", exact: true }).isChecked(), true);
+  await adjust.getByRole("radio", { name: "+1", exact: true }).check();
   assert.equal((await storedSettings(page)).places[0].hijriAdjust, 1);
-  await adjust.selectOption("-1");
+  await adjust.getByRole("radio", { name: "−1", exact: true }).check();
   assert.equal((await storedSettings(page)).places[0].hijriAdjust, -1);
+});
+
+/**
+ * @param {Page} page
+ * @returns {Promise<string>} The computed page background colour.
+ */
+function pageBackground(page) {
+  return page
+    .locator("body")
+    .evaluate(
+      (body) => body.ownerDocument.defaultView?.getComputedStyle(body).backgroundColor ?? "",
+    );
+}
+
+test("ui_set_012_theme_choice_overrides_the_system_and_is_saved", async () => {
+  const { page } = await openPage(browser, built.url, {
+    saved: savedPlaces(["SA"]),
+    colorScheme: "dark",
+  });
+  await openSettings(page);
+  const theme = page.getByRole("group", { name: "Theme" });
+  assert.equal(await theme.getByRole("radio", { name: "Auto" }).isChecked(), true);
+  assert.equal(await pageBackground(page), "rgb(7, 9, 13)");
+  await theme.getByRole("radio", { name: "Light" }).check();
+  await page.locator('html[data-theme="light"]').waitFor({ state: "attached" });
+  assert.equal(await pageBackground(page), "rgb(234, 246, 246)");
+  assert.equal((await storedSettings(page)).theme, "light");
+  await theme.getByRole("radio", { name: "Auto" }).check();
+  await page.locator("html:not([data-theme])").waitFor({ state: "attached" });
+  assert.equal(await pageBackground(page), "rgb(7, 9, 13)");
+});
+
+test("ui_thm_001_saved_dark_theme_applies_on_open_over_a_light_system", async () => {
+  const saved = { ...savedPlaces(["SA"]), theme: /** @type {const} */ ("dark") };
+  const { page } = await openPage(browser, built.url, { saved, colorScheme: "light" });
+  await page.locator('html[data-theme="dark"]').waitFor({ state: "attached" });
+  assert.equal(await pageBackground(page), "rgb(7, 9, 13)");
 });

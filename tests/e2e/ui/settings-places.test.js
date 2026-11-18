@@ -50,7 +50,9 @@ async function openSettings(page) {
  * @returns {Promise<void>} Adds a place through the panel's add form.
  */
 async function addCountry(page, country) {
-  await page.getByLabel("Country").selectOption({ label: country });
+  await page
+    .getByRole("combobox", { name: "Country", exact: true })
+    .selectOption({ label: country });
   await page.getByRole("button", { name: "Add place" }).click();
 }
 
@@ -83,21 +85,27 @@ test("ui_set_001_escape_closes_panel_and_returns_focus_to_its_button", async () 
   );
 });
 
-test("ui_set_002_new_place_shows_capital_time", async () => {
+test("ui_set_002_new_place_shows_capital_zone_offset", async () => {
   const { page } = await openPage(browser, built.url, { saved: savedPlaces(["US"]) });
   await openSettings(page);
   await addCountry(page, "Saudi Arabia");
   const riyadh = page.locator(".settings-place", { hasText: "Riyadh" });
-  assert.match((await riyadh.textContent()) ?? "", /12:25 PM/);
+  assert.equal(await riyadh.locator('[data-role="facts"]').textContent(), "Saudi Arabia · UTC+3");
 });
 
 test("ui_set_003_choose_another_city_zone", async () => {
   const { page } = await openPage(browser, built.url, { saved: savedPlaces(["US"]) });
   await openSettings(page);
   await page.getByRole("button", { name: "Edit Washington, D.C." }).click();
-  await page.getByLabel("City time zone").selectOption({ label: "Chicago" });
-  const row = page.locator(".settings-place");
-  assert.match((await row.textContent()) ?? "", /3:25 AM/);
+  const zone = page.getByRole("combobox", { name: "Time zone", exact: true });
+  const options = await zone.locator("option").allTextContents();
+  assert.equal(options[0], "Washington, D.C., capital (UTC−5)");
+  assert.match(
+    (await page.locator('[data-role="zone-hint"]').textContent()) ?? "",
+    /^United States has more than one time zone\./,
+  );
+  await zone.selectOption({ label: "Chicago (UTC−6)" });
+  assert.equal(await page.locator('[data-role="facts"]').textContent(), "United States · UTC−6");
   assert.deepEqual(await listedNames(page), ["Chicago"]);
 });
 
@@ -124,6 +132,7 @@ test("ui_set_009_display_name_shown_instead_of_city", async () => {
   const { page } = await openPage(browser, built.url, { saved: savedPlaces(["SA"]) });
   await openSettings(page);
   await page.getByRole("button", { name: "Edit Riyadh" }).click();
+  assert.equal(await page.getByRole("button", { name: "Collapse Riyadh" }).count(), 1);
   await page.getByLabel("Display name").fill("Team HQ");
   await page.getByLabel("Display name").press("Tab");
   assert.deepEqual(await listedNames(page), ["Team HQ"]);

@@ -8,7 +8,9 @@ import {
   formatDate,
   formatHijri,
   formatMonth,
+  formatOffset,
   formatTime,
+  formatWeekday,
 } from "../../src/domain/format.js";
 
 /**
@@ -50,10 +52,10 @@ test("test_dsp_003_hijri_date_format_dd_month_yyyy", () => {
   assert.equal(formatHijri({ day: 21, month: "Rajab", year: 1448 }), "21-Rajab-1448");
 });
 
-test("test_dsp_002_clock_shows_the_instant_in_the_browsers_zone_as_12_hour_text", () => {
+test("test_dsp_002_clock_shows_the_instant_in_the_browsers_zone_with_its_date", () => {
   // Built from local-time parts, so the result does not depend on the machine's zone.
-  assert.equal(formatClock(new Date(2026, 10, 16, 9, 25).getTime()), "9:25 AM");
-  assert.equal(formatClock(new Date(2026, 10, 16, 23, 5).getTime()), "11:05 PM");
+  assert.equal(formatClock(new Date(2026, 10, 16, 9, 25).getTime()), "9:25 AM · 16-Nov-26");
+  assert.equal(formatClock(new Date(2026, 10, 16, 23, 5).getTime()), "11:05 PM · 16-Nov-26");
 });
 
 test("test_pck_007_month_title_is_full_english_month_and_year", () => {
@@ -64,4 +66,18 @@ test("test_pck_007_month_title_is_full_english_month_and_year", () => {
 test("test_dsp_003_hijri_month_band_text", async () => {
   const { formatHijriMonth } = await import("../../src/domain/format.js");
   assert.equal(formatHijriMonth({ day: 6, month: "Jumada II", year: 1448 }), "Jumada II-1448");
+});
+
+test("test_nfr_003_weekday_is_two_english_letters", () => {
+  assert.equal(formatWeekday({ year: 2026, month: 11, day: 16 }), "Mo");
+  assert.equal(formatWeekday({ year: 2026, month: 11, day: 22 }), "Su");
+});
+
+test("test_pck_002_offset_from_utc_with_sign_hours_and_minutes", () => {
+  const hour = 60 * 60 * 1000;
+  assert.equal(formatOffset(0), "UTC+0");
+  assert.equal(formatOffset(3 * hour), "UTC+3");
+  assert.equal(formatOffset(5.5 * hour), "UTC+5:30");
+  assert.equal(formatOffset(-5 * hour), "UTC−5");
+  assert.equal(formatOffset(-3.5 * hour), "UTC−3:30");
 });

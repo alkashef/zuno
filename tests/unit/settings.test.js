@@ -1,5 +1,5 @@
 // @ts-check
-/** @module settings.test Unit tests for src/domain/settings.js (SET-005, SET-007, SET-010, SET-011). */
+/** @module settings.test Unit tests for src/domain/settings.js (SET-005, SET-007, SET-010 to SET-012). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -9,6 +9,7 @@ import {
   defaultSettings,
   parseSettings,
   withDisplaySwitch,
+  withTheme,
   withWorkingHours,
 } from "../../src/domain/settings.js";
 
@@ -57,4 +58,19 @@ test("test_set_010_set_011_display_switch_changes_one_switch_and_refuses_non_boo
     showHijri: true,
   });
   assert.equal(withDisplaySwitch(settings, "showHijri", "yes"), null);
+});
+
+test("test_set_012_theme_is_auto_by_default_and_refuses_other_values", () => {
+  const settings = fresh();
+  assert.equal(settings.theme, "auto");
+  assert.deepEqual(withTheme(settings, "dark"), { ...settings, theme: "dark" });
+  assert.deepEqual(withTheme(settings, "light"), { ...settings, theme: "light" });
+  assert.equal(withTheme(settings, "blue"), null);
+});
+
+test("test_set_012_saved_record_without_theme_gets_auto_and_a_wrong_theme_is_refused", () => {
+  const { theme, ...older } = { ...fresh(), places: [createPlace("a", "SA")] };
+  assert.equal(theme, "auto");
+  assert.deepEqual(parseSettings(older), { ...older, theme: "auto" });
+  assert.equal(parseSettings({ ...older, theme: "blue" }), null);
 });

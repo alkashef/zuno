@@ -71,9 +71,11 @@ function wallMillis(local) {
 /**
  * @param {number} instant UTC milliseconds.
  * @param {string} zone IANA time-zone name.
- * @returns {number} The zone's offset from UTC at that instant, in milliseconds.
+ * @returns {number} The zone's offset from UTC at that instant, in milliseconds, with daylight
+ *   saving applied (CLK-002); east of UTC is positive.
+ * @throws {RangeError} When the zone is not a valid IANA name.
  */
-function zoneOffset(instant, zone) {
+export function zoneOffset(instant, zone) {
   const minute = Math.floor(instant / msPerMinute) * msPerMinute;
   return wallMillis(localDateTime(minute, zone)) - minute;
 }

@@ -1,5 +1,5 @@
 // @ts-check
-/** @module controller-settings.test Settings workflows through src/controller.js with fake api, storage and clock (SET-001 to SET-006, SET-008 to SET-011, HIJ-002, HIJ-003). */
+/** @module controller-settings.test Settings workflows through src/controller.js with fake api, storage and clock (SET-001 to SET-006, SET-008 to SET-012, HIJ-002, HIJ-003). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -272,4 +272,15 @@ test("test_hij_003_adjust_hijri_per_place", async () => {
   assert.deepEqual(controller.getState().grid[1][0].hijri, before);
   await controller.dispatch({ type: "editPlace", placeId: "a", changes: { hijriAdjust: 2 } });
   assert.equal(controller.getState().settings?.places[0].hijriAdjust, 1);
+});
+
+test("test_set_012_choose_theme_is_saved_and_a_wrong_value_refused", async () => {
+  const { controller, store } = setup();
+  await controller.dispatch({ type: "open" });
+  assert.equal(controller.getState().settings, null);
+  await controller.dispatch({ type: "setTheme", value: "dark" });
+  assert.equal(controller.getState().settings?.theme, "dark");
+  assert.equal(store.saved?.theme, "dark");
+  await controller.dispatch({ type: "setTheme", value: "blue" });
+  assert.equal(store.saved?.theme, "dark");
 });

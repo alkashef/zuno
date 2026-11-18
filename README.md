@@ -2,7 +2,10 @@
 
 ## What it does
 
-A timer app that tracks time across time zones.
+A timer app that tracks time across time zones: a world map, a month grid of weekends and public
+holidays, and a meeting-time picker for the places you add. The settings panel holds the places,
+the working hours, the display switches and the theme (Light, Dark, or Auto, which follows your
+system).
 
 ## Stack
 

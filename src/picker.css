@@ -1,21 +1,22 @@
 /**
- * The time picker panel: its title, the day selector with its month calendar, the hour axis, the
- * rows with their coloured stretches, and the marker. It does not style the page shell
- * (layout.css), the settings panel (settings.css) or any later view, and it holds no colour or
- * size value of its own (theme.css does).
+ * The time picker panel on the right of the page: its title, the day selector with its month
+ * calendar, the hour axis, the rows with their names, marker times and coloured stretches, and the
+ * marker line with its handle. It does not style the page shell (layout.css), the settings panel
+ * (settings.css) or any other view, and it holds no colour or size value of its own (theme.css
+ * does).
  */
 .picker {
   display: flex;
-  width: min(var(--picker-width), 100%);
+  min-width: 0;
   flex-direction: column;
-  margin-left: auto;
-  border: var(--line-width) solid var(--color-line-card);
+  padding: var(--space-card) var(--space-card) var(--space-5);
+  border-left: var(--line-width) solid var(--color-line-card);
   background: var(--color-card);
 }
 
 .picker-title {
-  padding: var(--space-3) var(--space-3) 0;
-  font-size: var(--font-size-body);
+  margin-bottom: var(--space-control);
+  font-size: var(--font-size-heading);
 }
 
 .day-selector {
@@ -23,70 +24,122 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-3);
+  margin-bottom: var(--space-marker);
 }
 
 .day-selector-date {
+  min-width: 0;
   flex: 1;
+  gap: var(--space-row);
+  font-size: var(--font-size-emphasis);
+}
+
+.day-selector-date::before {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  flex: none;
+  background: currentcolor;
+  content: "";
+  mask: var(--icon-calendar) center / contain no-repeat;
 }
 
 .calendar {
   position: absolute;
-  z-index: 5;
-  top: 100%;
-  left: var(--space-3);
-  padding: var(--space-3);
+  z-index: 8;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  width: var(--calendar-width);
+  padding: var(--space-control);
   border: var(--line-width) solid var(--color-line-control);
   background: var(--color-card);
+  box-shadow: var(--shadow-large);
 }
 
 .calendar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.calendar-step {
+  display: inline-flex;
+  width: var(--control-height-small);
+  height: var(--control-height-small);
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.calendar-step .icon {
+  width: var(--font-size-heading);
+  height: var(--font-size-heading);
 }
 
 .calendar-title {
-  margin: 0;
   font-size: var(--font-size-body);
 }
 
 .calendar-table {
-  border-collapse: collapse;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: var(--space-hairline);
+  table-layout: fixed;
 }
 
-.calendar-day {
-  min-width: var(--control-height);
+.calendar-table th {
+  padding: var(--space-1) 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-tiny);
+  font-weight: normal;
+}
+
+.calendar-table td {
   padding: 0;
 }
 
+.calendar-day {
+  width: 100%;
+  min-height: var(--control-height-small);
+  padding: 0;
+  border: 0;
+  font-size: var(--font-size-small);
+  font-weight: normal;
+}
+
 .calendar-day[aria-current="date"] {
-  border-color: var(--color-today);
-  font-weight: bold;
+  background: var(--color-text);
+  color: var(--color-on-text);
 }
 
 .picker-scroll {
-  max-height: var(--picker-max-height);
-  padding: 0 var(--space-3) var(--space-3);
-  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+  contain: size;
+  margin: 0 calc(-1 * var(--space-row));
+  padding: 0 var(--space-row);
+  overflow: hidden auto;
 }
 
 .picker-axis {
   position: sticky;
-  z-index: 1;
+  z-index: 4;
   top: 0;
-  height: calc(var(--handle-size) + var(--space-4));
+  height: var(--axis-height);
   background: var(--color-card);
   touch-action: none;
 }
 
 .picker-tick {
   position: absolute;
-  top: 0;
+  bottom: var(--space-hairline);
   left: calc(var(--tick-position) * 100%);
   color: var(--color-text-muted);
-  font-size: var(--font-size-small);
+  font-size: var(--font-size-tiny);
   transform: translateX(-50%);
   white-space: nowrap;
 }
@@ -95,19 +148,13 @@
   transform: none;
 }
 
-.picker-handle {
-  position: absolute;
-  bottom: 0;
-  left: calc(var(--marker-fraction) * 100%);
-  width: var(--handle-size);
-  height: var(--handle-size);
-  background: var(--color-marker);
-  cursor: grab;
-  transform: translateX(-50%);
+.picker-tick:last-child {
+  transform: translateX(-100%);
 }
 
 .picker-content {
   position: relative;
+  padding-bottom: var(--handle-size);
 }
 
 .picker-rows {
@@ -117,26 +164,111 @@
   touch-action: pan-y;
 }
 
-.picker-info {
+.picker-row {
   display: flex;
+  flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-small);
+  margin: 0 calc(-1 * var(--space-row));
+  padding: var(--space-control) var(--space-row) var(--space-row);
+  border-top: var(--line-width) solid var(--color-line-hairline);
 }
 
+.picker-info {
+  position: relative;
+  min-height: var(--picker-info-height);
+}
+
+.picker-row[data-reference="true"],
 .picker-row[data-reference="true"] .picker-info {
   background: var(--color-reference);
 }
 
+.picker-who {
+  position: absolute;
+  top: 0;
+  left: var(--name-left, 0);
+  display: flex;
+  width: var(--name-width, 100%);
+  flex-direction: column;
+  gap: var(--line-width);
+}
+
+.picker-content[data-name-side="end"] .picker-who {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.picker-name-line {
+  display: flex;
+  max-width: 100%;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.picker-name,
+.picker-sub {
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .picker-name {
-  margin-right: auto;
+  min-width: 0;
+  font-size: var(--font-size-emphasis);
+}
+
+.picker-zone,
+.picker-sub {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+}
+
+.picker-zone {
+  flex: none;
+}
+
+.picker-mark {
+  position: absolute;
+  top: 0;
+  left: var(--mark-left, 0);
+  display: flex;
+  flex-direction: column;
+  white-space: nowrap;
+}
+
+.picker-time {
+  font-size: var(--font-size-emphasis);
   font-weight: bold;
+}
+
+.picker-date,
+.picker-hijri {
+  font-size: var(--font-size-caption);
+}
+
+.picker-hijri {
+  color: var(--color-hijri);
 }
 
 .picker-track {
   position: relative;
   height: var(--picker-track-height);
-  margin-bottom: var(--space-2);
+  overflow: hidden;
+}
+
+.picker-track::after {
+  position: absolute;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--color-line-hour) 0,
+    var(--color-line-hour) var(--line-width),
+    transparent var(--line-width),
+    transparent calc(100% / var(--hour-count, 24))
+  );
+  content: "";
+  inset: 0;
+  pointer-events: none;
 }
 
 .picker-segment {
@@ -162,14 +294,25 @@
 .picker-line {
   position: absolute;
   top: 0;
-  bottom: 0;
+  bottom: calc(var(--handle-size) / 2);
   left: calc(var(--marker-fraction) * 100%);
   width: var(--marker-width);
   background: var(--color-marker);
+  box-shadow: 0 0 0 var(--marker-halo) var(--color-card);
   pointer-events: none;
   transform: translateX(-50%);
 }
 
-.picker-hijri {
-  color: var(--color-hijri);
+.picker-handle {
+  position: absolute;
+  bottom: 0;
+  left: calc(var(--marker-fraction) * 100%);
+  width: var(--handle-size);
+  height: var(--handle-size);
+  border: var(--handle-border) solid var(--color-card);
+  background: var(--color-marker);
+  box-shadow: 0 0 0 var(--line-width) var(--color-marker);
+  cursor: grab;
+  touch-action: none;
+  transform: translateX(-50%);
 }

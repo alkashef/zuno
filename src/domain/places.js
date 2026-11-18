@@ -174,12 +174,19 @@ export function placeName(place, showCountry) {
 }
 
 /**
+ * The parts of a place's name that the views lay out apart.
  * @param {Place} place
- * @param {number} instant UTC milliseconds.
- * @returns {string} The place's local time of day, for example `9:25 AM` (SET-002).
+ * @param {boolean} showCountry
+ * @returns {{ name: string, city: string | null, country: string | null }} The name shown for the
+ *   place (SET-009), the city name when a display name hides it, and the country name while
+ *   country names are on (SET-010).
  */
-export function placeClock(place, instant) {
-  return formatTime(localDateTime(instant, place.zone));
+export function placeFacts(place, showCountry) {
+  return {
+    name: placeName(place, false),
+    city: place.label === "" ? null : cityName(place),
+    country: showCountry ? countryName(place.countryCode) : null,
+  };
 }
 
 /**

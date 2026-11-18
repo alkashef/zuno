@@ -1,90 +1,143 @@
 /**
- * The design tokens of the page (DEC-009): every colour, line, corner, spacing and type value, as
- * CSS custom properties. The light theme is the default and the dark theme replaces the colours
- * while the operating system asks for it (THM-001); there is no toggle on the page. It styles no
- * element: base.css and layout.css use these tokens, and no other sheet writes a colour value.
+ * The design tokens of the page (DEC-009): every colour, line, corner, shadow, spacing and type
+ * value, as CSS custom properties, taken from the "Zuno UI" canvas. Each colour holds its light and
+ * its dark value in `light-dark()`; `color-scheme` picks one. With no `data-theme` on the root
+ * the operating system's setting decides, and `views/theme.js` sets `data-theme` to light or dark
+ * when the user chooses one (THM-001, SET-012). It styles no element: the other sheets use these
+ * tokens, and no other sheet writes a colour value.
  */
 :root {
   color-scheme: light dark;
 
-  /* Colours: light theme (Lagoon). */
-  --color-page: #eaf6f6;
-  --color-card: #fff;
-  --color-text: #0e2a33;
-  --color-text-muted: #4f6f78;
-  --color-text-secondary: #1f4450;
-  --color-line-card: #d5eaea;
-  --color-line-hairline: #e3f1f1;
-  --color-line-control: #b6d4d6;
-  --color-line-input: #6b979d;
-  --color-working: #12b886;
-  --color-non-working: #e4f1f1;
-  --color-day-off: #0f4c5c;
-  --color-text-on-tint: #0e2a33;
-  --color-weekend: #ffd166;
-  --color-holiday: #ff6b6b;
-  --color-today: #6c5ce7;
-  --color-hijri: #c0267c;
-  --color-reference: #dff3f3;
-  --color-marker: var(--color-today);
-  --color-map-sea: #bfe9f2;
-  --color-map-land: #ffe6b8;
-  --color-danger: #c9344a;
+  /* Colours: light theme (Lagoon), then dark theme (Midnight). */
+  --color-page: light-dark(#eaf6f6, #07090d);
+  --color-card: light-dark(#fff, #10131a);
+  --color-text: light-dark(#0e2a33, #eaeef5);
+  --color-on-text: light-dark(#fff, #07090d);
+  --color-text-muted: light-dark(#4f6f78, #9ba4b5);
+  --color-text-secondary: light-dark(#1f4450, #c3cbd8);
+  --color-text-label: light-dark(#285560, #b6bfcd);
+  --color-line-card: light-dark(#d5eaea, #1e2433);
+  --color-line-hairline: light-dark(#e3f1f1, #1b2030);
+  --color-line-control: light-dark(#b6d4d6, #363e52);
+  --color-line-input: light-dark(#6b979d, #5a647c);
+  --color-line-swatch: light-dark(rgb(14 42 51 / 25%), rgb(255 255 255 / 25%));
+  --color-line-hour: light-dark(rgb(255 255 255 / 60%), rgb(7 9 13 / 50%));
+  --color-working: light-dark(#12b886, #1fd1a5);
+  --color-non-working: light-dark(#e4f1f1, #1a2030);
+  --color-day-off: light-dark(#0f4c5c, #6e5be6);
+  --color-text-on-tint: light-dark(#0e2a33, #07090d);
+  --color-weekend: light-dark(#ffd166, #f2b63d);
+  --color-holiday: light-dark(#ff6b6b, #ff4f8b);
+  --color-today: light-dark(#6c5ce7, #5bc8ff);
+  --color-hijri: light-dark(#c0267c, #c7aeff);
+  --color-chip: light-dark(#fff, #07090d);
+  --color-reference: light-dark(#dff3f3, #161b2a);
+  --color-marker: var(--color-text);
+  --color-map-sea: light-dark(#bfe9f2, #0b0f18);
+  --color-map-land: light-dark(#ffe6b8, #222b40);
+  --color-map-coast: light-dark(#fff, #07090d);
+  --color-danger: light-dark(#c9344a, #ff7a9e);
+  --shadow-small:
+    0 2px 8px light-dark(rgb(14 60 70 / 10%), transparent),
+    0 0 0 1px light-dark(transparent, rgb(255 255 255 / 4%));
+  --shadow-large:
+    0 16px 40px light-dark(rgb(14 60 70 / 22%), transparent),
+    0 14px 40px light-dark(transparent, rgb(0 0 0 / 60%)),
+    0 0 0 1px light-dark(transparent, rgb(255 255 255 / 5%));
+  --shadow-up:
+    0 -6px 20px light-dark(rgb(14 60 70 / 8%), transparent),
+    0 -8px 24px light-dark(transparent, rgb(0 0 0 / 50%));
 
   /* Shapes and sizes: square corners, 1 px lines, 44 px controls. */
   --line-width: 1px;
   --radius: 0;
   --control-height: 44px;
-  --logo-size: 40px;
-  --picker-width: 36rem;
-  --picker-max-height: 50vh;
-  --picker-track-height: 24px;
-  --marker-width: 2px;
-  --handle-size: 20px;
-  --map-min-height: 9rem;
-  --map-pin-size: 10px;
-  --grid-max-height: 50vh;
-  --grid-cell-size: 32px;
+  --control-height-small: 36px;
+  --control-height-large: 48px;
+  --empty-icon-box: 56px;
+  --empty-icon-size: 28px;
+  --empty-text-width: 460px;
+  --icon-size: 20px;
+  --icon-size-small: 16px;
+  --icon-size-large: 22px;
+  --icon-size-button: 18px;
+  --check-size: 20px;
+  --move-button-width: 32px;
+  --move-button-height: 22px;
+  --settings-width: 560px;
+  --badge-size: 18px;
+  --badge-offset: -5px;
+  --picker-width: 460px;
+  --picker-max-height: calc(100vh - 15rem);
+  --picker-info-height: 56px;
+  --picker-track-height: 38px;
+  --marker-width: 3px;
+  --marker-halo: 1.5px;
+  --handle-size: 22px;
+  --handle-border: 3px;
+  --axis-height: 22px;
+  --map-min-height: 160px;
+  --map-pin-size: 16px;
+  --map-pin-border: 3px;
+  --grid-max-height: 300px;
+  --grid-min-width: 840px;
+  --grid-place-width: 130px;
+  --grid-cell-height: 36px;
+  --grid-band-height: 28px;
+  --band-line-width: 2px;
   --today-outline-width: 2px;
+  --selected-outline-width: 3px;
+  --swatch-size: 14px;
+  --card-width: 300px;
+  --note-width: 280px;
+  --notices-width: 380px;
+  --calendar-width: 308px;
+  --title-min-width: 150px;
+
+  /* Icons drawn by CSS masks, for controls whose text the code replaces. */
+  --icon-calendar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='5' width='16' height='15' rx='2'/%3E%3Cpath d='M4 10h16M9 3v4M15 3v4'/%3E%3C/svg%3E");
 
   /* Spacing. */
+  --space-hairline: 2px;
+  --space-chip: 3px;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 16px;
   --space-4: 24px;
   --space-5: 40px;
+  --space-tight: 6px;
+  --space-row: 10px;
+  --space-control: 12px;
+  --space-marker: 14px;
+  --space-legend: 18px;
+  --space-card: 20px;
+  --space-panel: 28px;
+  --space-page: 32px;
+  --space-empty: 64px;
 
   /* Type: a rounded system stack, no web fonts (NFR-001). */
-  --font-family: ui-rounded, system-ui, sans-serif;
+  --font-family:
+    ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", roboto, sans-serif;
   --font-family-code: ui-monospace, monospace;
-  --font-size-small: 0.875rem;
-  --font-size-body: 1rem;
+  --font-size-tiny: 0.6875rem;
+  --font-size-caption: 0.75rem;
+  --font-size-small: 0.8125rem;
+  --font-size-body: 0.875rem;
+  --font-size-emphasis: 0.9375rem;
+  --font-size-large: 1rem;
+  --font-size-heading: 1.125rem;
+  --font-size-time: 1.25rem;
+  --font-size-panel-title: 1.375rem;
   --font-size-title: 1.5rem;
+  --font-weight-strong: 600;
+  --letter-spacing-caps: 0.04em;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Colours: dark theme (Midnight). */
-    --color-page: #07090d;
-    --color-card: #10131a;
-    --color-text: #eaeef5;
-    --color-text-muted: #9ba4b5;
-    --color-text-secondary: #c3cbd8;
-    --color-line-card: #1e2433;
-    --color-line-hairline: #1b2030;
-    --color-line-control: #363e52;
-    --color-line-input: #5a647c;
-    --color-working: #1fd1a5;
-    --color-non-working: #1a2030;
-    --color-day-off: #6e5be6;
-    --color-text-on-tint: #07090d;
-    --color-weekend: #f2b63d;
-    --color-holiday: #ff4f8b;
-    --color-today: #5bc8ff;
-    --color-hijri: #c7aeff;
-    --color-reference: #161b2a;
-    --color-map-sea: #0b0f18;
-    --color-map-land: #222b40;
-    --color-danger: #ff7a9e;
-  }
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }

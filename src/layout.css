@@ -1,7 +1,8 @@
 /**
- * The layout of the page shell: the header row, the page area, the empty page and the error
- * screen. It does not style the views of later screens (each has its own sheet), and it holds no
- * colour or size value of its own (theme.css does).
+ * The layout of the page shell: the header row, the page area (the map above the month grid on the
+ * left, the picker panel on the right), the empty page and the error screen. It does not style the
+ * views themselves (each has its own sheet), and it holds no colour or size value of its own
+ * (theme.css does).
  */
 body {
   display: flex;
@@ -13,21 +14,22 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border-bottom: var(--line-width) solid var(--color-line-card);
-  background: var(--color-card);
+  gap: var(--space-control);
+  padding: var(--space-control) var(--space-page);
 }
 
-.header-logo {
-  width: var(--logo-size);
-  height: var(--logo-size);
-  background: url("./assets/zuno-logo.jpg") center / contain no-repeat;
+.header-brand {
+  margin-right: auto;
 }
 
 .header-title {
-  margin-right: auto;
   font-size: var(--font-size-title);
+  line-height: 1.2;
+}
+
+.header-subtitle {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
 }
 
 .header-updated {
@@ -38,22 +40,18 @@ body {
 .page {
   display: grid;
   flex: 1;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  gap: var(--space-4);
-  padding: var(--space-4);
-}
-
-.page > .map,
-.page > .month-grid {
-  grid-column: 1;
+  grid-template-columns: minmax(0, 1fr) min(var(--picker-width), 40%);
+  grid-template-rows: 1fr auto;
+  padding-left: var(--space-page);
 }
 
 .page > .map {
+  grid-column: 1;
   grid-row: 1;
 }
 
 .page > .month-grid {
+  grid-column: 1;
   grid-row: 2;
 }
 
@@ -65,25 +63,63 @@ body {
 @media (width <= 60rem) {
   .page {
     grid-template-columns: minmax(0, 1fr);
+    padding-right: var(--space-page);
   }
 
   .page > .picker {
     grid-column: 1;
-    grid-row: auto;
+    grid-row: 3;
+  }
+
+  .page > .picker > .picker-scroll {
+    max-height: var(--picker-max-height);
+    contain: none;
   }
 }
 
 .empty {
   display: flex;
+  align-self: start;
   grid-column: 1 / -1;
-  max-width: 28rem;
   flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-3);
-  margin: var(--space-5) auto;
-  padding: var(--space-4);
-  border: var(--line-width) solid var(--color-line-card);
+  align-items: center;
+  gap: var(--space-marker);
+  margin: var(--space-page) var(--space-page) 0 0;
+  padding: var(--space-empty) var(--space-4);
+  border: var(--line-width) dashed var(--color-line-input);
   background: var(--color-card);
+  text-align: center;
+}
+
+.empty-icon {
+  display: flex;
+  width: var(--empty-icon-box);
+  height: var(--empty-icon-box);
+  align-items: center;
+  justify-content: center;
+  background: var(--color-non-working);
+}
+
+.empty-icon .icon {
+  width: var(--empty-icon-size);
+  height: var(--empty-icon-size);
+}
+
+.empty-title {
+  font-size: var(--font-size-time);
+}
+
+.empty-text {
+  max-width: var(--empty-text-width);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-emphasis);
+}
+
+.empty-add {
+  min-height: var(--control-height-large);
+  margin-top: var(--space-tight);
+  padding: 0 var(--space-4);
+  font-size: var(--font-size-emphasis);
 }
 
 .crash {

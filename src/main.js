@@ -10,9 +10,9 @@ import { config } from "./config.js";
 import { createController } from "./controller.js";
 import { monthWeeks } from "./domain/calendar.js";
 import { countryName, listCountries } from "./domain/countries.js";
-import { placeClock, placeName, placePin, zonesOf } from "./domain/places.js";
+import { placeFacts, placeName, placePin, zonesOf } from "./domain/places.js";
 import { parseSettings } from "./domain/settings.js";
-import { localDateTime } from "./domain/zones.js";
+import { localDateTime, zoneOffset } from "./domain/zones.js";
 import { log } from "./log.js";
 import { createStorage } from "./storage.js";
 import { bindActions } from "./views/actions.js";
@@ -28,6 +28,7 @@ import { createNotices } from "./views/notices.js";
 import { createPicker } from "./views/picker.js";
 import { createPlaceList } from "./views/settings-places.js";
 import { createSettingsPanel } from "./views/settings.js";
+import { createTheme } from "./views/theme.js";
 
 const errorScreen = createErrorScreen(document);
 
@@ -46,8 +47,9 @@ const controller = createController({
   clock,
   defaultHours: { start: config.defaultWorkStartMinutes, end: config.defaultWorkEndMinutes },
 });
-const lookup = { countries: listCountries(), zonesOf, placeName, clockOf: placeClock };
+const lookup = { countries: listCountries(), zonesOf, placeFacts, offsetAt: zoneOffset };
 const views = [
+  createTheme(document),
   createHeader(document),
   createEmptyPage(document),
   createLegend(document),
@@ -55,13 +57,14 @@ const views = [
   createMap(document, { placeName, pinOf: placePin }),
   createMonthGrid(document, {
     dispatch: controller.dispatch,
-    placeName,
+    placeFacts,
     makeHijriNote: createHijriNote,
   }),
   createPicker(document, {
     dispatch: controller.dispatch,
     localAt: localDateTime,
-    placeName,
+    offsetAt: zoneOffset,
+    placeFacts,
     steps: {
       stepMinutes: config.pickerStepMinutes,
       axisLabelEveryHours: config.pickerAxisLabelEveryHours,
@@ -71,6 +74,7 @@ const views = [
   }),
   createSettingsPanel(document, {
     defaultHours: { start: config.defaultWorkStartMinutes, end: config.defaultWorkEndMinutes },
+    hoursStepMinutes: config.workingHoursStepMinutes,
     dispatch: controller.dispatch,
     lookup,
     makeList: (list) => createPlaceList(document, list, { dispatch: controller.dispatch, lookup }),

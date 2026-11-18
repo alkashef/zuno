@@ -1,12 +1,15 @@
 // @ts-check
 /**
  * @module views/settings
- * Owns the settings panel: opens and closes it with `settingsOpen`, the working-hours inputs, the
- * country-name and Hijri switches, the add-by-country form, the close button, and Escape, and
- * returns the keyboard focus to the button that opened it (SET-001, SET-002, SET-004, SET-005,
- * SET-010, SET-011). It clones its markup from templates in index.html. It does not draw the list
- * of places (views/settings-places.js does, built by `deps.makeList`) and it saves nothing (the controller does).
+ * Owns the settings panel: opens and closes it with `settingsOpen`, the working-hours lists, the
+ * country-name and Hijri switches, the theme choice, the add-by-country form, the close button,
+ * and Escape, and returns the keyboard focus to the button that opened it (SET-001, SET-002,
+ * SET-004, SET-005, SET-010 to SET-012). It clones its markup from templates in index.html. It
+ * does not draw the list of places (views/settings-places.js does, built by `deps.makeList`) and
+ * it saves nothing (the controller does).
  */
+import { formatMinutes } from "../domain/format.js";
+
 /** @typedef {import("./settings-places.js").Lookup} Lookup */
 /** @typedef {import("./settings-places.js").PlaceListView} PlaceListView */
 /** @typedef {import("../controller.js").Action} Action */
@@ -19,7 +22,16 @@
  */
 
 /**
- * @typedef {PlaceListView & { settingsOpen: boolean, settings: (NonNullable<PlaceListView["settings"]> & { workStartMinutes: number, workEndMinutes: number }) | null }} SettingsView
+ * @typedef {object} PanelSettings The saved values the panel shows.
+ * @property {number} workStartMinutes
+ * @property {number} workEndMinutes
+ * @property {boolean} showCountry
+ * @property {boolean} showHijri
+ * @property {string} theme
+ */
+
+/**
+ * @typedef {PlaceListView & { settingsOpen: boolean, settings: (NonNullable<PlaceListView["settings"]> & PanelSettings) | null }} SettingsView
  *   The part of the page view the panel draws.
  */
 
@@ -27,6 +39,7 @@
  * @typedef {object} Deps
  * @property {{ start: number, end: number }} defaultHours Working hours (minutes after midnight)
  *   shown when none are saved (SET-005; main.js passes them from config).
+ * @property {number} hoursStepMinutes Minutes between two choices of the working-hours lists.
  * @property {(action: Action) => Promise<void>} dispatch The controller's `dispatch`.
  * @property {Lookup} lookup
  * @property {(list: HTMLElement) => { render: (view: PlaceListView) => void }} makeList Builds the
@@ -82,50 +95,47 @@ function submitAdd(ctx, panel) {
 }
 
 /**
- * @param {string} text A time as `HH:MM`.
- * @returns {number} Minutes after midnight; `NaN` when the text is not a time.
+ * @param {number} step Minutes between two choices.
+ * @param {number} saved The saved time, listed even when it falls between two steps.
+ * @returns {number[]} The times of day to list, in minutes after midnight, in order.
  */
-function minutesOf(text) {
-  const [hours, minutes] = text.split(":").map(Number);
-  return hours * 60 + minutes;
-}
-
-/**
- * @param {number} minutes After midnight.
- * @returns {string} The time as `HH:MM`, the value of a time input.
- */
-function timeText(minutes) {
-  const pad = (/** @type {number} */ value) => String(value).padStart(2, "0");
-  return `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
+function hourChoices(step, saved) {
+  const count = Math.ceil((24 * 60) / step);
+  const steps = Array.from({ length: count }, (_, index) => index * step);
+  return steps.includes(saved) ? steps : [...steps, saved].sort((a, b) => a - b);
 }
 
 /**
  * @param {PanelContext} ctx
  * @param {HTMLElement} panel
- * @returns {void} Sets the working hours when both times are set and the start is before the end;
- *   otherwise marks the end time as invalid and changes nothing (SET-005).
+ * @returns {void} Sets the working hours when the start is before the end; otherwise marks the
+ *   end time as invalid and changes nothing (SET-005).
  */
 function submitHours(ctx, panel) {
-  const start = minutesOf(/** @type {HTMLInputElement} */ (part(panel, "work-start")).value);
-  const end = minutesOf(/** @type {HTMLInputElement} */ (part(panel, "work-end")).value);
-  const valid = !Number.isNaN(start) && !Number.isNaN(end) && start < end;
-  part(panel, "work-end").setAttribute("aria-invalid", String(!valid));
-  if (valid) void ctx.deps.dispatch({ type: "setWorkingHours", start, end });
+  const start = Number(/** @type {HTMLSelectElement} */ (part(panel, "work-start")).value);
+  const end = Number(/** @type {HTMLSelectElement} */ (part(panel, "work-end")).value);
+  part(panel, "work-end").setAttribute("aria-invalid", String(start >= end));
+  if (start < end) void ctx.deps.dispatch({ type: "setWorkingHours", start, end });
 }
 
 /**
  * @param {PanelContext} ctx
  * @param {HTMLElement} panel
  * @param {{ workStartMinutes: number, workEndMinutes: number }} hours
- * @returns {void} Shows the working hours and wires the two inputs (SET-005).
+ * @returns {void} Lists the times of day, shows the working hours and wires the two lists (SET-005).
  */
 function setUpHours(ctx, panel, hours) {
-  /** @type {HTMLInputElement} */ (part(panel, "work-start")).value = timeText(
-    hours.workStartMinutes,
-  );
-  /** @type {HTMLInputElement} */ (part(panel, "work-end")).value = timeText(hours.workEndMinutes);
-  for (const role of ["work-start", "work-end"]) {
-    part(panel, role).addEventListener("change", () => submitHours(ctx, panel));
+  const fields = /** @type {const} */ ([
+    ["work-start", hours.workStartMinutes],
+    ["work-end", hours.workEndMinutes],
+  ]);
+  for (const [role, saved] of fields) {
+    const select = /** @type {HTMLSelectElement} */ (part(panel, role));
+    for (const minutes of hourChoices(ctx.deps.hoursStepMinutes, saved)) {
+      select.append(new Option(formatMinutes(minutes), String(minutes)));
+    }
+    select.value = String(saved);
+    select.addEventListener("change", () => submitHours(ctx, panel));
   }
 }
 
@@ -150,8 +160,26 @@ function setUpSwitches(ctx, panel, shown) {
 /**
  * @param {PanelContext} ctx
  * @param {HTMLElement} panel
+ * @param {string} theme The saved theme.
+ * @returns {void} Checks the saved theme and wires the three choices (SET-012).
+ */
+function setUpTheme(ctx, panel, theme) {
+  const group = part(panel, "theme");
+  for (const radio of group.querySelectorAll("input")) {
+    radio.checked = radio.value === theme;
+  }
+  group.addEventListener("change", (event) => {
+    if (event.target instanceof HTMLInputElement) {
+      void ctx.deps.dispatch({ type: "setTheme", value: event.target.value });
+    }
+  });
+}
+
+/**
+ * @param {PanelContext} ctx
+ * @param {HTMLElement} panel
  * @param {SettingsView} view
- * @returns {void} Shows the saved hours and switches, or the defaults when nothing is saved.
+ * @returns {void} Shows the saved hours, switches and theme, or the defaults when nothing is saved.
  */
 function setUpDisplay(ctx, panel, view) {
   const { start, end } = ctx.deps.defaultHours;
@@ -160,9 +188,11 @@ function setUpDisplay(ctx, panel, view) {
     workEndMinutes: end,
     showCountry: false,
     showHijri: false,
+    theme: "auto",
   };
   setUpHours(ctx, panel, saved);
   setUpSwitches(ctx, panel, saved);
+  setUpTheme(ctx, panel, saved.theme);
 }
 
 /**

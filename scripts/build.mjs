@@ -2,7 +2,7 @@
 /**
  * @module build
  * Builds the one-file page dist/zuno.html (PKG-001, DEC-002, DEC-012). Bundles src/main.js and
- * src/styles.css with esbuild (the logo becomes a data URI inside the CSS), inlines both into
+ * src/styles.css with esbuild, inlines both into
  * src/index.html, and adds a Content-Security-Policy tag
  * that allows only the inline script and style, data-URI images and the holiday host. It does not run the page or
  * read any setting except through the command-line entry at the bottom.
@@ -32,7 +32,6 @@ async function bundle(srcDir) {
     bundle: true,
     format: "iife",
     write: false,
-    loader: { ".jpg": "dataurl" },
     outdir: path.join(srcDir, "out"),
     logLevel: "silent",
   });

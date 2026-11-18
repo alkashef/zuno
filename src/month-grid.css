@@ -1,43 +1,49 @@
 /**
- * The month grid: its month buttons and title, the day headers, the place rows with their weekend,
- * holiday, split and today cells, and the holiday card. It does not style the picker (picker.css)
- * or the page shell (layout.css), and it holds no colour or size value of its own (theme.css does).
+ * The month grid: its card under the map, the month buttons and title, the Hijri month band, the
+ * day headers, the place rows with their weekend, holiday, split, today and selected cells, and the
+ * holiday card. It does not style the picker (picker.css) or the page shell (layout.css), and it
+ * holds no colour or size value of its own (theme.css does).
  */
 .month-grid {
   display: flex;
   min-width: 0;
-  flex: 1;
   flex-direction: column;
+  padding: var(--space-card);
   border: var(--line-width) solid var(--color-line-card);
+  border-top: none;
   background: var(--color-card);
 }
 
 .month-grid-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2);
-  padding: var(--space-3);
+  margin-bottom: var(--space-3);
 }
 
 .month-grid-title {
-  font-size: var(--font-size-body);
+  min-width: var(--title-min-width);
+  font-size: var(--font-size-large);
+  text-align: center;
 }
 
 .month-grid-scroll {
   max-height: var(--grid-max-height);
-  padding: 0 var(--space-3) var(--space-3);
   overflow: auto;
 }
 
 .month-grid-table {
+  width: 100%;
+  min-width: var(--grid-min-width);
   border-collapse: separate;
   border-spacing: 0;
-  font-size: var(--font-size-small);
+  table-layout: fixed;
 }
 
+.month-grid-corner,
 .month-grid-day,
-.month-grid-corner {
+.month-grid-band {
   position: sticky;
   z-index: 2;
   top: 0;
@@ -46,27 +52,56 @@
 }
 
 .month-grid-corner {
-  left: 0;
   z-index: 3;
+  left: 0;
+  width: var(--grid-place-width);
+  padding: 0 0 var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  line-height: 1.2;
   text-align: left;
+  vertical-align: bottom;
+}
+
+.month-grid-day {
+  padding: var(--space-1) 0 var(--space-tight);
+  text-align: center;
+}
+
+.month-grid-day-number {
+  display: block;
+  font-size: var(--font-size-small);
+  font-weight: bold;
+}
+
+.month-grid-weekday {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-tiny);
 }
 
 .month-grid-place {
   position: sticky;
   z-index: 1;
   left: 0;
-  min-width: 8rem;
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-1) 0;
+  border-top: var(--line-width) solid var(--color-line-hairline);
   background: var(--color-card);
+  font-weight: normal;
   text-align: left;
   white-space: nowrap;
 }
 
-.month-grid-cell,
-.month-grid-day {
-  min-width: var(--grid-cell-size);
-  height: var(--grid-cell-size);
-  border: var(--line-width) solid var(--color-line-hairline);
+.month-grid-place:has(.month-grid-card) {
+  z-index: 4;
+}
+
+.month-grid-cell {
+  height: var(--grid-cell-height);
+  padding: 0;
+  border-top: var(--line-width) solid var(--color-line-hairline);
+  border-left: var(--line-width) solid var(--color-line-hairline);
+  background: var(--color-card);
   text-align: center;
 }
 
@@ -79,7 +114,7 @@
 }
 
 .month-grid-cell[data-kind="split"] {
-  background: linear-gradient(to bottom right, var(--color-weekend) 50%, var(--color-holiday) 50%);
+  background: linear-gradient(135deg, var(--color-weekend) 50%, var(--color-holiday) 50%);
 }
 
 .month-grid-cell[data-today="true"] {
@@ -87,9 +122,17 @@
   outline-offset: calc(-1 * var(--today-outline-width));
 }
 
+.month-grid-cell[data-selected="true"] {
+  outline: var(--selected-outline-width) solid var(--color-text);
+  outline-offset: calc(-1 * var(--today-outline-width));
+}
+
 .month-grid-holiday {
+  display: flex;
   width: 100%;
   height: 100%;
+  align-items: center;
+  justify-content: center;
   padding: 0;
   border: 0;
   background: transparent;
@@ -98,56 +141,97 @@
   cursor: pointer;
 }
 
-.month-grid-card {
-  position: absolute;
-  z-index: 4;
-  top: 0;
-  left: 100%;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  border: var(--line-width) solid var(--color-line-control);
-  background: var(--color-card);
-  font-weight: normal;
-}
-
-.month-grid-card-name {
-  font-weight: bold;
-}
-
-.month-grid-band,
-.hijri-note-button {
+.month-grid-hijri {
+  padding: var(--space-chip) var(--space-hairline);
   color: var(--color-hijri);
+  font-size: var(--font-size-tiny);
+  font-weight: var(--font-weight-strong);
+  line-height: 1;
+}
+
+.month-grid-cell:not([data-kind="plain"]) .month-grid-hijri {
+  background: var(--color-chip);
+}
+
+.month-grid-band-row + tr > th {
+  top: var(--grid-band-height);
+}
+
+.month-grid-band-row > .month-grid-corner {
+  height: var(--grid-band-height);
+  padding: 0;
+  color: var(--color-hijri);
+  vertical-align: middle;
 }
 
 .month-grid-band {
-  position: sticky;
-  z-index: 2;
-  top: 0;
-  background: var(--color-card);
-  font-weight: normal;
+  height: var(--grid-band-height);
+  padding: var(--space-chip) var(--space-tight);
+  overflow: hidden;
+  border-left: var(--band-line-width) solid var(--color-hijri);
+  color: var(--color-hijri);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-strong);
   text-align: left;
   white-space: nowrap;
 }
 
-.month-grid-band-row + tr > th {
-  top: var(--grid-cell-size);
+.month-grid-card {
+  position: absolute;
+  z-index: 6;
+  top: 0;
+  left: calc(100% - var(--space-tight));
+  display: flex;
+  width: var(--card-width);
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-control) var(--space-marker);
+  border: var(--line-width) solid var(--color-line-control);
+  background: var(--color-card);
+  box-shadow: var(--shadow-large);
+  white-space: normal;
 }
 
-.month-grid-hijri {
-  display: block;
-  color: var(--color-hijri);
+.month-grid-card-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.month-grid-card-swatch {
+  width: var(--swatch-size);
+  height: var(--swatch-size);
+  flex: none;
+  background: var(--color-holiday);
+}
+
+.month-grid-card-name {
+  flex: 1;
+  font-weight: bold;
+}
+
+.month-grid-card-close {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.month-grid-card-close .icon {
+  width: var(--icon-size-small);
+  height: var(--icon-size-small);
+}
+
+.month-grid-card-facts {
+  color: var(--color-text-secondary);
   font-size: var(--font-size-small);
 }
 
-.month-grid-cell[data-kind="weekend"],
-.month-grid-cell[data-kind="holiday"],
-.month-grid-cell[data-kind="split"],
-.month-grid-cell[data-kind="weekend"] .month-grid-hijri,
-.month-grid-cell[data-kind="holiday"] .month-grid-hijri,
-.month-grid-cell[data-kind="split"] .month-grid-hijri {
-  color: var(--color-text-on-tint);
+.month-grid-card-facts > :not(:first-child)::before {
+  content: " · ";
+  color: var(--color-text-secondary);
 }
 
 .month-grid-card-hijri {
@@ -156,18 +240,55 @@
 
 .hijri-note {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.hijri-note-button {
+  display: inline-flex;
+  width: var(--space-4);
+  height: var(--space-4);
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-hijri);
+  cursor: pointer;
+}
+
+.hijri-note-button .icon {
+  width: var(--icon-size-small);
+  height: var(--icon-size-small);
 }
 
 .hijri-note-card {
   position: absolute;
-  z-index: 5;
+  z-index: 7;
   top: 100%;
   left: 0;
-  width: max-content;
-  max-width: 16rem;
-  padding: var(--space-2);
+  width: var(--note-width);
+  padding: var(--space-control) var(--space-marker);
   border: var(--line-width) solid var(--color-line-control);
   background: var(--color-card);
-  color: var(--color-text);
+  box-shadow: var(--shadow-large);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-small);
+  font-weight: normal;
   white-space: normal;
+}
+
+.month-grid-corner-hijri {
+  color: var(--color-hijri);
+}
+
+.month-grid-place-name,
+.month-grid-place-country {
+  display: block;
+}
+
+.month-grid-place-country {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
 }

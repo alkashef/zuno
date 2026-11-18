@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { instantAtLocal, localDateTime, offsetChange } from "../../src/domain/zones.js";
+import { instantAtLocal, localDateTime, offsetChange, zoneOffset } from "../../src/domain/zones.js";
 
 /**
  * @param {number} year
@@ -108,4 +108,12 @@ test("test_pck_006_offset_change_found_between_two_instants", () => {
   const to = utc(2026, 3, 29, 12, 0);
   assert.equal(offsetChange("Europe/London", from, to), utc(2026, 3, 29, 1, 0));
   assert.equal(offsetChange("Asia/Tokyo", from, to), null);
+});
+
+test("test_clk_002_zone_offset_follows_daylight_saving", () => {
+  const hour = 60 * 60 * 1000;
+  assert.equal(zoneOffset(Date.UTC(2026, 6, 1, 12), "Europe/London"), hour);
+  assert.equal(zoneOffset(Date.UTC(2026, 11, 1, 12), "Europe/London"), 0);
+  assert.equal(zoneOffset(Date.UTC(2026, 10, 16), "Asia/Kolkata"), 5.5 * hour);
+  assert.equal(zoneOffset(Date.UTC(2026, 10, 16), "America/Chicago"), -6 * hour);
 });
