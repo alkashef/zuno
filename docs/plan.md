@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M23** Weekend days per place | The user chooses a place's weekend days; the month grid and the picker follow them | sonnet | high | open |
 | **M24** Holidays the user adds and hides | Add, remove, hide and show holidays per country, saved in the browser, from the settings panel and the holiday card | opus | high | open |
 | **M25** Holidays file | Export the user's holidays to a file and import one; a bad file is refused | sonnet | high | open |
 | **M26** Picker window and selected day | Hour slots of a fixed width from midnight of the selected day, 24 hours or more, the date range in the day selector, the hours saved | opus | high | open |
@@ -26,14 +25,6 @@ The visual reference for M26 to M28 is the "Zuno UI" canvas named at the top of 
 DEC-019 to DEC-021 state its sizes and colours. Existing tests that check behaviour a requirement
 of 2026-11-18 changed (SET-002, SET-003, SET-007, CAL-002, HOL-003, PCK-003, PCK-006, PCK-007) are
 updated in the milestone that changes it, and the report names them.
-
-### M23 — Weekend days per place
-
-- **Refs:** SET-016, CAL-002, PCK-005, EX-014, EX-002, DEC-016.
-- **Owner:** `src/domain/weekends.js`, `src/domain/places.js`, `src/views/settings-places.js`.
-- **Tests first:** `test_set_016_weekend_days_default_to_the_countrys` , `test_set_016_user_chooses_a_places_weekend_days` (controller `editPlace`; an empty or invalid list is refused), `test_cal_002_month_grid_marks_the_places_own_weekend_days` (EX-014), `test_pck_005_picker_day_off_follows_the_places_weekend_days`, `test_set_016_editor_shows_seven_day_boxes_with_the_default_ticked` (browser), `test_set_016_saved_record_without_weekend_days_gets_the_countrys`.
-- **Build:** `Place.weekendDays` (`null` or days 1 to 7); `weekends.js` answers for a place; `calendar.js` and `picker.js` ask it with the place; the place editor gets the "Weekend days" boxes and the line naming the country's default, as on the canvas.
-- **Gate:** EX-002 still passes for an unchanged Riyadh place.
 
 ### M24 — Holidays the user adds and hides
 

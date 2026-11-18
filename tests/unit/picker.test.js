@@ -247,3 +247,12 @@ test("test_hij_001_picker_rows_carry_hijri_date_only_when_on", () => {
   const on = buildPicker({ ...settings, showHijri: true }, marker, {});
   assert.deepEqual(on[0].hijri, { day: 6, month: "Jumada II", year: 1448 });
 });
+
+test("test_pck_005_picker_day_off_follows_the_places_weekend_days", () => {
+  const sundayOnly = editPlace([createPlace("a", "riyadh")], "a", { weekendDays: [7] });
+  const settings = settingsWith(sundayOnly);
+  const friday = utc(2026, 11, 20, 11);
+  const sunday = utc(2026, 11, 22, 11);
+  assert.equal(kindAt(buildPicker(settings, { instant: friday }, {})[0], friday), DayKind.working);
+  assert.equal(kindAt(buildPicker(settings, { instant: sunday }, {})[0], sunday), DayKind.dayOff);
+});

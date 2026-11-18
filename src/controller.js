@@ -508,14 +508,17 @@ function movePlace(ctx, { placeId, offset }) {
 }
 
 /**
- * Changes the display name, region or Hijri choices of a place (SET-006, SET-009, HIJ-002,
- * HIJ-003).
+ * Changes the display name, region, weekend days or Hijri choices of a place (SET-006, SET-009,
+ * SET-016, HIJ-002, HIJ-003). A change that makes the place invalid is refused and nothing is saved.
  * @param {Context} ctx
  * @param {Extract<Action, { type: "editPlace" }>} action
  * @returns {Promise<void>}
  */
 function editPlace(ctx, { placeId, changes }) {
-  return changePlaces(ctx, (places) => placeList.editPlace(places, placeId, changes));
+  const { places } = currentSettings(ctx);
+  const edited = placeList.editPlace(places, placeId, changes);
+  const refused = edited.every((place, index) => place === places[index]);
+  return refused ? Promise.resolve() : changePlaces(ctx, () => edited);
 }
 
 /**

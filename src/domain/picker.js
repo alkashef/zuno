@@ -113,8 +113,7 @@ function kindAt(row, instant) {
   const { place } = row;
   const local = localDateTime(instant, place.zone);
   const isDayOff =
-    isWeekend(place.countryCode, local) ||
-    holidayOn(row.holidays, place.region, isoDate(local)) !== null;
+    isWeekend(place, local) || holidayOn(row.holidays, place.region, isoDate(local)) !== null;
   if (isDayOff) return DayKind.dayOff;
   const minutes = local.hour * minutesPerHour + local.minute;
   const isWorking = minutes >= row.workStartMinutes && minutes < row.workEndMinutes;

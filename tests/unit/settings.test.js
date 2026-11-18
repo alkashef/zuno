@@ -5,6 +5,9 @@ import { test } from "node:test";
 
 import { config } from "../../src/config.js";
 import { createPlace } from "../../src/domain/places.js";
+import { placeWeekendDays } from "../../src/domain/weekends.js";
+
+/** @typedef {import("../../src/domain/places.js").Place} Place */
 import {
   defaultSettings,
   parseSettings,
@@ -99,4 +102,14 @@ test("test_set_015_version_1_record_is_read_as_no_saved_settings", () => {
   const record = { ...fresh(), places: [createPlace("a", "riyadh")] };
   assert.equal(parseSettings({ ...record, version: 1 }), null);
   assert.equal(fresh().version, 2);
+});
+
+test("test_set_016_saved_record_without_weekend_days_gets_the_countrys", () => {
+  const { weekendDays, ...older } = createPlace("a", "riyadh");
+  assert.equal(weekendDays, null);
+  const parsed = parseSettings({ ...fresh(), places: [older] });
+  assert.equal(parsed?.places[0].weekendDays, null);
+  assert.deepEqual(placeWeekendDays(/** @type {Place} */ (parsed?.places[0])), [5, 6]);
+  assert.equal(parsed?.version, 2);
+  assert.equal(parseSettings({ ...fresh(), places: [{ ...older, weekendDays: [] }] }), null);
 });

@@ -3,7 +3,8 @@
  * @module domain/format
  * Formats a local date as dd-mmm-yy and a local time as 12-hour text (DSP-001, DSP-002, EX-005,
  * EX-006), minutes after midnight as 12-hour text, a Hijri date as dd-month-yyyy (DSP-003), a month title (PCK-007), a weekday as two
- * English letters (NFR-003) and an offset from UTC. It does not compute local times or offsets
+ * English letters (NFR-003), a list of weekend days as English names (SET-016) and an offset from
+ * UTC. It does not compute local times or offsets
  * (domain/zones.js does) or Hijri dates (domain/hijri.js does).
  */
 
@@ -109,6 +110,17 @@ export function formatClock(instant) {
 export function formatWeekday(date) {
   const names = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "UTC" });
   return names.format(Date.UTC(date.year, date.month - 1, date.day)).slice(0, 2);
+}
+
+/**
+ * @param {number[]} days Days of the week, 1 = Monday to 7 = Sunday.
+ * @returns {string} The full English day names in the order given, joined as a list, for example
+ *   `Saturday and Sunday` (SET-016).
+ */
+export function formatDayNames(days) {
+  const names = new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "UTC" });
+  const spelled = days.map((day) => names.format(Date.UTC(2024, 0, day)));
+  return new Intl.ListFormat("en-US", { style: "long", type: "conjunction" }).format(spelled);
 }
 
 /**

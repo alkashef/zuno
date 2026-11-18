@@ -3,12 +3,13 @@
  * @module domain/places
  * The list of places: makes a place from a city, restores a saved one, validates, adds, removes,
  * moves, edits and names them (SET-001, SET-002, SET-006, SET-008, SET-009, SET-010, SET-013,
- * SET-015). Every function returns a new list and leaves its input unchanged. The list order is the
+ * SET-015, SET-016). Every function returns a new list and leaves its input unchanged. The list order is the
  * display order (PCK-006). It does not hold the city list (domain/cities.js does).
  */
 import { cityOf, countryName } from "./cities.js";
 import { formatDate, formatTime } from "./format.js";
 import { HijriVariant, isHijriAdjust, isHijriVariant } from "./hijri.js";
+import { isWeekendChoice } from "./weekends.js";
 import { localDateTime } from "./zones.js";
 
 /** @typedef {import("./hijri.js").HijriVariantName} HijriVariantName */
@@ -22,6 +23,8 @@ import { localDateTime } from "./zones.js";
  * @property {string} zone The city's IANA time-zone name, filled in from the city.
  * @property {string} label Display name; empty means the city name (SET-009).
  * @property {string} region Region code; empty means national holidays only (SET-006).
+ * @property {number[] | null} weekendDays The weekend days the user chose, 1 = Monday to 7 = Sunday;
+ *   `null` means the weekend of the place's country (SET-016).
  * @property {HijriVariantName} hijriVariant
  * @property {number} hijriAdjust -1, 0 or 1 days.
  */
@@ -69,6 +72,7 @@ export function isPlace(value) {
   const record = /** @type {Record<string, unknown>} */ (value);
   return (
     hasTextFields(record) &&
+    isWeekendChoice(record.weekendDays) &&
     isHijriVariant(record.hijriVariant) &&
     isHijriAdjust(record.hijriAdjust) &&
     hasCityFacts(record)
@@ -95,7 +99,7 @@ export function restorePlace(value) {
   if (typeof value !== "object" || value === null) return null;
   const city = cityOf(/** @type {Record<string, unknown>} */ (value).cityId);
   if (city === null) return null;
-  const place = { ...value, countryCode: city.countryCode, zone: city.zone };
+  const place = { weekendDays: null, ...value, countryCode: city.countryCode, zone: city.zone };
   return isPlace(place) ? place : null;
 }
 
@@ -115,6 +119,7 @@ export function createPlace(id, cityId) {
     zone: city.zone,
     label: "",
     region: "",
+    weekendDays: null,
     hijriVariant: HijriVariant.umalqura,
     hijriAdjust: 0,
   };
@@ -161,7 +166,7 @@ export function movePlace(places, id, offset) {
 /** @typedef {Partial<Omit<Place, "id" | "cityId" | "countryCode" | "zone">>} PlaceChanges */
 
 /**
- * Changes fields of a place (SET-006, SET-009, HIJ-002, HIJ-003). The id and the city, with its
+ * Changes fields of a place (SET-006, SET-009, SET-016, HIJ-002, HIJ-003). The id and the city, with its
  * country and zone, do not change.
  * @param {Place[]} places
  * @param {string} id

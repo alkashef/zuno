@@ -3,12 +3,13 @@
  * @module views/settings-places
  * Owns the list of places inside the settings panel: one row per place with move arrows, its name,
  * its city, country and offset from UTC (and Hijri variant while Hijri is on), an edit button, a
- * remove button and an editor for the display name, region and, while Hijri is on, the Hijri
- * variant and adjustment (SET-001, SET-002, SET-006, SET-008, SET-009, HIJ-002, HIJ-003).
+ * remove button and an editor for the display name, region, weekend days and, while Hijri is on,
+ * the Hijri variant and adjustment (SET-001, SET-002, SET-006, SET-008, SET-009, SET-016, HIJ-002,
+ * HIJ-003).
  * It does not own the panel, the add form or Escape (views/settings.js does) and it computes no
  * names or offsets (the `lookup` it receives does).
  */
-import { formatOffset } from "../domain/format.js";
+import { formatDayNames, formatOffset } from "../domain/format.js";
 
 /** @typedef {import("../domain/places.js").Place} Place */
 /** @typedef {import("../domain/cities.js").CityChoice} CityChoice */
@@ -20,6 +21,9 @@ import { formatOffset } from "../domain/format.js";
  * @property {(place: Place, showCountry: boolean) => { name: string, city: string | null, country: string | null }} placeFacts
  *   The name shown for a place, the city a display name hides, and the country name.
  * @property {(instant: number, zone: string) => number} offsetAt A zone's offset from UTC (ms).
+ * @property {(place: Place) => number[]} placeWeekendDays The place's weekend days, 1 = Monday to 7 =
+ *   Sunday: the days the user chose, else its country's.
+ * @property {(countryCode: string) => number[]} countryWeekendDays The weekend days of a country.
  */
 
 /**
@@ -120,6 +124,36 @@ function fillRegion(item, place, codes) {
 }
 
 /**
+ * @param {ParentNode} item A row.
+ * @returns {HTMLInputElement[]} The seven day boxes of the row's editor, Sunday first.
+ */
+function weekendBoxes(item) {
+  const boxes = item.querySelectorAll('[data-role="weekend-day"]');
+  return [...boxes].map((box) => /** @type {HTMLInputElement} */ (box));
+}
+
+/**
+ * @param {ListContext} ctx
+ * @param {HTMLElement} item
+ * @param {Place} place
+ * @returns {void} Ticks the place's weekend days (its own, else its country's), names each box
+ *   after its full day name, and writes the line that names the country's default (SET-016).
+ */
+function fillWeekend(ctx, item, place) {
+  const days = ctx.lookup.placeWeekendDays(place);
+  for (const box of weekendBoxes(item)) {
+    const day = Number(box.value);
+    box.checked = days.includes(day);
+    box.setAttribute("aria-label", formatDayNames([day]));
+    box.dataset.focusKey = `${place.id}:weekend-${day}`;
+  }
+  const country = ctx.lookup.placeFacts(place, true).country ?? "";
+  const defaults = formatDayNames(ctx.lookup.countryWeekendDays(place.countryCode));
+  part(item, "weekend-hint").textContent =
+    `The default for ${country} is ${defaults}. Change it if this place has other days off.`;
+}
+
+/**
  * @param {HTMLElement} item
  * @param {Place} place
  * @param {boolean} showHijri
@@ -174,6 +208,7 @@ function buildItem(ctx, place, view) {
   labelButtons(item, place, name);
   /** @type {HTMLInputElement} */ (part(item, "label")).value = place.label;
   fillRegion(item, place, view.regions[place.countryCode] ?? []);
+  fillWeekend(ctx, item, place);
   fillHijri(item, place, view.settings?.showHijri ?? false);
   setExpanded(item, ctx.expanded.has(place.id));
   return item;
@@ -245,15 +280,53 @@ const fieldChanges = Object.freeze({
 
 /**
  * @param {ListContext} ctx
+ * @param {HTMLElement} item A row.
+ * @param {HTMLInputElement} box The day box that changed.
+ * @returns {void} Saves the ticked days as the place's weekend. The last ticked box cannot be
+ *   cleared: a weekend has at least one day (SET-016).
+ */
+function onWeekendChange(ctx, item, box) {
+  const days = weekendBoxes(item)
+    .filter((each) => each.checked)
+    .map((each) => Number(each.value))
+    .sort((a, b) => a - b);
+  if (days.length === 0) {
+    box.checked = true;
+    return;
+  }
+  void ctx.dispatch({
+    type: "editPlace",
+    placeId: item.dataset.id ?? "",
+    changes: { weekendDays: days },
+  });
+}
+
+/**
+ * @param {Event} event A change inside the list.
+ * @returns {{ item: HTMLElement, field: HTMLInputElement | HTMLSelectElement } | null} The editor
+ *   field that changed and its row, or `null` for any other target.
+ */
+function changedField(event) {
+  const field = event.target;
+  const item = field instanceof Element ? field.closest("[data-id]") : null;
+  const isField = field instanceof HTMLInputElement || field instanceof HTMLSelectElement;
+  return item instanceof HTMLElement && isField ? { item, field } : null;
+}
+
+/**
+ * @param {ListContext} ctx
  * @param {Event} event A change of an editor field.
  * @returns {void}
  */
 function onChange(ctx, event) {
-  const field = event.target;
-  const item = field instanceof Element ? field.closest("[data-id]") : null;
-  if (!(item instanceof HTMLElement)) return;
-  if (!(field instanceof HTMLInputElement || field instanceof HTMLSelectElement)) return;
+  const changed = changedField(event);
+  if (changed === null) return;
+  const { item, field } = changed;
   const role = field.dataset.role ?? "";
+  if (role === "weekend-day") {
+    onWeekendChange(ctx, item, /** @type {HTMLInputElement} */ (field));
+    return;
+  }
   if (!Object.hasOwn(fieldChanges, role)) return;
   const changes = fieldChanges[/** @type {keyof typeof fieldChanges} */ (role)](field.value);
   void ctx.dispatch({ type: "editPlace", placeId: item.dataset.id ?? "", changes });

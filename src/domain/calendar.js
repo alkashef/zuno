@@ -25,7 +25,7 @@ import { localDateTime } from "./zones.js";
 /**
  * @typedef {object} DayFacts The facts of one day in one place's row.
  * @property {string} date `YYYY-MM-DD`.
- * @property {boolean} isWeekend Whether the day is a weekend day of the place's country (CAL-002).
+ * @property {boolean} isWeekend Whether the day is a weekend day of the place (CAL-002).
  * @property {string | null} holidayName The public holiday's name, or `null` (CAL-003).
  * @property {boolean} isToday Whether it is today's date in the place's own zone (CAL-004).
  * @property {HijriDate | null} hijri The Hijri date, or `null` while Hijri is off (HIJ-001).
@@ -69,7 +69,7 @@ function dayFacts(row, monthRef, day) {
   const calendarDate = { year: monthRef.year, month: monthRef.month, day };
   return {
     date,
-    isWeekend: isWeekend(place.countryCode, calendarDate),
+    isWeekend: isWeekend(place, calendarDate),
     holidayName: holidayOn(row.holidays, place.region, date)?.name ?? null,
     isToday: date === row.today,
     hijri: row.showHijri ? hijriDate(calendarDate, place.hijriVariant, place.hijriAdjust) : null,

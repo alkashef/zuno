@@ -352,3 +352,29 @@ test("test_set_012_choose_theme_is_saved_and_a_wrong_value_refused", async () =>
   await controller.dispatch({ type: "setTheme", value: "blue" });
   assert.equal(store.saved?.theme, "dark");
 });
+
+test("test_set_016_user_chooses_a_places_weekend_days", async () => {
+  const { controller, saves } = setup({
+    saved: { ...defaultSettings(540, 1020), places: [createPlace("a", "new-delhi")] },
+  });
+  await controller.dispatch({ type: "open" });
+  const place = () => controller.getState().settings?.places[0];
+  assert.equal(place()?.weekendDays, null);
+  assert.equal(controller.getState().grid[0][6].isWeekend, false);
+  await controller.dispatch({ type: "editPlace", placeId: "a", changes: { weekendDays: [6, 7] } });
+  assert.deepEqual(place()?.weekendDays, [6, 7]);
+  assert.equal(saves.length, 1);
+  const marked = controller.getState().grid[0].filter((day) => day.isWeekend);
+  assert.deepEqual(
+    marked.slice(1, 3).map((day) => day.date),
+    ["2026-11-07", "2026-11-08"],
+  );
+  for (const weekendDays of [[], [0], [8], [6, 6]]) {
+    await controller.dispatch({ type: "editPlace", placeId: "a", changes: { weekendDays } });
+  }
+  assert.deepEqual(place()?.weekendDays, [6, 7]);
+  assert.equal(saves.length, 1);
+  await controller.dispatch({ type: "editPlace", placeId: "a", changes: { weekendDays: null } });
+  assert.equal(place()?.weekendDays, null);
+  assert.equal(saves.length, 2);
+});

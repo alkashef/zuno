@@ -136,3 +136,22 @@ test("test_pck_007_month_weeks_hold_every_day_once_in_a_leap_february", () => {
     Array.from({ length: 29 }, (_, index) => index + 1),
   );
 });
+
+test("test_cal_002_month_grid_marks_the_places_own_weekend_days", () => {
+  const delhi = editPlace([createPlace("a", "new-delhi")], "a", { weekendDays: [6, 7] });
+  const settings = settingsWith([...delhi, createPlace("b", "riyadh")]);
+  const [india, saudi] = buildMonth(settings, { year: 2026, month: 11 }, {}, noon);
+  const marked = (/** @type {import("../../src/domain/calendar.js").DayFacts[]} */ row) =>
+    row.filter((cell) => cell.isWeekend).map((cell) => cell.date);
+  assert.deepEqual(marked(india).slice(1, 5), [
+    "2026-11-07",
+    "2026-11-08",
+    "2026-11-14",
+    "2026-11-15",
+  ]);
+  assert.equal(india[20].isWeekend, true);
+  assert.equal(india[21].isWeekend, true);
+  assert.equal(saudi[19].isWeekend, true);
+  assert.equal(saudi[20].isWeekend, true);
+  assert.equal(saudi[21].isWeekend, false);
+});

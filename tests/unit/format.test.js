@@ -1,11 +1,12 @@
 // @ts-check
-/** @module format.test Unit tests for src/domain/format.js (DSP-001 to DSP-003, PCK-007, EX-005, EX-006). */
+/** @module format.test Unit tests for src/domain/format.js (DSP-001 to DSP-003, PCK-007, SET-016, EX-005, EX-006). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
   formatClock,
   formatDate,
+  formatDayNames,
   formatHijri,
   formatMonth,
   formatOffset,
@@ -80,4 +81,11 @@ test("test_pck_002_offset_from_utc_with_sign_hours_and_minutes", () => {
   assert.equal(formatOffset(5.5 * hour), "UTC+5:30");
   assert.equal(formatOffset(-5 * hour), "UTC−5");
   assert.equal(formatOffset(-3.5 * hour), "UTC−3:30");
+});
+
+test("test_set_016_day_numbers_are_spelled_as_english_names", () => {
+  assert.equal(formatDayNames([6, 7]), "Saturday and Sunday");
+  assert.equal(formatDayNames([5, 6]), "Friday and Saturday");
+  assert.equal(formatDayNames([7]), "Sunday");
+  assert.equal(formatDayNames([1, 2, 7]), "Monday, Tuesday, and Sunday");
 });

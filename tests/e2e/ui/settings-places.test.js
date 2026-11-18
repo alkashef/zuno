@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
+import { config } from "../../../src/config.js";
 import { createPlace } from "../../../src/domain/places.js";
 import { defaultSettings } from "../../../src/domain/settings.js";
 import { buildToScratch, launchBrowser, openPage } from "./page-fixture.js";
@@ -154,4 +155,35 @@ test("ui_set_009_display_name_shown_instead_of_city", async () => {
   await page.getByLabel("Display name").fill("");
   await page.getByLabel("Display name").press("Tab");
   assert.deepEqual(await listedNames(page), ["Riyadh"]);
+});
+
+test("test_set_016_editor_shows_seven_day_boxes_with_the_default_ticked", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["riyadh"]) });
+  await openSettings(page);
+  await page.getByRole("button", { name: "Edit Riyadh" }).click();
+  const group = page.getByRole("group", { name: "Weekend days" });
+  const labels = await group.locator("label").allTextContents();
+  assert.deepEqual(
+    labels.map((text) => text.trim()),
+    ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+  );
+  const ticked = async () =>
+    group
+      .locator("input:checked")
+      .evaluateAll((boxes) =>
+        boxes.map((box) => /** @type {HTMLInputElement} */ (box).getAttribute("aria-label")),
+      );
+  assert.deepEqual(await ticked(), ["Friday", "Saturday"]);
+  const hint = "The default for Saudi Arabia is Friday and Saturday.";
+  assert.equal(await page.getByText(hint).count(), 1);
+  await group.getByRole("checkbox", { name: "Sunday" }).check();
+  assert.deepEqual(await ticked(), ["Sunday", "Friday", "Saturday"]);
+  const key = config.storageKey;
+  const saved = () => page.evaluate((name) => localStorage.getItem(name) ?? "", key);
+  assert.deepEqual(JSON.parse(await saved()).places[0].weekendDays, [5, 6, 7]);
+  await group.getByRole("checkbox", { name: "Friday" }).uncheck();
+  await group.getByRole("checkbox", { name: "Saturday" }).uncheck();
+  await group.getByRole("checkbox", { name: "Sunday" }).click();
+  assert.deepEqual(await ticked(), ["Sunday"]);
+  assert.deepEqual(JSON.parse(await saved()).places[0].weekendDays, [7]);
 });

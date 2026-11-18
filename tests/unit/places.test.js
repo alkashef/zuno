@@ -123,3 +123,23 @@ test("test_set_009_place_facts_split_name_city_and_country", () => {
     country: "United Kingdom",
   });
 });
+
+test("test_set_016_edit_refuses_an_empty_out_of_range_or_repeated_weekend_list", () => {
+  const places = [createPlace("a", "riyadh")];
+  const chosen = editPlace(places, "a", { weekendDays: [6, 7] });
+  assert.deepEqual(chosen[0].weekendDays, [6, 7]);
+  for (const weekendDays of [[], [0], [8], [5, 5], [1.5]]) {
+    assert.deepEqual(editPlace(chosen, "a", { weekendDays }), chosen);
+  }
+  assert.equal(editPlace(chosen, "a", { weekendDays: null })[0].weekendDays, null);
+});
+
+test("test_set_016_restored_place_without_weekend_days_gets_null", () => {
+  const { countryCode, zone, weekendDays, ...stored } = createPlace("a", "riyadh");
+  assert.equal(weekendDays, null);
+  assert.equal(restorePlace(stored)?.weekendDays, null);
+  assert.deepEqual(restorePlace({ ...stored, weekendDays: [6, 7] })?.weekendDays, [6, 7]);
+  assert.equal(restorePlace({ ...stored, weekendDays: [] }), null);
+  assert.equal(countryCode, "SA");
+  assert.equal(zone, "Asia/Riyadh");
+});

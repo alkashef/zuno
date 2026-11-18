@@ -12,6 +12,7 @@ import { monthWeeks } from "./domain/calendar.js";
 import { countryName, listCities } from "./domain/cities.js";
 import { placeFacts, placeName, placePin } from "./domain/places.js";
 import { parseSettings } from "./domain/settings.js";
+import { countryWeekendDays, placeWeekendDays } from "./domain/weekends.js";
 import { localDateTime, zoneOffset } from "./domain/zones.js";
 import { log } from "./log.js";
 import { createStorage } from "./storage.js";
@@ -48,7 +49,13 @@ const controller = createController({
   defaultHours: { start: config.defaultWorkStartMinutes, end: config.defaultWorkEndMinutes },
   defaultCityIds: config.defaultCityIds,
 });
-const lookup = { cities: listCities(), placeFacts, offsetAt: zoneOffset };
+const lookup = {
+  cities: listCities(),
+  placeFacts,
+  offsetAt: zoneOffset,
+  placeWeekendDays,
+  countryWeekendDays,
+};
 const views = [
   createTheme(document),
   createHeader(document),
