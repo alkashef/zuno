@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "lint:css": "stylelint \"src/**/*.css\" --allow-empty-input",
     "format:check": "prettier --check \"src/**/*.{js,mjs,css,html}\" \"tests/**/*.js\" --no-error-on-unmatched-pattern",
-    "test": "node --test"
+    "test": "node --test --experimental-test-coverage --test-coverage-include=\"src/**\" --test-coverage-lines=80 --test-coverage-branches=80"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

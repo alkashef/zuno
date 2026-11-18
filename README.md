@@ -26,11 +26,12 @@ Plain JavaScript, HTML and CSS, bundled into one file by esbuild 0.28.2. Browser
 
 ```bash
 npm install
-npx playwright install chromium
+npx playwright install chromium firefox webkit
 ```
 
-The second command downloads the browser that the browser tests drive. The page needs no
-configuration and no server.
+The second command downloads the three browsers that the browser tests drive. The fourth, Microsoft
+Edge, is not downloaded: the tests use the Edge installed on the machine (the `msedge` channel). The
+page needs no configuration and no server.
 
 After a fresh clone, turn on the pre-commit hook, which refuses a commit unless the checks pass:
 
@@ -58,5 +59,7 @@ npm run format:check
 ```
 
 `npm test` also runs the headless-browser tests in `tests/e2e/ui/`. They build the page into a
-scratch folder, open it as a file in Chromium, and answer the holiday service by request routing,
-so they need no network.
+scratch folder, open it as a file in Chromium, Firefox, WebKit and Edge, and answer the holiday
+service by request routing, so they need no network.
+
+`npm test` also measures coverage of `src/` and fails below 80% for lines or branches.

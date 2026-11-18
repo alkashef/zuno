@@ -111,6 +111,7 @@ section 7 stays). Palette (hex) until `theme.css` exists:
 | card line, hairline, control line, input line | `#D5EAEA`, `#E3F1F1`, `#B6D4D6`, `#6B979D` | `#1E2433`, `#1B2030`, `#363E52`, `#5A647C` |
 | working hours, non-working hours, day off (picker) | `#12B886`, `#E4F1F1`, `#0F4C5C` | `#1FD1A5`, `#1A2030`, `#6E5BE6` |
 | weekend, public holiday (month grid) | `#FFD166`, `#FF6B6B` | `#F2B63D`, `#FF4F8B` |
+| text on weekend and holiday cells (`--color-text-on-tint`; keeps 4.5:1 on the two tints) | `#0E2A33` | `#07090D` |
 | today outline, Hijri text, reference row | `#6C5CE7`, `#C0267C`, `#DFF3F3` | `#5BC8FF`, `#C7AEFF`, `#161B2A` |
 | map sea, map land, danger | `#BFE9F2`, `#FFE6B8`, `#C9344A` | `#0B0F18`, `#222B40`, `#FF7A9E` |
 

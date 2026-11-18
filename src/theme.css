@@ -20,6 +20,7 @@
   --color-working: #12b886;
   --color-non-working: #e4f1f1;
   --color-day-off: #0f4c5c;
+  --color-text-on-tint: #0e2a33;
   --color-weekend: #ffd166;
   --color-holiday: #ff6b6b;
   --color-today: #6c5ce7;
@@ -76,6 +77,7 @@
     --color-working: #1fd1a5;
     --color-non-working: #1a2030;
     --color-day-off: #6e5be6;
+    --color-text-on-tint: #07090d;
     --color-weekend: #f2b63d;
     --color-holiday: #ff4f8b;
     --color-today: #5bc8ff;

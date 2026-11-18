@@ -141,6 +141,15 @@
   font-size: var(--font-size-small);
 }
 
+.month-grid-cell[data-kind="weekend"],
+.month-grid-cell[data-kind="holiday"],
+.month-grid-cell[data-kind="split"],
+.month-grid-cell[data-kind="weekend"] .month-grid-hijri,
+.month-grid-cell[data-kind="holiday"] .month-grid-hijri,
+.month-grid-cell[data-kind="split"] .month-grid-hijri {
+  color: var(--color-text-on-tint);
+}
+
 .month-grid-card-hijri {
   color: var(--color-hijri);
 }

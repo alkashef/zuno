@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { chromium } from "playwright";
+import { chromium, firefox, webkit } from "playwright";
 
 import { buildPage } from "../../../scripts/build.mjs";
 import { config } from "../../../src/config.js";
@@ -41,8 +41,17 @@ export async function buildToScratch() {
   };
 }
 
-/** @returns {Promise<Browser>} A headless Chromium. */
-export function launchBrowser() {
+/** The browsers of NFR-002; `edge` is Chromium launched through the `msedge` channel (DEC-011). */
+export const browserNames = Object.freeze(["chromium", "firefox", "webkit", "edge"]);
+
+/**
+ * @param {typeof browserNames[number]} [name] One of `browserNames`; Chromium by default.
+ * @returns {Promise<Browser>} A headless browser of that kind.
+ */
+export function launchBrowser(name = "chromium") {
+  if (name === "firefox") return firefox.launch();
+  if (name === "webkit") return webkit.launch();
+  if (name === "edge") return chromium.launch({ channel: "msedge" });
   return chromium.launch();
 }
 
@@ -51,12 +60,14 @@ export function launchBrowser() {
  * @property {"light" | "dark"} [colorScheme] The operating-system colour scheme; light by default.
  * @property {Settings | null} [saved] The settings already saved in the browser, if any.
  * @property {string[]} [failingCountries] Country codes whose holiday requests fail (no answer).
+ * @property {string} [locale] The browser's language; `en-US` by default.
  */
 
 /**
  * @typedef {object} OpenedPage
  * @property {Page} page
  * @property {string[]} holidayRequests The `CC-YYYY` of every holiday request, in order.
+ * @property {string[]} requestUrls The URL of every request the page makes, in order (NFR-001).
  */
 
 /**
@@ -70,15 +81,18 @@ export function launchBrowser() {
 export async function openPage(
   browser,
   url,
-  { colorScheme = "light", saved = null, failingCountries = [] } = {},
+  { colorScheme = "light", saved = null, failingCountries = [], locale = "en-US" } = {},
 ) {
-  const context = await browser.newContext({ colorScheme, timezoneId: "UTC", locale: "en-US" });
+  const context = await browser.newContext({ colorScheme, timezoneId: "UTC", locale });
   if (saved !== null) {
     const record = { key: config.storageKey, value: JSON.stringify(saved) };
     await context.addInitScript(({ key, value }) => localStorage.setItem(key, value), record);
   }
   /** @type {string[]} */
   const holidayRequests = [];
+  /** @type {string[]} */
+  const requestUrls = [];
+  context.on("request", (request) => requestUrls.push(request.url()));
   await context.route(`${config.holidayServiceBaseUrl}/Holidays/**`, (route) => {
     const [, countryCode, year] =
       new URL(route.request().url()).pathname.match(/(\w+)\/(\d+)$/) ?? [];
@@ -94,5 +108,5 @@ export async function openPage(
   await page.clock.install({ time: startInstant });
   await page.clock.setFixedTime(startInstant);
   await page.goto(url);
-  return { page, holidayRequests };
+  return { page, holidayRequests, requestUrls };
 }
