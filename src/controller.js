@@ -4,8 +4,9 @@
  * The page workflows: applies an action to the page state, asks the injected `api` for the holidays
  * the shown month and the marker's window need, and tells subscribers about every new state
  * (PCK-004, PCK-007, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-001, SET-002,
- * SET-004 to SET-014, HIJ-002, HIJ-003, DEC-007, DEC-016). Pure apart from its injected `api`, `storage` and `clock`. It touches no DOM (the views
- * do) and builds no picker, grid or notices logic itself (domain/* does).
+ * SET-004 to SET-014, HIJ-002, HIJ-003, HOL-003, HOL-006 to HOL-009, DEC-007, DEC-016, DEC-017). Pure
+ * apart from its injected `api`, `storage`, `holidayStorage` and `clock`. It touches no DOM (the
+ * views do) and builds no picker, grid, notices or holiday-list logic itself (domain/* does).
  */
 import { buildMonth } from "./domain/calendar.js";
 import { cityOf } from "./domain/cities.js";
@@ -24,6 +25,7 @@ import {
   withTheme,
   withWorkingHours,
 } from "./domain/settings.js";
+import * as userHolidayList from "./domain/user-holidays.js";
 import { localDateTime } from "./domain/zones.js";
 
 /** @typedef {import("./domain/calendar.js").DayFacts} DayFacts */
@@ -35,6 +37,8 @@ import { localDateTime } from "./domain/zones.js";
 /** @typedef {import("./domain/places.js").Place} Place */
 /** @typedef {import("./domain/places.js").PlaceChanges} PlaceChanges */
 /** @typedef {import("./domain/settings.js").Settings} Settings */
+/** @typedef {import("./domain/user-holidays.js").HolidayEntry} HolidayEntry */
+/** @typedef {import("./domain/user-holidays.js").UserHolidays} UserHolidays */
 /** @typedef {import("./domain/weekends.js").CalendarDate} CalendarDate */
 /** @typedef {Record<string, Record<string, HolidayResult>>} ResultsByCountryYear Keyed by country code, then year. */
 
@@ -42,6 +46,8 @@ import { localDateTime } from "./domain/zones.js";
  * @typedef {object} ControllerDeps The outside world, injected so tests can pass fakes.
  * @property {{ getHolidays: (countryCode: string, year: number) => Promise<HolidayResult> }} api
  * @property {{ load: () => Settings | null, save: (settings: Settings) => void }} storage
+ * @property {{ load: () => UserHolidays | null, save: (record: UserHolidays) => void }} holidayStorage
+ *   The record of the holidays the user added and hid (HOL-009, DEC-017).
  * @property {{ now: () => number }} clock
  * @property {{ start: number, end: number }} defaultHours Working hours (minutes after midnight)
  *   for settings that are not saved yet (SET-005).
@@ -63,6 +69,7 @@ import { localDateTime } from "./domain/zones.js";
  * @property {Marker} marker The picker's chosen instant (PCK-004).
  * @property {MonthRef} month The month the grid shows (CAL-005).
  * @property {ResultsByCountryYear} holidayResults Every answer of the holiday service.
+ * @property {UserHolidays} userHolidays The holidays the user added and hid (HOL-006 to HOL-008).
  * @property {SelectedHoliday | null} selectedHoliday
  * @property {boolean} noticesOpen
  * @property {boolean} settingsOpen
@@ -97,7 +104,8 @@ import { localDateTime } from "./domain/zones.js";
  *   | { type: "editPlace", placeId: string, changes: PlaceChanges }
  *   | { type: "setWorkingHours", start: number, end: number }
  *   | { type: "setShowCountry", value: boolean } | { type: "setShowHijri", value: boolean }
- *   | { type: "setTheme", value: string }} Action
+ *   | { type: "setTheme", value: string }
+ *   | ({ type: "addHoliday" | "removeHoliday" | "hideHoliday" | "showHoliday" } & HolidayEntry)} Action
  */
 
 /** @typedef {{ countryCode: string, year: number }} CountryYear */
@@ -169,13 +177,28 @@ function loadedHolidays(byYear) {
 }
 
 /**
- * @param {ResultsByCountryYear} results
- * @returns {Record<string, Holiday[]>} Every loaded holiday by country code (REF-002).
+ * @param {PageState} state
+ * @param {string} countryCode
+ * @returns {Holiday[]} The country's holidays as the page uses them: the loaded ones without those
+ *   the user hid, plus those the user added (HOL-003).
  */
-function holidaysByCountry(results) {
-  return Object.fromEntries(
-    Object.entries(results).map(([countryCode, byYear]) => [countryCode, loadedHolidays(byYear)]),
-  );
+function countryHolidays(state, countryCode) {
+  const loaded = loadedHolidays(state.holidayResults[countryCode] ?? {});
+  return userHolidayList.effectiveHolidays(loaded, state.userHolidays, countryCode);
+}
+
+/**
+ * @param {PageState} state
+ * @param {Settings} settings The state's settings, known not to be `null`.
+ * @returns {Record<string, Holiday[]>} The holidays of every loaded country and of every place's
+ *   country, by country code (HOL-003, REF-002).
+ */
+function holidaysByCountry(state, settings) {
+  const codes = new Set([
+    ...Object.keys(state.holidayResults),
+    ...settings.places.map((place) => place.countryCode),
+  ]);
+  return Object.fromEntries([...codes].map((code) => [code, countryHolidays(state, code)]));
 }
 
 /**
@@ -245,7 +268,7 @@ function emptyView(state) {
 function derive(state) {
   const { settings } = state;
   if (settings === null || settings.places.length === 0) return emptyView(state);
-  const holidays = holidaysByCountry(state.holidayResults);
+  const holidays = holidaysByCountry(state, settings);
   return {
     ...state,
     isEmpty: false,
@@ -317,14 +340,17 @@ function defaultsOf({ defaultHours, defaultCityIds }) {
 }
 
 /**
- * Loads the settings and puts the marker and the grid at now (PCK-004, SET-007, SET-014).
+ * Loads the settings and the user's holidays, and puts the marker and the grid at now (PCK-004,
+ * SET-007, SET-014, HOL-009). No valid holiday record means no added and no hidden holidays.
  * @param {Context} ctx
  * @returns {Promise<void>}
  */
 function open(ctx) {
   const settings = ctx.deps.storage.load() ?? defaultsOf(ctx.deps);
+  const userHolidays = ctx.deps.holidayStorage.load() ?? userHolidayList.emptyUserHolidays();
   const now = ctx.deps.clock.now();
-  ctx.update({ settings, now, marker: { instant: now }, month: monthAt(now, settings) });
+  const month = monthAt(now, settings);
+  ctx.update({ settings, userHolidays, now, marker: { instant: now }, month });
   return requestMissing(ctx);
 }
 
@@ -401,8 +427,7 @@ function showMonth(ctx, action) {
 function holidayAt(state, { placeId, date }) {
   const place = state.settings?.places.find((candidate) => candidate.id === placeId);
   if (place === undefined) return null;
-  const byYear = state.holidayResults[place.countryCode] ?? {};
-  const holiday = holidayOn(loadedHolidays(byYear), place.region, date);
+  const holiday = holidayOn(countryHolidays(state, place.countryCode), place.region, date);
   return holiday === null ? null : { placeId, date, name: holiday.name };
 }
 
@@ -572,6 +597,48 @@ function settingsHandlers() {
 }
 
 /**
+ * Saves a change of the user's holidays and shows it; a holiday card whose holiday is gone closes
+ * (HOL-006 to HOL-009). `null` is a refused change: nothing is saved or shown.
+ * @param {Context} ctx
+ * @param {UserHolidays | null} next
+ * @returns {void}
+ */
+function commitUserHolidays(ctx, next) {
+  if (next === null) return;
+  ctx.deps.holidayStorage.save(next);
+  const state = { ...ctx.read(), userHolidays: next };
+  const selected = state.selectedHoliday;
+  ctx.update({
+    userHolidays: next,
+    selectedHoliday: selected === null ? null : holidayAt(state, selected),
+  });
+}
+
+/**
+ * @param {(record: UserHolidays, entry: HolidayEntry) => UserHolidays | null} change
+ * @returns {Handler} The handler that applies the change to the action's country, date and name.
+ */
+function holidayChange(change) {
+  return (ctx, action) => {
+    const { countryCode, date, name } = /** @type {HolidayEntry} */ (action);
+    commitUserHolidays(ctx, change(ctx.read().userHolidays, { countryCode, date, name }));
+  };
+}
+
+/**
+ * @returns {Partial<Record<Action["type"], Handler>>} The handlers of the holiday workflows
+ *   (HOL-006 to HOL-008).
+ */
+function holidayHandlers() {
+  return {
+    addHoliday: holidayChange(userHolidayList.addHoliday),
+    removeHoliday: holidayChange(userHolidayList.removeHoliday),
+    hideHoliday: holidayChange(userHolidayList.hideHoliday),
+    showHoliday: holidayChange(userHolidayList.showHoliday),
+  };
+}
+
+/**
  * @returns {Record<Action["type"], Handler>} The handler of each action type.
  */
 function handlers() {
@@ -584,6 +651,7 @@ function handlers() {
     showMonth,
     selectHoliday,
     ...settingsHandlers(),
+    ...holidayHandlers(),
     toggleNotices: (ctx) => ctx.update({ noticesOpen: !ctx.read().noticesOpen }),
     openSettings: (ctx) => ctx.update({ settingsOpen: true }),
     closeSettings: (ctx) => ctx.update({ settingsOpen: false }),
@@ -601,6 +669,7 @@ function initialState(now) {
     marker: { instant: now },
     month: monthAt(now, null),
     holidayResults: {},
+    userHolidays: userHolidayList.emptyUserHolidays(),
     selectedHoliday: null,
     noticesOpen: false,
     settingsOpen: false,
@@ -628,7 +697,7 @@ function createContext(deps, onChange) {
 
 /**
  * Creates the controller of the page workflows.
- * @param {ControllerDeps} deps The holiday api, the settings storage and the clock.
+ * @param {ControllerDeps} deps The holiday api, the settings and holiday storages and the clock.
  * @returns {{ getState: () => PageView, dispatch: (action: Action) => Promise<void>, subscribe: (listener: (view: PageView) => void) => () => void }}
  *   `dispatch` settles when the action's holiday requests are answered; `subscribe` returns a
  *   function that unsubscribes. A rejected `api` call rejects `dispatch` (top-level handler).

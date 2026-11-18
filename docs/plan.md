@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M24** Holidays the user adds and hides | Add, remove, hide and show holidays per country, saved in the browser, from the settings panel and the holiday card | opus | high | open |
 | **M25** Holidays file | Export the user's holidays to a file and import one; a bad file is refused | sonnet | high | open |
 | **M26** Picker window and selected day | Hour slots of a fixed width from midnight of the selected day, 24 hours or more, the date range in the day selector, the hours saved | opus | high | open |
 | **M27** Resize handle and hover time | Dragging the picker's left edge adds or removes hour slots; pointing at a row shows the local time and date there | sonnet | high | open |
@@ -25,14 +24,6 @@ The visual reference for M26 to M28 is the "Zuno UI" canvas named at the top of 
 DEC-019 to DEC-021 state its sizes and colours. Existing tests that check behaviour a requirement
 of 2026-11-18 changed (SET-002, SET-003, SET-007, CAL-002, HOL-003, PCK-003, PCK-006, PCK-007) are
 updated in the milestone that changes it, and the report names them.
-
-### M24 — Holidays the user adds and hides
-
-- **Refs:** HOL-003, HOL-006, HOL-007, HOL-008, HOL-009, EX-015, EX-016, DEC-017.
-- **Owner:** `src/domain/user-holidays.js`, `src/controller.js`, `src/views/settings-holidays.js`.
-- **Tests first:** `test_hol_006_added_holiday_shows_for_every_place_of_its_country` (EX-015), `test_hol_006_add_refuses_a_bad_date_an_empty_name_and_an_unlisted_country`, `test_hol_007_user_removes_an_added_holiday`, `test_hol_008_hidden_service_holiday_is_not_a_holiday_until_shown_again` (EX-016), `test_hol_003_effective_holidays_are_service_minus_hidden_plus_added`, `test_hol_009_added_and_hidden_holidays_are_saved_and_restored`, `test_hol_006_holidays_section_adds_and_lists_a_holiday` (browser), `test_hol_008_holiday_card_hides_a_service_holiday_and_removes_an_added_one` (browser).
-- **Build:** `domain/user-holidays.js`; a second `createStorage` under `holidaysStorageKey` with `parseUserHolidays`; the controller loads the record on `open`, handles `addHoliday`, `removeHoliday`, `hideHoliday` and `showHoliday`, saves after each, and gives the month grid and the picker the effective holidays; the Holidays section of the settings panel (add form, added list with Remove, hidden list with Show); the holiday card's Hide or Remove button.
-- **Gate:** the service's holiday data is still never saved; the settings record is unchanged by a holiday action.
 
 ### M25 — Holidays file
 

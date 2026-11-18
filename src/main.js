@@ -9,9 +9,10 @@ import * as clock from "./clock.js";
 import { config } from "./config.js";
 import { createController } from "./controller.js";
 import { monthWeeks } from "./domain/calendar.js";
-import { countryName, listCities } from "./domain/cities.js";
+import { countryName, listCities, listCountries } from "./domain/cities.js";
 import { placeFacts, placeName, placePin } from "./domain/places.js";
 import { parseSettings } from "./domain/settings.js";
+import { isAddedHoliday, parseUserHolidays } from "./domain/user-holidays.js";
 import { countryWeekendDays, placeWeekendDays } from "./domain/weekends.js";
 import { localDateTime, zoneOffset } from "./domain/zones.js";
 import { log } from "./log.js";
@@ -27,6 +28,7 @@ import { createMap } from "./views/map.js";
 import { createMonthGrid } from "./views/month-grid.js";
 import { createNotices } from "./views/notices.js";
 import { createPicker } from "./views/picker.js";
+import { createHolidaysSection } from "./views/settings-holidays.js";
 import { createPlaceList } from "./views/settings-places.js";
 import { createSettingsPanel } from "./views/settings.js";
 import { createTheme } from "./views/theme.js";
@@ -45,6 +47,11 @@ window.addEventListener("unhandledrejection", (event) => reportFailure(event.rea
 const controller = createController({
   api: { getHolidays },
   storage: createStorage({ store: localStorage, parse: parseSettings }),
+  holidayStorage: createStorage({
+    store: localStorage,
+    parse: parseUserHolidays,
+    key: config.holidaysStorageKey,
+  }),
   clock,
   defaultHours: { start: config.defaultWorkStartMinutes, end: config.defaultWorkEndMinutes },
   defaultCityIds: config.defaultCityIds,
@@ -66,6 +73,7 @@ const views = [
   createMonthGrid(document, {
     dispatch: controller.dispatch,
     placeFacts,
+    isAddedHoliday,
     makeHijriNote: createHijriNote,
   }),
   createPicker(document, {
@@ -86,6 +94,11 @@ const views = [
     dispatch: controller.dispatch,
     lookup,
     makeList: (list) => createPlaceList(document, list, { dispatch: controller.dispatch, lookup }),
+    makeHolidays: (section) =>
+      createHolidaysSection(document, section, {
+        dispatch: controller.dispatch,
+        countries: listCountries(),
+      }),
   }),
 ];
 

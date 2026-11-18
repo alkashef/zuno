@@ -43,6 +43,7 @@ function setup({ saved = savedWithNoPlaces(), store = { saved } } = {}) {
         saves.push(settings);
       },
     },
+    holidayStorage: { load: () => null, save: () => {} },
     clock: { now: () => start },
     defaultHours: { start: 540, end: 1020 },
     defaultCityIds: config.defaultCityIds,

@@ -3,7 +3,8 @@
  * @module views/month-grid
  * Owns the month grid: the previous and next month buttons, the day headers, one row per place with
  * one cell per day (weekend, public holiday, split and today cells), and the holiday card beside
- * the place's name (CAL-001 to CAL-007, LAY-001). It clones its markup from templates in
+ * the place's name, with a Hide button for a service holiday and a Remove button for one the user
+ * added (CAL-001 to CAL-007, LAY-001, HOL-007, HOL-008). It clones its markup from templates in
  * index.html. It decides no cell kind (domain/calendar.js does), loads no holiday (the controller
  * does, through `deps.dispatch`) and picks no colour (month-grid.css does, from theme.css).
  */
@@ -20,6 +21,9 @@ import {
 /** @typedef {import("../domain/places.js").Place} Place */
 /** @typedef {{ name: string, city: string | null, country: string | null }} PlaceFacts */
 /** @typedef {import("../controller.js").Action} Action */
+/** @typedef {import("../domain/user-holidays.js").HolidayEntry} HolidayEntry */
+/** @typedef {import("../domain/user-holidays.js").UserHolidays} UserHolidays */
+/** @typedef {{ placeId: string, date: string, name: string }} SelectedHoliday */
 
 /**
  * @typedef {object} MonthGridView The part of the page view the grid draws.
@@ -27,7 +31,8 @@ import {
  * @property {DayFacts[][]} grid One row per place.
  * @property {{ year: number, month: number }} month
  * @property {{ places: Place[], showCountry: boolean } | null} settings
- * @property {{ placeId: string, date: string, name: string } | null} selectedHoliday
+ * @property {SelectedHoliday | null} selectedHoliday
+ * @property {UserHolidays} userHolidays The holidays the user added and hid.
  */
 
 /**
@@ -35,6 +40,8 @@ import {
  * @property {(action: Action) => Promise<void>} dispatch The controller's `dispatch`.
  * @property {(place: Place, showCountry: boolean) => PlaceFacts} placeFacts The place's name and,
  *   while country names are on, its country.
+ * @property {(record: UserHolidays, entry: HolidayEntry) => boolean} isAddedHoliday Whether the
+ *   user added a holiday (its card then offers Remove instead of Hide).
  * @property {(doc: Document) => { root: HTMLElement }} makeHijriNote Builds the information button
  *   and card beside the Hijri month band (views/hijri-note.js, passed in by main.js).
  */
@@ -155,15 +162,30 @@ function buildCell(doc, placeId, day) {
 }
 
 /**
- * @param {GridContext} ctx
- * @param {{ placeId: string, date: string, name: string }} holiday
- * @param {HijriDate | null} hijri The holiday's Hijri date, or `null` while Hijri is off.
- * @returns {HTMLElement} The card with the holiday's name, date and Hijri date (CAL-006, DSP-003).
+ * @param {HTMLElement} card
+ * @param {HolidayEntry} entry The holiday's country, date and name.
+ * @param {boolean} added Whether the user added it.
+ * @returns {void} Keeps the Remove button for a holiday the user added (HOL-007), else the Hide
+ *   button (HOL-008), and gives it the holiday's country, date and name.
  */
-function buildCard(ctx, holiday, hijri) {
+function keepCardAction(card, entry, added) {
+  part(card, added ? "card-hide" : "card-remove").remove();
+  Object.assign(part(card, added ? "card-remove" : "card-hide").dataset, entry);
+}
+
+/**
+ * @param {GridContext} ctx
+ * @param {{ holiday: SelectedHoliday, countryCode: string, added: boolean }} shown The holiday,
+ *   its country and whether the user added it.
+ * @param {HijriDate | null} hijri The holiday's Hijri date, or `null` while Hijri is off.
+ * @returns {HTMLElement} The card with the holiday's name, date, Hijri date and its Hide or Remove
+ *   button (CAL-006, DSP-003, HOL-007, HOL-008).
+ */
+function buildCard(ctx, { holiday, countryCode, added }, hijri) {
   const card = /** @type {HTMLElement} */ (
     ctx.cardTemplate.content.firstElementChild?.cloneNode(true)
   );
+  keepCardAction(card, { countryCode, date: holiday.date, name: holiday.name }, added);
   part(card, "card-name").textContent = holiday.name;
   part(card, "card-date").textContent = dateText(holiday.date);
   const hijriText = part(card, "card-hijri");
@@ -197,6 +219,20 @@ function textSpan(doc, className, text) {
 /**
  * @param {GridContext} ctx
  * @param {MonthGridView} view
+ * @param {number} index The position of the place whose holiday is selected.
+ * @returns {HTMLElement} The card of the selected holiday.
+ */
+function placeCard(ctx, view, index) {
+  const holiday = /** @type {SelectedHoliday} */ (view.selectedHoliday);
+  const { countryCode } = /** @type {{ places: Place[] }} */ (view.settings).places[index];
+  const added = ctx.deps.isAddedHoliday(view.userHolidays, { ...holiday, countryCode });
+  const hijri = hijriOf(view.grid[index], holiday.date);
+  return buildCard(ctx, { holiday, countryCode, added }, hijri);
+}
+
+/**
+ * @param {GridContext} ctx
+ * @param {MonthGridView} view
  * @param {number} index The place's position.
  * @returns {HTMLElement} The row header: the place's name, and its holiday card when one is open.
  */
@@ -214,10 +250,7 @@ function buildRowHeader(ctx, view, index) {
   if (facts.country !== null) {
     header.append(textSpan(doc, "month-grid-place-country", facts.country));
   }
-  if (view.selectedHoliday?.placeId === place.id)
-    header.append(
-      buildCard(ctx, view.selectedHoliday, hijriOf(view.grid[index], view.selectedHoliday.date)),
-    );
+  if (view.selectedHoliday?.placeId === place.id) header.append(placeCard(ctx, view, index));
   return header;
 }
 
@@ -368,7 +401,8 @@ function moveFocus(ctx, view) {
  * @returns {void} Brings the grid up to date; it is redrawn only when something it shows changed.
  */
 function update(ctx, view) {
-  const signature = JSON.stringify([view.grid, view.month, view.settings, view.selectedHoliday]);
+  const { grid, month, settings, selectedHoliday, userHolidays } = view;
+  const signature = JSON.stringify([grid, month, settings, selectedHoliday, userHolidays]);
   if (signature === ctx.memo.signature) return;
   ctx.memo.signature = signature;
   draw(ctx, view);
@@ -376,19 +410,32 @@ function update(ctx, view) {
 }
 
 /**
+ * @param {HTMLElement} button
+ * @returns {HolidayEntry} The holiday a card's Hide or Remove button names (empty for others).
+ */
+function cardEntry(button) {
+  const { countryCode = "", date = "", name = "" } = button.dataset;
+  return { countryCode, date, name };
+}
+
+/**
  * @param {GridContext} ctx
  * @param {MouseEvent} event
- * @returns {void} Handles a click: a month button, a holiday cell or the card's close button.
+ * @returns {void} Handles a click: a month button, a holiday cell, or the card's close, Hide or
+ *   Remove button. The controller closes the card of a holiday that is hidden or removed.
  */
 function onClick(ctx, event) {
   const button = event.target instanceof Element ? event.target.closest("button") : null;
   if (button === null) return;
   const { role = "", placeId = "", date = "" } = button.dataset;
+  const entry = cardEntry(button);
   /** @type {Record<string, Action>} */
   const actions = {
     earlier: { type: "showMonth", offset: -1 },
     later: { type: "showMonth", offset: 1 },
     "card-close": { type: "selectHoliday", cell: null },
+    "card-hide": { type: "hideHoliday", ...entry },
+    "card-remove": { type: "removeHoliday", ...entry },
     holiday: { type: "selectHoliday", cell: { placeId, date } },
   };
   if (role in actions) void ctx.deps.dispatch(actions[role]);

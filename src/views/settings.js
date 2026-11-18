@@ -5,13 +5,15 @@
  * country-name and Hijri switches, the theme choice, the add form (the cities of the list, each with
  * its country), the close button, and Escape, and returns the keyboard focus to the button that
  * opened it (SET-001, SET-002, SET-004, SET-005, SET-010 to SET-013). It clones its markup from templates in index.html. It
- * does not draw the list of places (views/settings-places.js does, built by `deps.makeList`) and
- * it saves nothing (the controller does).
+ * does not draw the list of places (views/settings-places.js does, built by `deps.makeList`) or
+ * the Holidays section (views/settings-holidays.js does, built by `deps.makeHolidays`), and it
+ * saves nothing (the controller does).
  */
 import { formatMinutes } from "../domain/format.js";
 
 /** @typedef {import("./settings-places.js").Lookup} Lookup */
 /** @typedef {import("./settings-places.js").PlaceListView} PlaceListView */
+/** @typedef {import("./settings-holidays.js").HolidaysView} HolidaysView */
 /** @typedef {import("../controller.js").Action} Action */
 
 /**
@@ -19,6 +21,7 @@ import { formatMinutes } from "../domain/format.js";
  * @property {HTMLElement | null} panel
  * @property {Element | null} opener The element that had focus when the panel opened.
  * @property {{ render: (view: PlaceListView) => void } | null} places
+ * @property {{ render: (view: HolidaysView) => void } | null} holidays
  */
 
 /**
@@ -31,7 +34,7 @@ import { formatMinutes } from "../domain/format.js";
  */
 
 /**
- * @typedef {PlaceListView & { settingsOpen: boolean, settings: (NonNullable<PlaceListView["settings"]> & PanelSettings) | null }} SettingsView
+ * @typedef {PlaceListView & HolidaysView & { settingsOpen: boolean, settings: (NonNullable<PlaceListView["settings"]> & PanelSettings) | null }} SettingsView
  *   The part of the page view the panel draws.
  */
 
@@ -45,6 +48,8 @@ import { formatMinutes } from "../domain/format.js";
  * @property {(list: HTMLElement) => { render: (view: PlaceListView) => void }} makeList Builds the
  *   list of places inside the panel (views/settings-places.js; main.js passes it in, because a
  *   view imports no other view).
+ * @property {(section: HTMLElement) => { render: (view: HolidaysView) => void }} makeHolidays
+ *   Builds the Holidays section inside the panel (views/settings-holidays.js; main.js passes it in).
  */
 
 /**
@@ -197,6 +202,21 @@ function setUpDisplay(ctx, panel, view) {
 
 /**
  * @param {PanelContext} ctx
+ * @param {HTMLElement} panel
+ * @returns {void} Wires the close button and the add form.
+ */
+function wireButtons(ctx, panel) {
+  part(panel, "close").addEventListener("click", () => {
+    void ctx.deps.dispatch({ type: "closeSettings" });
+  });
+  part(panel, "add-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    submitAdd(ctx, panel);
+  });
+}
+
+/**
+ * @param {PanelContext} ctx
  * @param {SettingsView} view
  * @returns {void} Builds the panel, wires it and puts it on the page.
  */
@@ -208,14 +228,9 @@ function openPanel(ctx, view) {
   session.opener = doc.activeElement;
   fillCities(ctx, panel);
   setUpDisplay(ctx, panel, view);
-  part(panel, "close").addEventListener("click", () => {
-    void ctx.deps.dispatch({ type: "closeSettings" });
-  });
-  part(panel, "add-form").addEventListener("submit", (event) => {
-    event.preventDefault();
-    submitAdd(ctx, panel);
-  });
+  wireButtons(ctx, panel);
   session.places = ctx.deps.makeList(part(panel, "places"));
+  session.holidays = ctx.deps.makeHolidays(part(panel, "holidays"));
   session.panel = panel;
   doc.body.append(panel);
   part(panel, "close").focus();
@@ -233,6 +248,19 @@ function closePanel(ctx) {
   if (opener instanceof HTMLElement) opener.focus();
   session.panel = null;
   session.places = null;
+  session.holidays = null;
+}
+
+/**
+ * @param {PanelContext} ctx
+ * @returns {void} Closes the open panel when Escape is pressed anywhere on the page.
+ */
+function closeOnEscape(ctx) {
+  ctx.doc.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && ctx.session.panel !== null) {
+      void ctx.deps.dispatch({ type: "closeSettings" });
+    }
+  });
 }
 
 /**
@@ -247,18 +275,16 @@ export function createSettingsPanel(doc, deps) {
   if (!(template instanceof HTMLTemplateElement)) {
     throw new Error("settings: the page has no #settings-panel-template");
   }
+  const session = { panel: null, opener: null, places: null, holidays: null };
   /** @type {PanelContext} */
-  const ctx = { doc, template, deps, session: { panel: null, opener: null, places: null } };
-  doc.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && ctx.session.panel !== null) {
-      void deps.dispatch({ type: "closeSettings" });
-    }
-  });
+  const ctx = { doc, template, deps, session };
+  closeOnEscape(ctx);
   return {
     render(view) {
       if (view.settingsOpen && ctx.session.panel === null) openPanel(ctx, view);
       if (!view.settingsOpen && ctx.session.panel !== null) closePanel(ctx);
       ctx.session.places?.render(view);
+      ctx.session.holidays?.render(view);
     },
   };
 }

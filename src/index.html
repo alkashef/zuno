@@ -205,6 +205,8 @@
           <span class="month-grid-card-hijri" data-role="card-hijri" hidden></span>
           <span>Public holiday</span>
         </p>
+        <button type="button" class="button" data-role="card-hide">Hide</button>
+        <button type="button" class="button" data-role="card-remove">Remove</button>
       </div>
     </template>
 
@@ -444,6 +446,52 @@
           </form>
           <p class="settings-hint">The new place uses the time zone of the city.</p>
         </section>
+        <section
+          class="settings-section"
+          aria-labelledby="settings-holidays-title"
+          data-role="holidays"
+        >
+          <h3 id="settings-holidays-title" class="settings-heading">Holidays</h3>
+          <p class="settings-hint settings-hint-large">
+            Add a public holiday that the holiday service does not list. Hide a listed holiday from
+            its card in the month view.
+          </p>
+          <form class="settings-holiday-form" data-role="holiday-form">
+            <label class="settings-field">
+              <span class="settings-label">Country</span>
+              <select class="settings-input" data-role="holiday-country">
+                <option value="">Choose a country</option>
+              </select>
+            </label>
+            <div class="settings-pair">
+              <label class="settings-field">
+                <span class="settings-label">Date</span>
+                <input type="date" class="settings-input" data-role="holiday-date" />
+              </label>
+              <label class="settings-field">
+                <span class="settings-label">Name</span>
+                <input type="text" class="settings-input" data-role="holiday-name" />
+              </label>
+            </div>
+            <button type="submit" class="button button-primary">
+              <svg
+                class="icon settings-add-icon"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Add holiday
+            </button>
+          </form>
+          <h4 class="settings-label settings-holidays-heading">Added holidays</h4>
+          <ul class="settings-holidays" data-role="added" hidden></ul>
+          <p class="settings-hint" data-role="added-empty">No holidays added.</p>
+          <h4 class="settings-label settings-holidays-heading">Hidden holidays</h4>
+          <ul class="settings-holidays" data-role="hidden" hidden></ul>
+          <p class="settings-hint" data-role="hidden-empty">No holidays hidden.</p>
+        </section>
         <p class="settings-footer">
           Changes are saved in this browser and restored on your next visit.
         </p>
@@ -586,6 +634,13 @@
             </p>
           </div>
         </div>
+      </li>
+    </template>
+
+    <template id="settings-holiday-template">
+      <li class="settings-holiday">
+        <span class="settings-holiday-text" data-role="holiday-text"></span>
+        <button type="button" class="button" data-role="holiday-action"></button>
       </li>
     </template>
 

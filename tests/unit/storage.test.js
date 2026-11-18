@@ -5,6 +5,7 @@ import { test } from "node:test";
 
 import { createPlace } from "../../src/domain/places.js";
 import { defaultSettings, parseSettings } from "../../src/domain/settings.js";
+import { parseUserHolidays } from "../../src/domain/user-holidays.js";
 import { createStorage } from "../../src/storage.js";
 
 /** @returns {{ store: { getItem: (k: string) => string | null, setItem: (k: string, v: string) => void }, data: Map<string, string> }} */
@@ -32,6 +33,22 @@ test("test_set_004_settings_round_trip_in_storage", () => {
   storage.save(settings);
   assert.ok(data.has("k"));
   assert.deepEqual(storage.load(), settings);
+});
+
+test("test_hol_009_user_holidays_round_trip_under_their_own_key", () => {
+  const { store, data } = fakeStore();
+  const settings = createStorage({ store, parse: parseSettings, key: "settings" });
+  const holidays = createStorage({ store, parse: parseUserHolidays, key: "holidays" });
+  assert.equal(holidays.load(), null);
+  const record = {
+    version: /** @type {const} */ (1),
+    added: [{ countryCode: "IN", date: "2026-11-08", name: "Diwali" }],
+    hidden: [{ countryCode: "US", date: "2026-12-25", name: "Christmas Day" }],
+  };
+  holidays.save(record);
+  assert.deepEqual([...data.keys()], ["holidays"]);
+  assert.deepEqual(holidays.load(), record);
+  assert.equal(settings.load(), null);
 });
 
 test("test_set_004_invalid_record_loads_as_null_and_logs_warning", () => {

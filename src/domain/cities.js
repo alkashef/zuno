@@ -2,8 +2,8 @@
 /**
  * @module domain/cities
  * Looks up the city list (SET-002, SET-013, DEC-015): every city for the add list, one city by id,
- * and English country names (NFR-003). It reads only `data/cities.js`. It does not make or check
- * places (domain/places.js does).
+ * the countries and territories of the list (HOL-006) and English country names (NFR-003). It
+ * reads only `data/cities.js`. It does not make or check places (domain/places.js does).
  */
 import { cityTable } from "../../data/cities.js";
 
@@ -27,15 +27,40 @@ export function cityOf(id) {
 }
 
 /**
+ * @typedef {object} CountryChoice A country or territory of the city list.
+ * @property {string} code ISO 3166-1 alpha-2 code.
+ * @property {string} name Its English name.
+ */
+
+/**
+ * @param {unknown} code
+ * @returns {code is string} Whether some city of the list is in that country or territory (HOL-006).
+ */
+export function isListedCountry(code) {
+  return cityTable.some((city) => city.countryCode === code);
+}
+
+/**
  * @param {string} code ISO 3166-1 alpha-2 code.
  * @returns {string} The English name of the country or territory (NFR-003).
  * @throws {RangeError} When no city of the list is in that country or territory.
  */
 export function countryName(code) {
-  if (!cityTable.some((city) => city.countryCode === code)) {
+  if (!isListedCountry(code)) {
     throw new RangeError(`No city of the list has the country code: ${code}`);
   }
   return regionNames.of(code) ?? code;
+}
+
+/**
+ * @returns {CountryChoice[]} Each country or territory of the city list once, sorted by its
+ *   English name (HOL-006).
+ */
+export function listCountries() {
+  const codes = [...new Set(cityTable.map((city) => city.countryCode))];
+  return codes
+    .map((code) => ({ code, name: countryName(code) }))
+    .sort((a, b) => a.name.localeCompare(b.name, "en"));
 }
 
 /**

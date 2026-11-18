@@ -7,7 +7,9 @@ holidays, and a meeting-time picker for the places you add. Each place is a city
 of 55 cities, and you can choose its weekend days (the default is its country's weekend). The
 settings panel holds the places,
 the working hours, the display switches and the theme (Light, Dark, or Auto, which follows your
-system).
+system). You can add a public holiday the holiday service does not list (by country, date and
+name), remove it, and hide a listed holiday from its card in the month grid and show it again from
+the settings panel. Your added and hidden holidays are saved in the browser.
 
 ## Stack
 

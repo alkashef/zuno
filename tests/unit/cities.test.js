@@ -5,7 +5,13 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { cityTable } from "../../data/cities.js";
-import { cityOf, countryName, listCities } from "../../src/domain/cities.js";
+import {
+  cityOf,
+  countryName,
+  isListedCountry,
+  listCities,
+  listCountries,
+} from "../../src/domain/cities.js";
 import { zoneOffset } from "../../src/domain/zones.js";
 
 /** The ISO 3166-1 code of each country or territory named in the spec's section 9. */
@@ -113,4 +119,21 @@ test("test_nfr_003_country_names_are_english", () => {
   assert.equal(countryName("GB"), "United Kingdom");
   assert.equal(countryName("TW"), "Taiwan");
   assert.throws(() => countryName("ZZ"), RangeError);
+});
+
+test("test_hol_006_country_list_has_each_country_of_the_city_table_once_by_name", () => {
+  const countries = listCountries();
+  assert.equal(countries.length, Object.keys(specCountryCodes).length);
+  assert.equal(new Set(countries.map((country) => country.code)).size, countries.length);
+  const names = countries.map((country) => country.name);
+  assert.deepEqual(
+    names,
+    [...names].sort((a, b) => a.localeCompare(b, "en")),
+  );
+  assert.deepEqual(countries[0], { code: "AR", name: "Argentina" });
+  assert.ok(
+    countries.some((country) => country.code === "HK" && country.name === countryName("HK")),
+  );
+  assert.equal(isListedCountry("IN"), true);
+  assert.equal(isListedCountry("KE"), false);
 });
