@@ -7,21 +7,21 @@ history is the record. Template: `docs/workflow.md`.
 
 ## Milestones at a glance
 
-| Milestone | Description | Model | Effort | Status |
-| --- | --- | --- | --- | --- |
-| **M31** Holiday table: generator and data | A script writes the public holidays of seven countries for 2026 to 2028 into `data/`, and a domain module reads them | opus | high | blocked |
-| **M32** Holiday table in the page | Places in the seven countries show the table's holidays, with no request to the service | sonnet | high | open |
-| **M33** Notice skips countries with added holidays | The "No holiday data" notice leaves out a country the user added a holiday for | sonnet | medium | open |
-| **M34** Real coastlines on the map | The map's outline is Natural Earth's coastlines, put into the page by the build | sonnet | high | open |
-| **M35** Half-transparent map labels | The map shows through the city labels, and their text stays readable | sonnet | low | open |
-| **M36** Hijri day look and "Day" label | The Hijri day has no chip and regular weight, a darker shade on tinted cells, and the corner reads "Day" | sonnet | medium | open |
-| **M37** Smaller month header | The month buttons are 32 px and the header row takes 40 px, not 60 px | sonnet | low | open |
-| **M38** Country names as the city list names them | Hong Kong's territory reads "Hong Kong" | sonnet | low | open |
-| **M39** Weekend equal to the country's is the default | A place whose ticked days equal its country's weekend stores no choice of its own | sonnet | low | open |
-| **M40** Version in the settings panel | The settings footer shows "Version" and the build's date and time in UTC | sonnet | medium | open |
-| **M41** No 24-hour fallback in the settings reader | `parseSettings` needs its limits; no default in code | sonnet | low | open |
-| **M42** Newer workflows in four browsers | The workflows added since M21 also run in Firefox, WebKit and Edge | sonnet | medium | open |
-| **M43** Publish to GitHub Pages | Every push to `main` builds the page and publishes it | sonnet | medium | blocked |
+| Milestone                                             | Description                                                                                                          | Model  | Effort | Status   |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------ | ------ | -------- |
+| **M31** Holiday table: generator and data             | A script writes the public holidays of seven countries for 2026 to 2028 into `data/`, and a domain module reads them | opus   | high   | Approved |
+| **M32** Holiday table in the page                     | Places in the seven countries show the table's holidays, with no request to the service                              | sonnet | high   | open     |
+| **M33** Notice skips countries with added holidays    | The "No holiday data" notice leaves out a country the user added a holiday for                                       | sonnet | medium | open     |
+| **M34** Real coastlines on the map                    | The map's outline is Natural Earth's coastlines, put into the page by the build                                      | sonnet | high   | open     |
+| **M35** Half-transparent map labels                   | The map shows through the city labels, and their text stays readable                                                 | sonnet | low    | open     |
+| **M36** Hijri day look and "Day" label                | The Hijri day has no chip and regular weight, a darker shade on tinted cells, and the corner reads "Day"             | sonnet | medium | open     |
+| **M37** Smaller month header                          | The month buttons are 32 px and the header row takes 40 px, not 60 px                                                | sonnet | low    | open     |
+| **M38** Country names as the city list names them     | Hong Kong's territory reads "Hong Kong"                                                                              | sonnet | low    | open     |
+| **M39** Weekend equal to the country's is the default | A place whose ticked days equal its country's weekend stores no choice of its own                                    | sonnet | low    | open     |
+| **M40** Version in the settings panel                 | The settings footer shows "Version" and the build's date and time in UTC                                             | sonnet | medium | open     |
+| **M41** No 24-hour fallback in the settings reader    | `parseSettings` needs its limits; no default in code                                                                 | sonnet | low    | open     |
+| **M42** Newer workflows in four browsers              | The workflows added since M21 also run in Firefox, WebKit and Edge                                                   | sonnet | medium | open     |
+| **M43** Publish to GitHub Pages                       | Every push to `main` builds the page and publishes it                                                                | sonnet | medium | blocked  |
 
 ## Milestones
 
