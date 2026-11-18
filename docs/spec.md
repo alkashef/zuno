@@ -18,6 +18,7 @@ chosen time across all places.
 **In scope.**
 - A single self-contained HTML file (HTML, CSS and JavaScript in one file).
 - Settings for the set of places and the working hours.
+- A fixed list of cities to choose places from, and a set of default places (SET-013, SET-014).
 - Live local time with daylight saving (DST) rules.
 - A month grid: one row per place, one column per day, weekends and public holidays coloured.
 - A time picker in the style of the Android time-zone converter.
@@ -26,6 +27,8 @@ chosen time across all places.
 - Display names for places, and optional country names (SET-009, SET-010).
 - Light and dark themes that follow the operating system (THM-001).
 - A refresh button.
+- A picker panel whose width the user can change (LAY-002, LAY-003).
+- Public holidays that the user adds or hides, with export to and import from a holidays file (HOL-006 to HOL-012).
 
 **Exclusions.**
 - Phones and small screens (NFR-002).
@@ -33,24 +36,32 @@ chosen time across all places.
 - Observances that are not days off, such as Valentine's Day.
 - Separate day and night colouring in the picker (PCK-003).
 - Non-colour cues for colour-blind users (LEG-001, accepted risk).
-- Sharing saved settings between browsers or users (SET-004).
+- Sharing saved settings between browsers or users (SET-004), except through the holidays file (HOL-010, HOL-011).
 
 **Binding constraints.**
 - One file, with no separate script or stylesheet files.
-- Public-holiday data comes from a free public holiday service, fetched at run time (user decision, 2026-11-16).
-  This is the one approved flow of data to an external service. The design must record it as a `DEC-NNN`.
+- Public-holiday data comes from free public holiday services, fetched at run time (user decision, 2026-11-16;
+  more than one service allowed by user decision, 2026-11-18). Each holiday service
+  is a flow of data to an external service that the user approves separately. The design must record each as a
+  `DEC-NNN`. No other flow of data to an external service is approved.
 
 **Evaluation after use.** Deferred by the user (2026-11-17): the user judges informally. No measure is recorded.
 
 ## 2. Roles and glossary
 
 - **User**: a member of a global team who uses the page. The only role. They configure and read the page.
-- **Place**: one entry in the settings: a country and one time zone. It defaults to the country's capital.
-  The user may choose another city's zone (SET-003). One row per place in both views.
-- **Public holiday**: a national public holiday of a place's country, as returned by the holiday service.
-- **Weekend**: the days of the week that are the non-working weekend in a place's country. They differ by country.
+- **Place**: one entry in the settings: a city from the city list, with that city's country or territory and
+  its time zone (SET-002). One row per place in both views.
+- **City list**: the fixed list of cities in section 9. The user can add only these cities (SET-013).
+- **Public holiday**: a national public holiday of a place's country or territory, as returned by a holiday service,
+  or a holiday the user added for that country or territory (HOL-006). A holiday the user hid is not one (HOL-008).
+- **Holidays file**: a file on the user's machine that holds the holidays a user added and hid (HOL-010, HOL-011).
+- **Weekend**: the days of the week that are the non-working weekend of a place. They default to the weekend of
+  the place's country or territory, which differs by country; the user can change them for a place (SET-016).
 - **Working hours**: one start and one end time of day, in the user's settings, applied to every place's local time.
 - **Marker**: the chosen date and time in the time picker.
+- **Selected day**: the date chosen in the day selector. The picker window starts at its midnight in the first
+  place (PCK-006). The marker's date can be one day later when the marker is on the next day's hours.
 - **Hijri date**: the date in the Islamic lunar calendar.
 
 ## 3. User scenarios
@@ -73,18 +84,18 @@ chosen time across all places.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | PKG-001 | The system shall be delivered as one HTML file that contains all of its HTML, CSS and JavaScript. | Must | Confirmed | Easy to share and open without setup. | User request | SCN-001, SCN-002 | |
 | SET-001 | The system shall provide a settings panel in which the user adds and removes places. | Must | Confirmed | The set of places differs by team. | User decision | SCN-001, SCN-002 | |
-| SET-002 | When the user adds a country, the system shall set the place's time zone to that of the country's capital. | Must | Confirmed | Sensible default with no extra input. | User decision | SCN-001 | |
-| SET-003 | Where a country has more than one time zone, the system shall let the user choose the time zone of a different city for that place. | Must | Confirmed | A team may work in a non-capital city. | User decision ("default to the capital") | SCN-001 | |
+| SET-002 | When the user adds a city, the system shall set the place's name, country or territory, and time zone to those of that city. | Must | Confirmed | One choice gives a complete place with no extra input. | User decision; changed by user decision (2026-11-18, dialog: pick a city) | SCN-001 | |
+| SET-003 | Withdrawn on 2026-11-18. It read: "Where a country has more than one time zone, the system shall let the user choose the time zone of a different city for that place." Choosing the city itself replaces it (SET-002, SET-013). | Must | Withdrawn | A team may work in a non-capital city. | User decision ("default to the capital"); withdrawn by user decision (2026-11-18, dialog) | SCN-001 | |
 | SET-004 | When the user changes the settings, the system shall save them in the browser and restore them on the next visit. | Must | Confirmed | The user should not re-enter places each time. | User decision (settings panel saved in browser) | SCN-001, SCN-002 | |
 | SET-005 | The system shall provide one working-hours setting, a start time and an end time, that applies to every place, with a default of 9:00 AM to 5:00 PM. | Must | Confirmed | Needed to colour working hours in the picker. | User decision (one global setting) | SCN-001 | |
 | SET-006 | Where a country has regional public holidays, the system shall let the user choose an optional region for a place; with no region chosen, the system shall use national holidays only. | Must | Confirmed (default "no region = national only" is an inference) | Regional holidays affect days off in states and provinces. | User decision (2026-11-16, option 2) | SCN-002 | |
 | SET-008 | When the user moves a place in the list, the system shall reorder the place's rows in both the month grid and the picker to match. | Must | Confirmed | The first place is the picker's reference (PCK-006), so the user needs to change it. | User decision (2026-11-17) | SCN-001 | |
-| SET-007 | While no places are saved, the system shall show an empty page with a prompt to add a place. | Must | Confirmed | User decision (2026-11-16, option 1). | User decision | SCN-001, SCN-002 | |
+| SET-007 | While the saved settings hold no places, the system shall show an empty page with a prompt to add a place. | Must | Confirmed | User decision (2026-11-16, option 1). With default places (SET-014), the page is empty only after the user removes every place. | User decision; changed by user decision (2026-11-18) | SCN-001, SCN-002 | |
 | CLK-001 | The system shall show the current local time and date for each place. | Must | Confirmed | Core need. | User request | SCN-001 | |
 | CLK-002 | The system shall apply the daylight-saving rules of each place's time zone to every local time and date it shows, for any date. | Must | Confirmed | Offsets change by date; wrong offsets break meetings. | User request ("account for DST") | SCN-001 | EX-001 |
 | CLK-003 | While the page is open, the system shall update the current local time of each place every minute. | Must | Confirmed | The time must stay correct on a page left open. | User decision (2026-11-16) | SCN-001 | |
 | CAL-001 | The system shall show a month grid with one row per place and one column per day of the displayed month. | Must | Confirmed | Lets the user plan vacations across countries. | User decision | SCN-002 | |
-| CAL-002 | The system shall mark weekend days in each row according to that place's country. | Must | Confirmed | Weekends differ by country. | User request | SCN-002 | EX-002 |
+| CAL-002 | The system shall mark weekend days in each row according to that place's weekend days (SET-016). | Must | Confirmed | Weekends differ by country, and a team's days off can differ from its country's. | User request; changed by user decision (2026-11-18) | SCN-002 | EX-002 |
 | CAL-003 | The system shall mark public holidays in each row with a colour different from the weekend colour. | Must | Confirmed | Core need. | User decision (colours for vacations and weekends) | SCN-002 | EX-004 |
 | CAL-007 | If a public holiday falls on a weekend day of the place, then the system shall show that cell split diagonally, with the weekend colour on one half and the holiday colour on the other. | Must | Confirmed | User decision (2026-11-16). | User decision | SCN-002 | EX-007 |
 | CAL-004 | The system shall highlight today's column in each row, using that place's local date. | Must | Confirmed | User asked for "today" in the grid. | User statement | SCN-002 | |
@@ -93,9 +104,9 @@ chosen time across all places.
 | HIJ-001 | Where the Hijri calendar is on, the system shall show the Hijri day in each cell of the month grid, the Hijri month above the grid, and each place's Hijri date beside the marker's date in the picker. | Must | Confirmed (calendar variant open) | User asked for lunar/Hijri as well as the regular calendar. | User request; changed by user decision (2026-11-17) | SCN-002 | EX-010 |
 | PCK-001 | The system shall provide a time picker with one row per place and a marker for the chosen date and time. | Must | Confirmed | Converts a time across all places. | User decision | SCN-001 | EX-003 |
 | PCK-002 | When the user moves the marker, the system shall update the local date and time shown on top of each row. | Must | Confirmed | Core of the converter. | User decision | SCN-001 | EX-003 |
-| PCK-003 | The system shall colour each row of the picker over a 24-hour window, with one colour for the working hours and another for the non-working hours of that place. | Must | Confirmed | User decision (2026-11-16): working and non-working hours, no separate day and night. | User decision | SCN-001 | EX-008 |
+| PCK-003 | The system shall colour each row of the picker over the picker window (PCK-006), with one colour for the working hours and another for the non-working hours of that place. | Must | Confirmed | User decision (2026-11-16): working and non-working hours, no separate day and night. | User decision | SCN-001 | EX-008 |
 | PCK-005 | The system shall colour the part of a picker row that falls on a weekend day or public holiday of that place with a third colour, different from the working-hours and non-working-hours colours. | Must | Confirmed | A day off must be visible when choosing a meeting time. | User decision (2026-11-16); one shared colour for weekend and holiday confirmed 2026-11-17 | SCN-001 | EX-009 |
-| PCK-006 | The system shall show the picker window as the 24 hours from midnight to midnight of the marker's date in the first place of the list (23 or 25 hours on a day when that place's clock changes), with every row covering the same instants. | Must | Confirmed | The marker is then one vertical line across all rows, and date differences between places are visible. | User decision (2026-11-16); first place as reference confirmed 2026-11-17 | SCN-001 | EX-003 |
+| PCK-006 | The system shall show the picker window as hour slots of one fixed width, starting at midnight of the selected day in the first place of the list and covering at least that whole day (24 hours, or 23 or 25 on a day when that place's clock changes), with every row covering the same instants. | Must | Confirmed | The marker is then one vertical line across all rows, and date differences between places are visible. A wider picker shows more hours instead of stretching them. | User decision (2026-11-16); first place as reference confirmed 2026-11-17; fixed slots and "24 hours or more" by user decision (2026-11-18, canvas comment and dialog) | SCN-001 | EX-003 |
 | PCK-004 | When the page opens, the system shall place the marker at the current date and time. | Should | Proposed (inference) | Natural starting point. | Agent inference | SCN-001 | |
 | HIJ-002 | Where the Hijri calendar is on, the system shall let the user choose, for each place, the Hijri calendar variant: Umm al-Qura or tabular, with Umm al-Qura as the default. | Must | Confirmed | Teams in different countries follow different Hijri calendars. | User decision (2026-11-16) | SCN-002 | |
 | HIJ-003 | Where the Hijri calendar is on, the system shall let the user adjust, for each place, the Hijri date by a whole number of days, from -1 to +1. | Must | Confirmed | Official moon-sighting dates can differ from the calculated date. | User decision (2026-11-16); range confirmed 2026-11-17 | SCN-002 | |
@@ -106,7 +117,7 @@ chosen time across all places.
 | DSP-003 | The system shall show every Hijri date as the two-digit day, the full month name and the four-digit year, separated by hyphens (for example 06-Jumada II-1448), except in a month-grid cell, which shows the two-digit day, with the month name and year in the band above the grid. | Must | Confirmed | User decision (2026-11-17). | User statement; changed by user decision (2026-11-17, dialog) | SCN-002 | EX-010 |
 | REF-001 | When the user presses the refresh button, the system shall recompute all local times and fetch the public-holiday data again. | Must | Confirmed | User request ("gets updated (refresh button)"). | User request | SCN-001, SCN-002 | |
 | REF-002 | If the holiday service cannot be reached, then the system shall keep showing times and any holidays already loaded, and tell the user which countries have no holiday data. | Must | Proposed (inference) | The page should still be useful offline. | Agent inference | SCN-002 | |
-| HOL-003 | The system shall treat as a place's public holidays the national public holidays of its country and, when a region is chosen, the public holidays of that region. | Must | Confirmed | User decision (2026-11-16, option 2). Observances that are not days off are excluded. | User decision | SCN-002 | |
+| HOL-003 | The system shall treat as a place's public holidays the national public holidays of its country, the public holidays of its region when one is chosen, and the holidays the user added for its country, without the holidays the user hid. | Must | Confirmed | User decision (2026-11-16, option 2). Observances that are not days off are excluded. The user's own entries complete or correct the service's data. | User decision; changed by user decision (2026-11-18) | SCN-002 | |
 | HOL-004 | If regional holiday data is unavailable for a chosen region, then the system shall show the national holidays and tell the user that regional holidays are missing for that place. | Must | Confirmed | Free services cover regions unevenly; the user must not trust an incomplete grid. | User decision (2026-11-17) | SCN-002 | |
 | HOL-001 | The system shall get each place's public holidays from a free public holiday service. | Must | Confirmed | User decision (option 1). | User decision | SCN-002 | EX-004 |
 | HOL-002 | The system shall send the holiday service only a country code and a year. | Must | Proposed (inference) | Privacy: nothing else about the user leaves the machine. | Agent inference from project rules | SCN-002 | |
@@ -114,10 +125,26 @@ chosen time across all places.
 | SET-009 | Where the user enters a display name for a place, the system shall show that name instead of the city name wherever the place is named; with no display name, the system shall show the city name. | Must | Confirmed | Teams name places by person or office, not by city. | User decision (2026-11-17) | SCN-001, SCN-002 | |
 | SET-010 | Where the user turns on country names, the system shall show each place's country next to the place's name; with country names off, which is the default, the system shall show the place's name alone. | Must | Confirmed | Country names add clutter; most users do not need them. | User decision (2026-11-17) | SCN-001, SCN-002 | |
 | SET-011 | The system shall provide a setting that turns the Hijri calendar on or off, with the Hijri calendar off by default. | Must | Confirmed | Not every team needs the Hijri calendar. | User decision (2026-11-17) | SCN-002 | EX-010 |
-| PCK-007 | When the user chooses the previous day, the next day, or a day in a calendar, the system shall move the marker to that date and keep the marker's time of day in the first place. | Must | Confirmed | Meetings are planned for days other than today. | User decision (2026-11-17) | SCN-001 | |
+| PCK-007 | When the user chooses the previous day, the next day, or a day in a calendar, the system shall make that day the selected day and move the marker to it, keeping the marker's time of day in the first place. | Must | Confirmed | Meetings are planned for days other than today. The picker window follows the selected day, not the marker, so it stays still while the marker moves into the next day's hours. | User decision (2026-11-17); changed by user decision (2026-11-18) | SCN-001 | |
+| PCK-009 | While the picker window covers more than one date in the first place, the system shall show the first and the last of those dates in the day selector (for example 20–21-Nov-26). | Must | Confirmed | The user sees which days the hour slots cover. | User request (2026-11-18, canvas comment: "when the slots span more than one day the date displays those days: 20-21") | SCN-001 | |
 | LAY-001 | While the places do not all fit in the picker or in the month grid, the system shall make that list scroll vertically and keep the hour axis or the day headers in view. | Must | Confirmed | The page must stay usable with many places. | User decision (2026-11-17) | SCN-001, SCN-002 | |
 | THM-001 | The system shall show the light theme or the dark theme that the theme setting (SET-012) chooses, and, while that setting is Auto, the theme that the operating system's colour-scheme setting asks for. | Must | Confirmed | Comfortable reading in any lighting. | User decision (2026-11-17); changed by user request (2026-11-18) | SCN-001, SCN-002 | |
 | SET-012 | The system shall provide a theme setting with the choices Light, Dark and Auto, with Auto as the default. | Must | Confirmed | Some users want a different theme from their system's. | User request (2026-11-18, "add the dark/light to the settings, follow the canvas") | SCN-001, SCN-002 | |
+| SET-013 | The system shall offer, as the places the user can add, only the cities of the city list (section 9). | Must | Confirmed | The team works in a known set of cities; a short list is quicker to choose from than every country. | User request (2026-11-18, "use these cities only in the app") | SCN-001, SCN-002 | |
+| SET-014 | While no settings are saved in the browser, the system shall show the default places Tokyo, Cairo, New Delhi, Madrid, Bogotá, Riyadh and Islamabad, in that order. | Must | Confirmed | A first visit shows a working page for the team's main cities. | User request (2026-11-18, "as a default in the app", "use the capital cities"); Tokyo once by user decision (2026-11-18, dialog) | SCN-001, SCN-002 | |
+| SET-015 | If the saved settings hold a place that is not in the city list, then the system shall remove that place when the page opens. | Must | Confirmed | The rule "only these cities" must hold for settings saved before the city list. | User decision (2026-11-18, dialog) | SCN-001, SCN-002 | |
+| HOL-005 | Withdrawn on 2026-11-18, the day it was added. It read: "The system shall provide public-holiday data for every country and territory in the city list." Holidays the user adds (HOL-006) replace it. | Must | Withdrawn | Vacation planning must work for every city the team can choose, including the default places. | User decision (2026-11-18, dialog: find a second source); withdrawn by user decision (2026-11-18, dialog: manual replaces it) | SCN-002 | |
+| HOL-006 | The system shall let the user add a public holiday, with a date and a name, to a country or territory of the city list. | Must | Confirmed | The holiday service has no data for some countries, and can miss a holiday in others. | User request (2026-11-18, "I want the user to be able to add public holidays if the system can't find them"); per country by user decision (dialog) | SCN-002 | |
+| HOL-007 | The system shall let the user remove a public holiday that the user added. | Must | Confirmed | A mistyped holiday must be correctable. | User decision (2026-11-18, dialog) | SCN-002 | |
+| HOL-008 | The system shall let the user hide a public holiday that came from the holiday service, and show it again. | Must | Confirmed | The service can list a day that is not a day off for the team. | User decision (2026-11-18, dialog: add and hide) | SCN-002 | |
+| HOL-009 | When the user adds, removes, hides or shows a holiday, the system shall save the change in the browser and restore it on the next visit. | Must | Confirmed | The user should not re-enter holidays each time. | User decision (2026-11-18, dialog) | SCN-002 | |
+| HOL-010 | When the user chooses to export, the system shall save the user's added and hidden holidays to a file on the user's machine. | Must | Confirmed | One person enters a country's holidays and shares the file with the team. | User decision (2026-11-18, dialog) | SCN-002 | |
+| HOL-011 | When the user imports a holidays file, the system shall add its holidays to those already saved. | Must | Confirmed | A teammate loads a shared file without losing their own entries. | User decision (2026-11-18, dialog); merging approved by the user as an assumption | SCN-002 | |
+| HOL-012 | If an imported file is not a valid holidays file, then the system shall change nothing and tell the user that the file was refused. | Must | Confirmed | A wrong file must not damage the saved holidays. | Agent inference, approved by the user (2026-11-18) | SCN-002 | |
+| LAY-002 | When the user drags the left edge of the picker panel, the system shall change the panel's width to follow the drag by adding or removing hour slots at the end of the picker window, within the limits the design sets. | Must | Confirmed | The user chooses how much room the map and the picker get, and how many hours the picker shows. | User request (2026-11-18, canvas comments; confirmed in dialogs) | SCN-001 | |
+| LAY-003 | When the user changes the picker panel's width, the system shall save it in the browser and restore it on the next visit. | Must | Confirmed | The user sets the width once. | User decision (2026-11-18, dialog) | SCN-001 | |
+| SET-016 | The system shall let the user choose, for each place, which days of the week are its weekend, with the weekend of the place's country or territory as the default. | Must | Confirmed | The built-in weekend of a country can differ from a team's real days off. | User request (2026-11-18, canvas comment: "add weekend days, in case the user wants to override the defaults") | SCN-001, SCN-002 | |
+| PCK-008 | While the pointer is over a picker row's window (PCK-006), the system shall show that place's local time and date at the pointer's position. | Must | Confirmed | The user reads a place's time at any point without moving the marker. | User request (2026-11-18, canvas comment: "when the user hovers over a time slot, the local time is displayed") | SCN-001 | |
 
 ## 5. Non-functional requirements
 
@@ -161,6 +188,13 @@ missing (HOL-004).
 | Which free holiday service, and its regional coverage | Decided in the design: Nager.Date, approved by the user 2026-11-17 (DEC-005). Whether it works from a page opened as a file is unverified. | Coverage and reliability vary; some regions may show national holidays only (HOL-004). | Design | Resolved on 2026-11-17: a live request for one country and year returned HTTP 200 with `access-control-allow-origin: *` and the documented fields; the result is in design section 5. |
 | Accepted risk: no non-colour cue for colour-blind users | User chose colour plus a legend (LEG-001, 2026-11-16). | Some users cannot tell some states apart. | User | Revisit if a colour-blind user needs the page. |
 | Example where the Umm al-Qura and tabular variants differ | EX-010 gives the same date in both variants. | Tests might not catch a wrong variant. | Design | Add a differing-variant example in the milestone tests. |
+| The offsets in the city list (section 9) | Assumption, stated to the user on 2026-11-18: they are each city's standard-time offset, for reference. The system keeps applying daylight-saving rules (CLK-002), so Sydney shows UTC+11 in November. | If the user meant fixed offsets, times are an hour off for part of the year in cities with daylight saving. | User | Revisit if a shown time differs from what the user expects. |
+| Hong Kong's holidays and weekend | User decision (2026-11-18, dialog): Hong Kong is its own territory for public holidays and weekends, although the user's list named China as its country. | With mainland China's holidays, Hong Kong's days off would be wrong. | User | Resolved 2026-11-18. |
+| Holiday data for seven countries | The approved holiday service (DEC-005) lists no data for India, Israel, Malaysia, Pakistan, Saudi Arabia, Taiwan and the United Arab Emirates (its list of countries, read 2026-11-18): 12 of the 55 cities, 3 of the 7 default places. The user first decided to find a second source (HOL-005) and then, the same day, that holidays added by the user replace it (HOL-006); HOL-005 is withdrawn and nothing waits for a second source. | Those countries show no holidays until a user adds them or imports a holidays file. | User | Resolved 2026-11-18. A second holiday service may be added later as an improvement; it would need the user's approval as a new outside data flow. |
+| A holiday the user adds (HOL-006) | Assumption, approved by the user on 2026-11-18: it is a single date and does not repeat every year. | Fixed-date holidays must be entered again for each year. | User | Revisit if yearly re-entry proves a burden. |
+| Importing a holidays file (HOL-011) | Assumption, approved by the user on 2026-11-18: an import adds to the saved holidays and never replaces them. Export and import use local files only, so NFR-001 still holds. | A user who wants to start over must remove entries one by one. | User | Revisit if users ask for "replace all". |
+| Acceptance examples for the 2026-11-18 requirements | None written yet for SET-013 to SET-016, HOL-006 to HOL-012, LAY-002, LAY-003 and PCK-008. | Tests would rest on unreviewed expectations. | User | Propose examples and have the user review them before `/write-plan`. |
+| Limits of the picker panel's width (LAY-002) | The lower limit is the whole day (PCK-006), so the panel cannot be narrower than its 24 hour slots; the upper limit is left to the design. | A panel too wide hides the map; on a small screen the map gets only what the 24 slots leave. | Design | Set and justify the limits in `/write-design`. |
 
 ## 8. Review and approval
 
@@ -177,3 +211,80 @@ requirement THM-001 (a Light, Dark or Auto theme setting in the settings panel).
 
 The design settled the two items once deferred to it: the source of each country's weekend days
 (DEC-003) and the holiday service (DEC-005, approved separately by the user).
+
+Changes approved by the user on 2026-11-18, in chat, after a dialog of decisions: new requirements
+SET-013, SET-014, SET-015, HOL-005, LAY-002 and LAY-003; changed requirements SET-002 and SET-007;
+SET-003 withdrawn; the city list (section 9); the reworded holiday-service constraint (section 1)
+and glossary (section 2); and the new items in section 7. Approved later the same day, in chat: new
+requirements SET-016 and PCK-008, changed requirement CAL-002, and the reworded Weekend entry in
+the glossary. Approved after that, in chat, following a second dialog: new requirements HOL-006 to
+HOL-012, changed requirement HOL-003, HOL-005 withdrawn, and the three assumptions recorded in
+section 7 (single date, import merges, local files only). Approved last, in chat: changed
+requirements PCK-006 and LAY-002 (hour slots of a fixed width, at least the whole day, resizing
+adds or removes slots) and the matching wording of PCK-003 and PCK-008; then the selected day
+(changed PCK-006 and PCK-007, new PCK-009, new glossary entry). The design does not yet reflect
+these changes: the next step is `/write-design`.
+
+## 9. City list
+
+The cities the user can add (SET-013), as given by the user on 2026-11-18. The offset is each city's
+standard-time offset from UTC, for reference only (section 7). Hong Kong is its own territory
+(section 7).
+
+| City | Country or territory | Standard-time offset |
+| --- | --- | --- |
+| Buenos Aires | Argentina | -03:00 |
+| Adelaide | Australia | +09:30 |
+| Canberra | Australia | +10:00 |
+| Melbourne | Australia | +10:00 |
+| Perth | Australia | +08:00 |
+| Sydney | Australia | +10:00 |
+| Vienna | Austria | +01:00 |
+| Brussels | Belgium | +01:00 |
+| Brasília | Brazil | -03:00 |
+| São Paulo | Brazil | -03:00 |
+| Beijing | China | +08:00 |
+| Hong Kong | Hong Kong | +08:00 |
+| Bogotá | Colombia | -05:00 |
+| Prague | Czechia | +01:00 |
+| Copenhagen | Denmark | +01:00 |
+| Quito | Ecuador | -05:00 |
+| Cairo | Egypt | +02:00 |
+| Helsinki | Finland | +02:00 |
+| Paris | France | +01:00 |
+| Berlin | Germany | +01:00 |
+| Munich | Germany | +01:00 |
+| Hyderabad | India | +05:30 |
+| Mumbai | India | +05:30 |
+| New Delhi | India | +05:30 |
+| Pune | India | +05:30 |
+| Jakarta | Indonesia | +07:00 |
+| Dublin | Ireland | +00:00 |
+| Jerusalem | Israel | +02:00 |
+| Tel Aviv | Israel | +02:00 |
+| Milan | Italy | +01:00 |
+| Rome | Italy | +01:00 |
+| Tokyo | Japan | +09:00 |
+| Kuala Lumpur | Malaysia | +08:00 |
+| Mexico City | Mexico | -06:00 |
+| Amsterdam | Netherlands | +01:00 |
+| Islamabad | Pakistan | +05:00 |
+| Lahore | Pakistan | +05:00 |
+| Warsaw | Poland | +01:00 |
+| Riyadh | Saudi Arabia | +03:00 |
+| Singapore | Singapore | +08:00 |
+| Seoul | South Korea | +09:00 |
+| Madrid | Spain | +01:00 |
+| Stockholm | Sweden | +01:00 |
+| Bern | Switzerland | +01:00 |
+| Taipei | Taiwan | +08:00 |
+| Dubai | United Arab Emirates | +04:00 |
+| London | United Kingdom | +00:00 |
+| Chicago | United States | -06:00 |
+| Los Angeles | United States | -08:00 |
+| Minneapolis | United States | -06:00 |
+| New York | United States | -05:00 |
+| Phoenix | United States | -07:00 |
+| San Diego | United States | -08:00 |
+| Tallahassee | United States | -05:00 |
+| Washington, D.C. | United States | -05:00 |
