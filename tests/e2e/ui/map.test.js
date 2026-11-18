@@ -75,3 +75,36 @@ test("ui_clk_003_pin_time_updates_each_tick", async () => {
   await page.clock.runFor(config.clockTickMs);
   assert.equal(await time.textContent(), "9:26 AM");
 });
+
+test("ui_map_001_outline_is_drawn_and_pins_stay_on_their_places", async () => {
+  const { page, requestUrls } = await openPage(browser, built.url, { saved: twoPlaces() });
+  const pins = page.locator('[data-role="pin"]');
+  await pins.first().waitFor();
+  const land = page.locator("path.map-land");
+  assert.equal(await land.count(), 1);
+  const outline = (await land.getAttribute("d")) ?? "";
+  assert.ok(outline.length > 20000, "the outline is the real coastline, not a sketch");
+  const box = await land.evaluate((element) => {
+    const { x, y, width, height } = /** @type {SVGGraphicsElement} */ (element).getBBox();
+    return { left: x, top: y, right: x + width, bottom: y + height };
+  });
+  assert.ok(box.left < 5 && box.right > 715, "the land spans the whole grid");
+  assert.ok(box.top < 60 && box.bottom > 290, "the land reaches the view's top and bottom");
+  const view = await page.locator('[data-role="map-view"]').boundingBox();
+  const tip = await pins.nth(0).locator(".map-pin-icon").boundingBox();
+  assert.ok(view && tip);
+  const riyadh = { x: (46.68 + 180) / 360, y: (90 - 24.71) / 180 };
+  const world = { width: view.width, height: view.height * (360 / 276) };
+  const top = view.y - world.height * (20 / 360);
+  assert.ok(Math.abs(tip.x + tip.width / 2 - (view.x + riyadh.x * world.width)) < 2);
+  assert.ok(Math.abs(tip.y + tip.height - (top + riyadh.y * world.height)) < 2);
+  assert.deepEqual(
+    requestUrls.filter(
+      (url) =>
+        !url.startsWith("file:") &&
+        !url.startsWith("data:") &&
+        !url.startsWith(config.holidayServiceBaseUrl),
+    ),
+    [],
+  );
+});

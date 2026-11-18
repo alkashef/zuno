@@ -9,6 +9,8 @@ data/*
 !data/.gitkeep
 !data/cities.js
 !data/holiday-table.js
+!data/ne_110m_land.geojson
+!data/map-outline.svg
 models/
 logs/
 *.before-*

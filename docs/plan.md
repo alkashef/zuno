@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                                             | Description                                                                                                          | Model  | Effort | Status   |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------ | ------ | -------- |
-| **M34** Real coastlines on the map                    | The map's outline is Natural Earth's coastlines, put into the page by the build                                      | sonnet | high   | open     |
 | **M35** Half-transparent map labels                   | The map shows through the city labels, and their text stays readable                                                 | sonnet | low    | open     |
 | **M36** Hijri day look and "Day" label                | The Hijri day has no chip and regular weight, a darker shade on tinted cells, and the corner reads "Day"             | sonnet | medium | open     |
 | **M37** Smaller month header                          | The month buttons are 32 px and the header row takes 40 px, not 60 px                                                | sonnet | low    | open     |
@@ -25,25 +24,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M34 — Real coastlines on the map
-
-- **Refs:** MAP-001, PKG-001, NFR-001, DEC-026.
-- **Owner:** `scripts/make-map.mjs`, `scripts/build.mjs`.
-- **Tests first:** `test_map_001_projection_puts_longitude_and_latitude_on_the_grid`,
-  `test_pkg_001_built_page_holds_the_outline_and_no_marker`,
-  `ui_map_001_outline_is_drawn_and_pins_stay_on_their_places`.
-- **Build:** as DEC-026 says. `make-map.mjs --download` fetches `ne_110m_land.geojson` into `data/`;
-  without the flag it writes `data/map-outline.svg` from it. `index.html` gets the marker
-  `<!--zuno:map-outline-->` in place of the hand-drawn outline, and the build puts the path there.
-  Commit the downloaded file and the generated outline. README: the two commands, the source and
-  its licence.
-- **Gate:** the built page has no marker left and makes no request for the map; the pins of the
-  existing map tests are where they were. Report the size of `data/map-outline.svg` and of the built
-  page. If the download fails, stop as blocked.
-- **Approval:** User, 2026-11-18, dialogs (decision 26, "The milestone downloads it", and the
-  plan): the milestone may download the one file `ne_110m_land.geojson` from Natural Earth's public
-  GitHub repository. Nothing else.
 
 ### M35 — Half-transparent map labels
 

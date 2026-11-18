@@ -3,7 +3,8 @@
  * @module build
  * Builds the one-file page dist/zuno.html (PKG-001, DEC-002, DEC-012). Bundles src/main.js and
  * src/styles.css with esbuild, inlines both into
- * src/index.html, and adds a Content-Security-Policy tag
+ * src/index.html, puts the map's coastline (data/map-outline.svg, DEC-026) in place of the marker
+ * <!--zuno:map-outline-->, and adds a Content-Security-Policy tag
  * that allows only the inline script and style, data-URI images and the holiday host. It does not run the page or
  * read any setting except through the command-line entry at the bottom.
  */
@@ -19,6 +20,7 @@ import { build } from "esbuild";
  * @property {string} srcDir Folder with index.html, main.js and styles.css.
  * @property {string} outFile Path of the built HTML file.
  * @property {string} holidayServiceBaseUrl Base URL of the holiday service.
+ * @property {string} mapOutlineFile Path of the map's outline (data/map-outline.svg, DEC-026).
  */
 
 /**
@@ -67,12 +69,14 @@ function cspTag(script, style, holidayServiceBaseUrl) {
  * Writes the one-file page.
  * @param {BuildOptions} options
  */
-export async function buildPage({ srcDir, outFile, holidayServiceBaseUrl }) {
+export async function buildPage({ srcDir, outFile, holidayServiceBaseUrl, mapOutlineFile }) {
   const { script: rawScript, style } = await bundle(srcDir);
   // A literal "</script" inside the bundle would end the element early.
   const script = rawScript.replaceAll("</script", "<\\/script");
   const template = await readFile(path.join(srcDir, "index.html"), "utf8");
+  const outline = (await readFile(mapOutlineFile, "utf8")).trim();
   const html = template
+    .replace("<!--zuno:map-outline-->", () => outline)
     .replace("<!--zuno:csp-->", () => cspTag(script, style, holidayServiceBaseUrl))
     .replace("<!--zuno:style-->", () => `<style>${style}</style>`)
     .replace("<!--zuno:script-->", () => `<script>${script}</script>`);
@@ -88,6 +92,7 @@ async function main() {
     srcDir: path.join(root, "src"),
     outFile: path.join(root, "dist", "zuno.html"),
     holidayServiceBaseUrl: config.holidayServiceBaseUrl,
+    mapOutlineFile: path.join(root, "data", "map-outline.svg"),
   });
 }
 

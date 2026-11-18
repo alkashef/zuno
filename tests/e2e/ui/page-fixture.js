@@ -34,7 +34,12 @@ export async function buildToScratch() {
   const scratch = await mkdtemp(path.join(tmpdir(), "zuno-ui-"));
   const srcDir = path.resolve(import.meta.dirname, "../../../src");
   const outFile = path.join(scratch, "zuno.html");
-  await buildPage({ srcDir, outFile, holidayServiceBaseUrl: config.holidayServiceBaseUrl });
+  await buildPage({
+    srcDir,
+    outFile,
+    holidayServiceBaseUrl: config.holidayServiceBaseUrl,
+    mapOutlineFile: path.resolve(import.meta.dirname, "../../../data/map-outline.svg"),
+  });
   return {
     url: pathToFileURL(outFile).href,
     remove: () => rm(scratch, { recursive: true }),
