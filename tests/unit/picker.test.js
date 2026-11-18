@@ -1,14 +1,19 @@
 // @ts-check
-/** @module picker.test Unit tests for src/domain/picker.js (PCK-001 to PCK-003, PCK-005 to PCK-007, SET-005, EX-003, EX-008, EX-009). */
+/** @module picker.test Unit tests for src/domain/picker.js (PCK-001 to PCK-003, PCK-005 to PCK-007, PCK-009, SET-005, EX-003, EX-008, EX-009, EX-019, EX-020). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { formatDateRange } from "../../src/domain/format.js";
 import {
   DayKind,
   buildPicker,
+  chooseDay,
+  keepMarkerInWindow,
+  markerInWindow,
   markerOnDate,
   pickerWindow,
-  shiftMarkerDay,
+  shiftDay,
+  windowDates,
 } from "../../src/domain/picker.js";
 import { createPlace, editPlace } from "../../src/domain/places.js";
 import { defaultSettings } from "../../src/domain/settings.js";
@@ -84,7 +89,7 @@ test("test_pck_001_one_row_per_place", () => {
     ["a", "b", "c"],
   );
   assert.deepEqual(buildPicker(settingsWith([]), { instant: utc(2026, 11, 16, 15) }, {}), []);
-  assert.equal(pickerWindow(settingsWith([]), { instant: utc(2026, 11, 16, 15) }), null);
+  assert.equal(pickerWindow(settingsWith([]), { year: 2026, month: 11, day: 16 }), null);
 });
 
 test("test_pck_002_local_time_at_marker_ex_003", () => {
@@ -130,7 +135,7 @@ test("test_pck_003_working_hours_setting_moves_segments_set_005", () => {
 test("test_pck_003_window_crosses_midnight_for_another_place", () => {
   const settings = settingsWith([createPlace("london", "london"), createPlace("riyadh", "riyadh")]);
   const marker = { instant: utc(2026, 11, 19, 12) };
-  const window = pickerWindow(settings, marker);
+  const window = pickerWindow(settings, { year: 2026, month: 11, day: 19 });
   assert.ok(window);
   const [, riyadh] = buildPicker(settings, marker, {});
   assertCoversWindow(riyadh, window);
@@ -175,30 +180,108 @@ test("test_pck_005_regional_holiday_follows_place_region", () => {
   assert.equal(kindAt(rowOf(national), noon), DayKind.working);
 });
 
-test("test_pck_006_window_midnight_to_midnight_of_first_place_23_and_25_hour_days", () => {
+test("test_pck_006_window_starts_at_midnight_of_the_selected_day_and_lasts_picker_hours", () => {
+  const tokyo = settingsWith([createPlace("a", "tokyo"), createPlace("b", "london")]);
+  const day20 = { year: 2026, month: 11, day: 20 };
+  assert.deepEqual(pickerWindow(tokyo, day20), {
+    from: utc(2026, 11, 19, 15),
+    to: utc(2026, 11, 20, 15),
+  });
+  assert.deepEqual(pickerWindow({ ...tokyo, pickerHours: 30 }, day20), {
+    from: utc(2026, 11, 19, 15),
+    to: utc(2026, 11, 20, 21),
+  });
   const london = settingsWith([createPlace("a", "london"), createPlace("b", "tokyo")]);
-  assert.deepEqual(pickerWindow(london, { instant: utc(2026, 11, 16, 23, 59) }), {
-    from: utc(2026, 11, 16, 0),
-    to: utc(2026, 11, 17, 0),
-  });
-  const spring = pickerWindow(london, { instant: utc(2026, 3, 29, 12) });
-  assert.deepEqual(spring, { from: utc(2026, 3, 29, 0), to: utc(2026, 3, 29, 23) });
-  const autumn = pickerWindow(london, { instant: utc(2026, 10, 25, 12) });
+  const autumnDay = { year: 2026, month: 10, day: 25 };
+  const autumn = pickerWindow(london, autumnDay);
   assert.deepEqual(autumn, { from: utc(2026, 10, 24, 23), to: utc(2026, 10, 26, 0) });
+  assert.ok(autumn);
   assert.equal(autumn.to - autumn.from, 25 * hour);
-  const newYork = settingsWith([createPlace("a", "washington-dc")]);
-  assert.deepEqual(pickerWindow(newYork, { instant: utc(2026, 3, 9, 3) }), {
-    from: utc(2026, 3, 8, 5),
-    to: utc(2026, 3, 9, 4),
+  assert.deepEqual(pickerWindow({ ...london, pickerHours: 30 }, autumnDay), {
+    from: utc(2026, 10, 24, 23),
+    to: utc(2026, 10, 26, 5),
   });
-  const rows = buildPicker(london, { instant: utc(2026, 10, 25, 12) }, {});
+  assert.deepEqual(pickerWindow(london, { year: 2026, month: 3, day: 29 }), {
+    from: utc(2026, 3, 29, 0),
+    to: utc(2026, 3, 30, 0),
+  });
+  const newYork = settingsWith([createPlace("a", "washington-dc")]);
+  assert.deepEqual(pickerWindow(newYork, { year: 2026, month: 3, day: 8 }), {
+    from: utc(2026, 3, 8, 5),
+    to: utc(2026, 3, 9, 5),
+  });
+  const rows = buildPicker(london, { instant: utc(2026, 10, 25, 12) }, {}, autumnDay);
   rows.forEach((row) => assertCoversWindow(row, autumn));
+});
+
+test("test_pck_003_rows_are_coloured_over_the_whole_window", () => {
+  const settings = {
+    ...settingsWith([createPlace("london", "london"), createPlace("tokyo", "tokyo")]),
+    pickerHours: 30,
+  };
+  const day = { year: 2026, month: 11, day: 16 };
+  const window = pickerWindow(settings, day);
+  assert.deepEqual(window, { from: utc(2026, 11, 16, 0), to: utc(2026, 11, 17, 6) });
+  assert.ok(window);
+  const [london, tokyo] = buildPicker(settings, { instant: utc(2026, 11, 16, 14) }, {}, day);
+  assertCoversWindow(london, window);
+  assertCoversWindow(tokyo, window);
+  assert.deepEqual(shape(london).at(-1), [
+    utc(2026, 11, 16, 17),
+    utc(2026, 11, 17, 6),
+    DayKind.nonWorking,
+  ]);
+  assert.equal(kindAt(tokyo, utc(2026, 11, 17, 1)), DayKind.working);
+});
+
+test("test_pck_006_marker_is_kept_inside_the_window_and_the_window_stays", () => {
+  const settings = { ...settingsWith([createPlace("a", "tokyo")]), pickerHours: 30 };
+  const selectedDay = { year: 2026, month: 11, day: 20 };
+  const choice = { selectedDay, marker: { instant: utc(2026, 11, 19, 20) } };
+  assert.deepEqual(markerInWindow(settings, choice, utc(2026, 11, 20, 17)), {
+    instant: utc(2026, 11, 20, 17),
+  });
+  assert.deepEqual(markerInWindow(settings, choice, utc(2026, 11, 22, 0)), {
+    instant: utc(2026, 11, 20, 20, 59),
+  });
+  assert.deepEqual(markerInWindow(settings, choice, utc(2026, 11, 1, 0)), {
+    instant: utc(2026, 11, 19, 15),
+  });
+  const late = { selectedDay, marker: { instant: utc(2026, 11, 20, 17) } };
+  assert.deepEqual(keepMarkerInWindow(settings, late), late.marker);
+  assert.deepEqual(keepMarkerInWindow({ ...settings, pickerHours: 24 }, late), {
+    instant: utc(2026, 11, 19, 17),
+  });
+  assert.deepEqual(markerInWindow(settingsWith([]), choice, 5), { instant: 5 });
+  assert.deepEqual(keepMarkerInWindow(settingsWith([]), late), late.marker);
+});
+
+test("test_pck_009_day_selector_shows_first_and_last_date_of_the_window", () => {
+  const tokyo = settingsWith([createPlace("a", "tokyo")]);
+  const day20 = { year: 2026, month: 11, day: 20 };
+  /**
+   * @param {import("../../src/domain/settings.js").Settings} settings
+   * @param {import("../../src/domain/weekends.js").CalendarDate} day
+   * @returns {string} What the day selector's date button says.
+   */
+  const label = (settings, day) => {
+    const dates = windowDates(settings, day);
+    assert.ok(dates);
+    return formatDateRange(dates.first, dates.last);
+  };
+  assert.equal(label(tokyo, day20), "20-Nov-26");
+  assert.equal(label({ ...tokyo, pickerHours: 30 }, day20), "20–21-Nov-26");
+  assert.equal(
+    label({ ...tokyo, pickerHours: 30 }, { year: 2026, month: 11, day: 30 }),
+    "30-Nov-26 – 01-Dec-26",
+  );
+  assert.equal(windowDates(settingsWith([]), day20), null);
 });
 
 test("test_pck_006_dst_change_day_splits_segments_at_new_offset", () => {
   const settings = settingsWith([createPlace("a", "jerusalem")]);
   const marker = { instant: utc(2026, 10, 25, 10) };
-  const window = pickerWindow(settings, marker);
+  const window = pickerWindow(settings, { year: 2026, month: 10, day: 25 });
   assert.deepEqual(window, { from: utc(2026, 10, 24, 21), to: utc(2026, 10, 25, 22) });
   const [jerusalem] = buildPicker(settings, marker, {});
   assertCoversWindow(jerusalem, window);
@@ -212,22 +295,32 @@ test("test_pck_006_dst_change_day_splits_segments_at_new_offset", () => {
 test("test_pck_007_shift_day_keeps_time_of_day_in_first_place", () => {
   const settings = settingsWith([createPlace("a", "london"), createPlace("b", "tokyo")]);
   const marker = { instant: utc(2026, 11, 16, 15) + 42_000 };
-  assert.deepEqual(shiftMarkerDay(settings, marker, 1), {
-    instant: utc(2026, 11, 17, 15) + 42_000,
+  const choice = { selectedDay: { year: 2026, month: 11, day: 16 }, marker };
+  assert.deepEqual(shiftDay(settings, choice, 1), {
+    selectedDay: { year: 2026, month: 11, day: 17 },
+    marker: { instant: utc(2026, 11, 17, 15) + 42_000 },
   });
-  assert.deepEqual(shiftMarkerDay(settings, marker, -1), {
+  assert.deepEqual(shiftDay(settings, choice, -1).marker, {
     instant: utc(2026, 11, 15, 15) + 42_000,
   });
-  assert.deepEqual(shiftMarkerDay(settings, { instant: utc(2026, 3, 28, 15) }, 1), {
-    instant: utc(2026, 3, 29, 14),
+  const beforeChange = {
+    selectedDay: { year: 2026, month: 3, day: 28 },
+    marker: { instant: utc(2026, 3, 28, 15) },
+  };
+  assert.deepEqual(shiftDay(settings, beforeChange, 1).marker, { instant: utc(2026, 3, 29, 14) });
+  const newYearsEve = {
+    selectedDay: { year: 2026, month: 12, day: 31 },
+    marker: { instant: utc(2026, 12, 31, 15) },
+  };
+  assert.deepEqual(shiftDay(settings, newYearsEve, 1), {
+    selectedDay: { year: 2027, month: 1, day: 1 },
+    marker: { instant: utc(2027, 1, 1, 15) },
   });
-  assert.deepEqual(shiftMarkerDay(settings, { instant: utc(2026, 12, 31, 15) }, 1), {
-    instant: utc(2027, 1, 1, 15),
+  assert.deepEqual(chooseDay(settings, choice, { year: 2026, month: 7, day: 1 }), {
+    selectedDay: { year: 2026, month: 7, day: 1 },
+    marker: { instant: utc(2026, 7, 1, 14) + 42_000 },
   });
-  assert.deepEqual(markerOnDate(settings, marker, { year: 2026, month: 7, day: 1 }), {
-    instant: utc(2026, 7, 1, 14) + 42_000,
-  });
-  assert.deepEqual(shiftMarkerDay(settingsWith([]), marker, 1), marker);
+  assert.deepEqual(shiftDay(settingsWith([]), choice, 1).marker, marker);
   assert.deepEqual(
     markerOnDate(settingsWith([]), marker, { year: 2026, month: 7, day: 1 }),
     marker,
@@ -236,8 +329,23 @@ test("test_pck_007_shift_day_keeps_time_of_day_in_first_place", () => {
 
 test("test_pck_007_missing_time_moves_to_end_of_clock_change", () => {
   const settings = settingsWith([createPlace("a", "london")]);
-  const marker = { instant: utc(2026, 3, 28, 1, 30) };
-  assert.deepEqual(shiftMarkerDay(settings, marker, 1), { instant: utc(2026, 3, 29, 1) });
+  const choice = {
+    selectedDay: { year: 2026, month: 3, day: 28 },
+    marker: { instant: utc(2026, 3, 28, 1, 30) },
+  };
+  assert.deepEqual(shiftDay(settings, choice, 1).marker, { instant: utc(2026, 3, 29, 1) });
+});
+
+test("test_pck_007_a_marker_on_the_next_days_hours_moves_to_the_new_day_ex_020", () => {
+  const settings = { ...settingsWith([createPlace("a", "tokyo")]), pickerHours: 30 };
+  const choice = {
+    selectedDay: { year: 2026, month: 11, day: 20 },
+    marker: { instant: utc(2026, 11, 20, 17) },
+  };
+  assert.deepEqual(shiftDay(settings, choice, 1), {
+    selectedDay: { year: 2026, month: 11, day: 21 },
+    marker: { instant: utc(2026, 11, 20, 17) },
+  });
 });
 
 test("test_hij_001_picker_rows_carry_hijri_date_only_when_on", () => {

@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M26** Picker window and selected day | Hour slots of a fixed width from midnight of the selected day, 24 hours or more, the date range in the day selector, the hours saved | opus | high | open |
 | **M27** Resize handle and hover time | Dragging the picker's left edge adds or removes hour slots; pointing at a row shows the local time and date there | sonnet | high | open |
 | **M28** Rounded look and split legend | Rounded corners, cyan weekend, the picker as a card, the legend in two parts, location icons, the settings sections in the canvas's order with lines | sonnet | high | open |
 
@@ -23,14 +22,6 @@ The visual reference for M26 to M28 is the "Zuno UI" canvas named at the top of 
 DEC-019 to DEC-021 state its sizes and colours. Existing tests that check behaviour a requirement
 of 2026-11-18 changed (SET-002, SET-003, SET-007, CAL-002, HOL-003, PCK-003, PCK-006, PCK-007) are
 updated in the milestone that changes it, and the report names them.
-
-### M26 — Picker window and selected day
-
-- **Refs:** PCK-003, PCK-006, PCK-007, PCK-009, PCK-004, LAY-003, EX-019, EX-020, EX-003, DEC-019.
-- **Owner:** `src/domain/picker.js`, `src/controller.js`, `src/views/picker.js`, `src/views/day-selector.js`.
-- **Tests first:** `test_pck_006_window_starts_at_midnight_of_the_selected_day_and_lasts_picker_hours` (EX-019; 24 and 30 hours; a 25-hour day at 24 slots covers the whole day), `test_pck_006_moving_the_marker_does_not_move_the_window` (EX-020), `test_pck_007_choosing_a_day_sets_the_selected_day_and_moves_the_marker` (EX-020), `test_pck_004_page_opens_with_today_selected_in_the_first_place`, `test_pck_009_day_selector_shows_first_and_last_date_of_the_window` (EX-019; a range across two months), `test_pck_003_rows_are_coloured_over_the_whole_window`, `test_lay_003_picker_hours_are_saved_and_restored` (EX-019), `test_pck_006_hour_slots_keep_one_width_at_24_and_30_hours` (browser), `test_lay_003_saved_record_without_picker_hours_gets_24`.
-- **Build:** `selectedDay` in the state and `pickerHours` in the settings (`pickerDefaultHours`, `pickerMinHours`, `pickerMaxHours` in `config.js`); `pickerWindow` from the selected day; `setMarker`, `shiftMarkerDay` and the new `setPickerHours` as in DEC-019; `formatDateRange` in `domain/format.js`; the picker panel's width follows `pickerHours` times `--picker-slot`, with the axis labels and hour lines per slot; the day selector's date button shows the range.
-- **Gate:** EX-003 still passes; the marker is always inside the window.
 
 ### M27 — Resize handle and hover time
 

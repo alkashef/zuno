@@ -1,5 +1,5 @@
 // @ts-check
-/** @module settings.test Unit tests for src/domain/settings.js (SET-005, SET-007, SET-010 to SET-012, SET-015). */
+/** @module settings.test Unit tests for src/domain/settings.js (SET-005, SET-007, SET-010 to SET-012, SET-015, LAY-003). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -12,11 +12,19 @@ import {
   defaultSettings,
   parseSettings,
   withDisplaySwitch,
+  withPickerHours,
   withTheme,
   withWorkingHours,
 } from "../../src/domain/settings.js";
 
 const fresh = () => defaultSettings(config.defaultWorkStartMinutes, config.defaultWorkEndMinutes);
+
+/** The picker hour limits from config (LAY-002, DEC-019). */
+const limits = {
+  defaultHours: config.pickerDefaultHours,
+  minHours: config.pickerMinHours,
+  maxHours: config.pickerMaxHours,
+};
 
 test("test_set_005_default_hours_9am_to_5pm_and_start_before_end", () => {
   const settings = fresh();
@@ -112,4 +120,28 @@ test("test_set_016_saved_record_without_weekend_days_gets_the_countrys", () => {
   assert.deepEqual(placeWeekendDays(/** @type {Place} */ (parsed?.places[0])), [5, 6]);
   assert.equal(parsed?.version, 2);
   assert.equal(parseSettings({ ...fresh(), places: [{ ...older, weekendDays: [] }] }), null);
+});
+
+test("test_lay_003_saved_record_without_picker_hours_gets_24", () => {
+  const { pickerHours, ...older } = { ...fresh(), places: [createPlace("a", "tokyo")] };
+  assert.equal(pickerHours, 24);
+  assert.deepEqual(parseSettings(older, limits), { ...older, pickerHours: 24 });
+  assert.equal(parseSettings(older, limits)?.version, 2);
+  assert.deepEqual(parseSettings({ ...older, pickerHours: 30 }, limits)?.pickerHours, 30);
+  assert.equal(parseSettings({ ...older, pickerHours: 23 }, limits), null);
+  assert.equal(parseSettings({ ...older, pickerHours: 49 }, limits), null);
+  assert.equal(parseSettings({ ...older, pickerHours: 30.5 }, limits), null);
+  assert.equal(parseSettings({ ...older, pickerHours: "30" }, limits), null);
+});
+
+test("test_lay_003_picker_hours_are_whole_numbers_within_the_limits", () => {
+  const settings = fresh();
+  assert.deepEqual(withPickerHours(settings, 30, limits), { ...settings, pickerHours: 30 });
+  assert.equal(withPickerHours(settings, 48, limits)?.pickerHours, 48);
+  assert.equal(withPickerHours(settings, 24, limits)?.pickerHours, 24);
+  assert.equal(withPickerHours(settings, 23, limits), null);
+  assert.equal(withPickerHours(settings, 49, limits), null);
+  assert.equal(withPickerHours(settings, 26.5, limits), null);
+  assert.equal(withPickerHours(settings, "30", limits), null);
+  assert.equal(defaultSettings(540, 1020, [], 30).pickerHours, 30);
 });

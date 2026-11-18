@@ -1,5 +1,5 @@
 // @ts-check
-/** @module picker.test Headless-browser tests of the picker view and its day selector in Chromium (PCK-001 to PCK-007, LAY-001, DSP-001, DSP-002, EX-003). */
+/** @module picker.test Headless-browser tests of the picker view and its day selector in Chromium (PCK-001 to PCK-007, PCK-009, LAY-001, DSP-001, DSP-002, EX-003, EX-019). */
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
@@ -276,4 +276,35 @@ test("ui_lay_001_picker_rows_scroll_axis_stays_in_view", async () => {
   assert.ok(axis !== null && last !== null && viewport !== null);
   assert.ok(axis.y >= 0 && axis.y + axis.height <= viewport.height);
   assert.ok(last.y + last.height <= viewport.height);
+});
+
+/**
+ * @param {number} hours The saved number of hour slots.
+ * @returns {Promise<{ slot: number, ticks: number, date: string }>} The width of one hour slot of
+ *   the first row's band, the number of axis labels and the day selector's date text.
+ */
+async function slotsAt(hours) {
+  const places = ["london", "tokyo"].map((cityId, index) =>
+    createPlace(`place-${index + 1}`, cityId),
+  );
+  const { page } = await openPage(browser, built.url, {
+    saved: { ...defaultSettings(540, 1020), places, pickerHours: hours },
+  });
+  await page.locator('[data-role="row"]').first().waitFor();
+  const track = await page.locator('[data-role="track"]').first().boundingBox();
+  assert.ok(track !== null);
+  return {
+    slot: track.width / hours,
+    ticks: await page.locator('[data-role="tick"]').count(),
+    date: (await page.locator('[data-role="date"]').textContent()) ?? "",
+  };
+}
+
+test("test_pck_006_hour_slots_keep_one_width_at_24_and_30_hours", async () => {
+  const day = await slotsAt(24);
+  const longer = await slotsAt(30);
+  assert.ok(Math.abs(day.slot - 17.5) < 0.5, `slot at 24 hours: ${day.slot}`);
+  assert.ok(Math.abs(longer.slot - day.slot) < 0.1, `${longer.slot} vs ${day.slot}`);
+  assert.deepEqual([day.ticks, longer.ticks], [5, 6]);
+  assert.deepEqual([day.date, longer.date], ["16-Nov-26", "16–17-Nov-26"]);
 });

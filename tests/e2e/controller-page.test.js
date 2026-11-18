@@ -1,5 +1,5 @@
 // @ts-check
-/** @module controller-page.test Page workflows through src/controller.js with fake api, storage and clock (PCK-004, PCK-007, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-007). */
+/** @module controller-page.test Page workflows through src/controller.js with fake api, storage and clock (PCK-004, PCK-006, PCK-007, PCK-009, EX-019, EX-020, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-007). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -67,6 +67,7 @@ function setup(saved, start, answer = invented) {
     holidaysFileName: "zuno-holidays.json",
     clock: { now: () => clock.time },
     defaultHours: { start: 540, end: 1020 },
+    pickerLimits: { defaultHours: 24, minHours: 24, maxHours: 48 },
     defaultCityIds: [],
   });
   return { controller, calls, clock };
@@ -303,4 +304,84 @@ test("test_controller_subscribers_hear_each_change_until_unsubscribed", async ()
   unsubscribe();
   await controller.dispatch({ type: "tick" });
   assert.deepEqual(heard, [start, start, start + minute]);
+});
+
+/**
+ * @param {number} hours
+ * @returns {Settings} Tokyo first, then London, with the picker at that many hour slots.
+ */
+function tokyoFirst(hours) {
+  return {
+    ...settingsWith([createPlace("a", "tokyo"), createPlace("b", "london")]),
+    pickerHours: hours,
+  };
+}
+
+test("test_pck_004_page_opens_with_today_selected_in_the_first_place", async () => {
+  const start = utc(2026, 11, 19, 20);
+  const { controller } = setup(tokyoFirst(24), start);
+  await controller.dispatch({ type: "open" });
+  const state = controller.getState();
+  assert.deepEqual(state.selectedDay, { year: 2026, month: 11, day: 20 });
+  assert.equal(state.marker.instant, start);
+  assert.deepEqual(state.pickerWindow, { from: utc(2026, 11, 19, 15), to: utc(2026, 11, 20, 15) });
+  assert.deepEqual(state.windowDates, {
+    first: { year: 2026, month: 11, day: 20 },
+    last: { year: 2026, month: 11, day: 20 },
+  });
+});
+
+test("test_pck_006_moving_the_marker_does_not_move_the_window", async () => {
+  const { controller } = setup(tokyoFirst(30), utc(2026, 11, 19, 20));
+  await controller.dispatch({ type: "open" });
+  await controller.dispatch({ type: "setMarker", instant: utc(2026, 11, 20, 17) });
+  const state = controller.getState();
+  assert.equal(state.marker.instant, utc(2026, 11, 20, 17));
+  assert.deepEqual(state.selectedDay, { year: 2026, month: 11, day: 20 });
+  assert.deepEqual(state.pickerWindow, { from: utc(2026, 11, 19, 15), to: utc(2026, 11, 20, 21) });
+  assert.deepEqual(state.windowDates?.last, { year: 2026, month: 11, day: 21 });
+  assert.deepEqual(state.picker[0].localDateTime, {
+    year: 2026,
+    month: 11,
+    day: 21,
+    hour: 2,
+    minute: 0,
+  });
+  await controller.dispatch({ type: "setMarker", instant: utc(2026, 11, 25, 0) });
+  assert.equal(controller.getState().marker.instant, utc(2026, 11, 20, 20) + 59 * minute);
+  await controller.dispatch({ type: "setMarker", instant: utc(2026, 11, 1, 0) });
+  assert.equal(controller.getState().marker.instant, utc(2026, 11, 19, 15));
+  assert.deepEqual(controller.getState().pickerWindow?.from, utc(2026, 11, 19, 15));
+});
+
+test("test_pck_007_choosing_a_day_sets_the_selected_day_and_moves_the_marker", async () => {
+  const { controller } = setup(tokyoFirst(30), utc(2026, 11, 19, 20));
+  await controller.dispatch({ type: "open" });
+  await controller.dispatch({ type: "setMarker", instant: utc(2026, 11, 20, 17) });
+  await controller.dispatch({ type: "shiftMarkerDay", days: 1 });
+  let state = controller.getState();
+  assert.deepEqual(state.selectedDay, { year: 2026, month: 11, day: 21 });
+  assert.equal(state.marker.instant, utc(2026, 11, 20, 17));
+  assert.deepEqual(state.pickerWindow, { from: utc(2026, 11, 20, 15), to: utc(2026, 11, 21, 21) });
+  await controller.dispatch({ type: "shiftMarkerDay", days: -1 });
+  assert.equal(controller.getState().marker.instant, utc(2026, 11, 19, 17));
+  await controller.dispatch({ type: "setMarker", date: { year: 2026, month: 12, day: 3 } });
+  state = controller.getState();
+  assert.deepEqual(state.selectedDay, { year: 2026, month: 12, day: 3 });
+  assert.equal(state.marker.instant, utc(2026, 12, 2, 17));
+  assert.deepEqual(state.pickerWindow?.from, utc(2026, 12, 2, 15));
+});
+
+test("test_pck_006_a_new_first_place_or_fewer_hours_keep_the_marker_in_the_window", async () => {
+  const { controller } = setup(tokyoFirst(30), utc(2026, 11, 19, 20));
+  await controller.dispatch({ type: "open" });
+  await controller.dispatch({ type: "setMarker", instant: utc(2026, 11, 20, 17) });
+  await controller.dispatch({ type: "setPickerHours", hours: 24 });
+  assert.equal(controller.getState().settings?.pickerHours, 24);
+  assert.equal(controller.getState().marker.instant, utc(2026, 11, 19, 17));
+  await controller.dispatch({ type: "movePlace", placeId: "b", offset: -1 });
+  const state = controller.getState();
+  assert.deepEqual(state.selectedDay, { year: 2026, month: 11, day: 20 });
+  assert.deepEqual(state.pickerWindow, { from: utc(2026, 11, 20, 0), to: utc(2026, 11, 21, 0) });
+  assert.equal(state.marker.instant, utc(2026, 11, 20, 17));
 });

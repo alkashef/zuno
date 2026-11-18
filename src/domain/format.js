@@ -1,8 +1,8 @@
 // @ts-check
 /**
  * @module domain/format
- * Formats a local date as dd-mmm-yy and a local time as 12-hour text (DSP-001, DSP-002, EX-005,
- * EX-006), minutes after midnight as 12-hour text, a Hijri date as dd-month-yyyy (DSP-003), a month title (PCK-007), a weekday as two
+ * Formats a local date as dd-mmm-yy, the first and last date of the picker window (PCK-009) and a
+ * local time as 12-hour text (DSP-001, DSP-002, EX-005, EX-006), minutes after midnight as 12-hour text, a Hijri date as dd-month-yyyy (DSP-003), a month title (PCK-007), a weekday as two
  * English letters (NFR-003), a list of weekend days as English names (SET-016) and an offset from
  * UTC. It does not compute local times or offsets
  * (domain/zones.js does) or Hijri dates (domain/hijri.js does).
@@ -10,6 +10,7 @@
 
 /** @typedef {import("./zones.js").LocalDateTime} LocalDateTime */
 /** @typedef {import("./hijri.js").HijriDate} HijriDate */
+/** @typedef {{ year: number, month: number, day: number }} CalendarDate A date, `month` 1 to 12. */
 
 /**
  * @param {number} value A non-negative integer.
@@ -31,13 +32,27 @@ function clockText(hour, minute) {
 }
 
 /**
- * @param {LocalDateTime} local
+ * @param {CalendarDate | LocalDateTime} local A date, with or without a time of day.
  * @returns {string} The Gregorian date as dd-mmm-yy, in English, for example `16-Nov-26` (DSP-001).
  */
 export function formatDate(local) {
   const monthNames = new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" });
   const month = monthNames.format(Date.UTC(2000, local.month - 1, 1));
   return `${twoDigits(local.day)}-${month}-${twoDigits(local.year % 100)}`;
+}
+
+/**
+ * @param {CalendarDate} first
+ * @param {CalendarDate} last On or after `first`.
+ * @returns {string} One date when both are the same, for example `20-Nov-26`; the two day numbers
+ *   joined by an en dash in one month, for example `20–21-Nov-26`; else both dates with a spaced en
+ *   dash, for example `30-Nov-26 – 01-Dec-26` (PCK-009, DSP-001).
+ */
+export function formatDateRange(first, last) {
+  const sameMonth = first.year === last.year && first.month === last.month;
+  if (sameMonth && first.day === last.day) return formatDate(first);
+  if (sameMonth) return `${twoDigits(first.day)}–${formatDate(last)}`;
+  return `${formatDate(first)} – ${formatDate(last)}`;
 }
 
 /**

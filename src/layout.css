@@ -40,7 +40,7 @@ body {
 .page {
   display: grid;
   flex: 1;
-  grid-template-columns: minmax(0, 1fr) min(var(--picker-width), 40%);
+  grid-template-columns: minmax(0, 1fr) auto;
   grid-template-rows: 1fr auto;
   padding-left: var(--space-page);
 }
@@ -55,7 +55,10 @@ body {
   grid-row: 2;
 }
 
+/* The panel is as wide as its hour slots (`--picker-hours`, set by views/picker.js) plus its own
+   padding and left border, so a slot keeps one width whatever the number of hours (DEC-019). */
 .page > .picker {
+  width: calc(var(--picker-hours) * var(--picker-slot) + 2 * var(--space-card) + var(--line-width));
   grid-column: 2;
   grid-row: 1 / span 2;
 }
@@ -67,6 +70,7 @@ body {
   }
 
   .page > .picker {
+    width: auto;
     grid-column: 1;
     grid-row: 3;
   }

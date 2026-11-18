@@ -45,9 +45,17 @@ function reportFailure(failure) {
 window.addEventListener("error", (event) => reportFailure(event.error ?? event.message));
 window.addEventListener("unhandledrejection", (event) => reportFailure(event.reason));
 
+const pickerLimits = {
+  defaultHours: config.pickerDefaultHours,
+  minHours: config.pickerMinHours,
+  maxHours: config.pickerMaxHours,
+};
 const controller = createController({
   api: { getHolidays },
-  storage: createStorage({ store: localStorage, parse: parseSettings }),
+  storage: createStorage({
+    store: localStorage,
+    parse: (value) => parseSettings(value, pickerLimits),
+  }),
   holidayStorage: createStorage({
     store: localStorage,
     parse: parseUserHolidays,
@@ -58,6 +66,7 @@ const controller = createController({
   clock,
   defaultHours: { start: config.defaultWorkStartMinutes, end: config.defaultWorkEndMinutes },
   defaultCityIds: config.defaultCityIds,
+  pickerLimits,
 });
 const lookup = {
   cities: listCities(),

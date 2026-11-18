@@ -2,8 +2,8 @@
 /**
  * @module domain/settings
  * The settings shape, defaults and validation (SET-005, SET-007, SET-010 to SET-012, SET-014, SET-015,
- * DEC-016). Invalid input is refused by returning `null`; it is not an error. It does not check
- * one place (domain/places.js does).
+ * LAY-003, DEC-016, DEC-019). Invalid input is refused by returning `null`; it is not an error. It
+ * does not check one place (domain/places.js does).
  */
 import { createPlace, isUnlistedPlace, restorePlace } from "./places.js";
 
@@ -18,6 +18,14 @@ import { createPlace, isUnlistedPlace, restorePlace } from "./places.js";
  * @property {boolean} showCountry Country names next to place names (SET-010).
  * @property {boolean} showHijri The Hijri calendar is on (SET-011).
  * @property {Theme} theme The chosen theme (SET-012, THM-001).
+ * @property {number} pickerHours Hour slots of the picker window (PCK-006, LAY-003, DEC-019).
+ */
+
+/**
+ * @typedef {object} PickerLimits The hour slots the picker may show (from config, DEC-019).
+ * @property {number} defaultHours For settings that do not say.
+ * @property {number} minHours The fewest.
+ * @property {number} maxHours The most.
  */
 
 /** @typedef {"auto" | "light" | "dark"} Theme */
@@ -29,6 +37,14 @@ export const themes = Object.freeze(/** @type {const} */ (["light", "dark", "aut
 export const settingsVersion = 2;
 
 const minutesPerDay = 24 * 60;
+const hoursPerDay = 24;
+
+/** The whole day only (PCK-006): the limits when the caller gives none. */
+const wholeDay = Object.freeze({
+  defaultHours: hoursPerDay,
+  minHours: hoursPerDay,
+  maxHours: hoursPerDay,
+});
 
 /**
  * @param {unknown} value
@@ -52,14 +68,34 @@ export function isWorkingHours(start, end) {
 }
 
 /**
+ * @param {unknown} value
+ * @param {PickerLimits} limits
+ * @returns {value is number} Whether it is a whole number of hour slots within the limits.
+ */
+function isPickerHours(value, limits) {
+  return (
+    Number.isInteger(value) &&
+    /** @type {number} */ (value) >= limits.minHours &&
+    /** @type {number} */ (value) <= limits.maxHours
+  );
+}
+
+/**
  * @param {number} workStartMinutes Default start (from config).
  * @param {number} workEndMinutes Default end (from config).
  * @param {readonly string[]} [cityIds] The cities of the default places, in order (from config);
  *   none when left out.
+ * @param {number} [pickerHours] Hour slots of the picker (from config); the whole day when left
+ *   out (PCK-006).
  * @returns {Settings} Settings with one place per city id, country names and Hijri off, and the
  *   theme on Auto (SET-007, SET-010 to SET-012, SET-014).
  */
-export function defaultSettings(workStartMinutes, workEndMinutes, cityIds = []) {
+export function defaultSettings(
+  workStartMinutes,
+  workEndMinutes,
+  cityIds = [],
+  pickerHours = hoursPerDay,
+) {
   return {
     version: settingsVersion,
     places: cityIds.map((cityId, index) => createPlace(`place-${index + 1}`, cityId)),
@@ -68,6 +104,7 @@ export function defaultSettings(workStartMinutes, workEndMinutes, cityIds = []) 
     showCountry: false,
     showHijri: false,
     theme: "auto",
+    pickerHours,
   };
 }
 
@@ -95,32 +132,38 @@ function restorePlaces(saved) {
 
 /**
  * @param {Record<string, unknown>} record
- * @returns {boolean} Whether both display switches are true or false and the theme is a choice.
+ * @param {PickerLimits} limits
+ * @returns {boolean} Whether both display switches are true or false, the theme is a choice and the
+ *   picker hours are within the limits.
  */
-function hasValidDisplay(record) {
+function hasValidDisplay(record, limits) {
   return (
     typeof record.showCountry === "boolean" &&
     typeof record.showHijri === "boolean" &&
-    isTheme(record.theme)
+    isTheme(record.theme) &&
+    isPickerHours(record.pickerHours, limits)
   );
 }
 
 /**
- * Checks a value read from storage. A record without `theme` gets Auto, the default (SET-012).
- * A place whose city is not in the list is dropped (SET-015).
+ * Checks a value read from storage. A record without `theme` gets Auto, the default (SET-012), and
+ * one without `pickerHours` gets the default hours (LAY-003). A place whose city is not in the list
+ * is dropped (SET-015).
  * @param {unknown} value
+ * @param {PickerLimits} [limits] The picker hour limits (from config); the whole day only when left
+ *   out (PCK-006).
  * @returns {Settings | null} The settings when valid, else `null`. Any version but 2, such as a
- *   version 1 record of places by country, is invalid (DEC-016).
+ *   version 1 record of places by country, is invalid (DEC-016), and so are hours outside the limits.
  */
-export function parseSettings(value) {
+export function parseSettings(value, limits = wholeDay) {
   if (typeof value !== "object" || value === null) return null;
   /** @type {Record<string, unknown>} */
-  const record = { theme: "auto", ...value };
+  const record = { theme: "auto", pickerHours: limits.defaultHours, ...value };
   const places = restorePlaces(record.places);
   const valid =
     record.version === settingsVersion &&
     isWorkingHours(record.workStartMinutes, record.workEndMinutes) &&
-    hasValidDisplay(record) &&
+    hasValidDisplay(record, limits) &&
     places !== null;
   return valid ? /** @type {Settings} */ (/** @type {unknown} */ ({ ...record, places })) : null;
 }
@@ -157,4 +200,16 @@ export function withWorkingHours(settings, start, end) {
  */
 export function withTheme(settings, value) {
   return isTheme(value) ? { ...settings, theme: value } : null;
+}
+
+/**
+ * Sets the number of hour slots of the picker (LAY-002, LAY-003, DEC-019).
+ * @param {Settings} settings
+ * @param {unknown} hours
+ * @param {PickerLimits} limits The picker hour limits (from config).
+ * @returns {Settings | null} New settings, or `null` when the hours are not a whole number within
+ *   the limits.
+ */
+export function withPickerHours(settings, hours, limits) {
+  return isPickerHours(hours, limits) ? { ...settings, pickerHours: hours } : null;
 }

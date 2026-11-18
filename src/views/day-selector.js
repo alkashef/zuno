@@ -2,20 +2,22 @@
 /**
  * @module views/day-selector
  * Owns the picker's day selector: the previous-day and next-day buttons, the date button that shows
- * the marker's date in the first place, and the month calendar that button opens. A day picked in
- * the calendar closes it; Escape closes it and returns the focus to the date button (PCK-007,
- * DSP-001). It clones its markup from templates in index.html. It does not move the marker (the
+ * the first and last date of the picker window in the first place (PCK-009), and the month calendar
+ * that button opens on the selected day. A day picked in the calendar closes it; Escape closes it
+ * and returns the focus to the date button (PCK-007, DSP-001). It clones its markup from templates in index.html. It does not move the marker (the
  * controller does, through `deps.dispatch`) and does not lay out the weeks (`deps.monthWeeks` does).
  */
-import { formatDate, formatMonth } from "../domain/format.js";
+import { formatDate, formatDateRange, formatMonth } from "../domain/format.js";
 
-/** @typedef {import("../domain/zones.js").LocalDateTime} LocalDateTime */
+/** @typedef {import("../domain/format.js").CalendarDate} CalendarDate */
+/** @typedef {import("../domain/picker.js").WindowDates} WindowDates */
 /** @typedef {import("../controller.js").Action} Action */
 /** @typedef {{ year: number, month: number }} MonthRef */
 
 /**
  * @typedef {object} DaySelectorView The part of the page view the selector draws.
- * @property {{ localDateTime: LocalDateTime }[]} picker The first row is the reference place.
+ * @property {CalendarDate} selectedDay The day the picker window starts on (PCK-006).
+ * @property {WindowDates | null} windowDates The window's first and last date (PCK-009).
  */
 
 /**
@@ -28,7 +30,7 @@ import { formatDate, formatMonth } from "../domain/format.js";
  * @typedef {object} State What the selector remembers.
  * @property {HTMLElement | null} calendar The open calendar, if any.
  * @property {MonthRef} shown The month the calendar shows.
- * @property {LocalDateTime} selected The marker's date and time in the first place.
+ * @property {CalendarDate} selected The selected day in the first place.
  */
 
 /**
@@ -80,7 +82,7 @@ function buildDay(ctx, day) {
   button.className = "button calendar-day";
   button.textContent = String(day);
   button.dataset.day = String(day);
-  button.setAttribute("aria-label", formatDate({ ...shown, day, hour: 0, minute: 0 }));
+  button.setAttribute("aria-label", formatDate({ ...shown, day }));
   const isSelected = shown.year === selected.year && shown.month === selected.month;
   if (isSelected && day === selected.day) button.setAttribute("aria-current", "date");
   return button;
@@ -142,7 +144,8 @@ function closeCalendar(ctx, returnFocus) {
 /**
  * @param {SelectorContext} ctx
  * @param {number} day A day of the shown month.
- * @returns {void} Moves the marker to that day, keeping its time of day (PCK-007).
+ * @returns {void} Makes that day the selected day and moves the marker to it, keeping its time of
+ *   day (PCK-007).
  */
 function pickDay(ctx, day) {
   const { year, month } = ctx.state.shown;
@@ -182,7 +185,7 @@ function watchOutsidePress(ctx) {
 
 /**
  * @param {SelectorContext} ctx
- * @returns {void} Opens the calendar on the month of the marker's date and focuses that day.
+ * @returns {void} Opens the calendar on the month of the selected day and focuses that day.
  */
 function openCalendar(ctx) {
   const { selected } = ctx.state;
@@ -228,8 +231,8 @@ function bindControls(ctx) {
  * @param {Document} doc The page.
  * @param {HTMLElement} slot The element the selector goes in.
  * @param {Deps} deps The controller's `dispatch` and the month layout from main.js.
- * @returns {{ render: (view: DaySelectorView) => void }} The selector; `render` shows the marker's
- *   date in the first place. An open calendar is not redrawn, so the focus stays on its button.
+ * @returns {{ render: (view: DaySelectorView) => void }} The selector; `render` shows the window's
+ *   first and last date in the first place. An open calendar is not redrawn, so the focus stays on its button.
  * @throws {Error} When the page has no day-selector or calendar template.
  */
 export function createDaySelector(doc, slot, deps) {
@@ -237,14 +240,16 @@ export function createDaySelector(doc, slot, deps) {
     templateOf(doc, "day-selector-template").content.firstElementChild?.cloneNode(true)
   );
   const calendarTemplate = templateOf(doc, "calendar-template");
-  const selected = { year: 0, month: 1, day: 1, hour: 0, minute: 0 };
+  const selected = { year: 0, month: 1, day: 1 };
   const state = { calendar: null, shown: { year: 0, month: 1 }, selected };
   bindControls({ doc, root, calendarTemplate, deps, state });
   slot.append(root);
   return {
     render(view) {
-      state.selected = view.picker[0].localDateTime;
-      part(root, "date").textContent = formatDate(state.selected);
+      state.selected = view.selectedDay;
+      const dates = view.windowDates;
+      part(root, "date").textContent =
+        dates === null ? "" : formatDateRange(dates.first, dates.last);
     },
   };
 }

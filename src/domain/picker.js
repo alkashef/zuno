@@ -1,11 +1,12 @@
 // @ts-check
 /**
  * @module domain/picker
- * The picker model (PCK-001 to PCK-003, PCK-005 to PCK-007, SET-005): the reference window from
- * midnight to midnight of the marker's date in the first place, one row of segments per place that
- * covers the window exactly, each place's local date and time at the marker, and moving the marker
- * to another day. It reads no clock (the caller passes the marker), makes no request, does not
- * format text (domain/format.js does) and chooses no colours (the view does).
+ * The picker model (PCK-001 to PCK-003, PCK-005 to PCK-007, PCK-009, SET-005, DEC-019): the window of
+ * `pickerHours` hours from midnight of the selected day in the first place, one row of segments per
+ * place that covers the window exactly, each place's local date and time at the marker, the first
+ * and last date of the window, the marker kept inside the window, and the selected day and marker
+ * after a day is chosen. It reads no clock (the caller passes the marker), makes no request, does
+ * not format text (domain/format.js does) and chooses no colours (the view does).
  */
 import { hijriDate } from "./hijri.js";
 import { holidayOn } from "./holidays.js";
@@ -21,7 +22,8 @@ export const DayKind = Object.freeze({
 
 const minutesPerHour = 60;
 const msPerMinute = 60 * 1000;
-const msPerDay = 24 * 60 * msPerMinute;
+const msPerHour = minutesPerHour * msPerMinute;
+const msPerDay = 24 * msPerHour;
 
 /** @typedef {typeof DayKind[keyof typeof DayKind]} DayKindName */
 /** @typedef {import("./hijri.js").HijriDate} HijriDate */
@@ -40,6 +42,20 @@ const msPerDay = 24 * 60 * msPerMinute;
  * @typedef {object} PickerWindow The instants every row covers (PCK-006).
  * @property {number} from UTC milliseconds, included.
  * @property {number} to UTC milliseconds, excluded.
+ */
+
+/**
+ * @typedef {object} DayChoice The selected day and the marker, which always change together when a
+ *   day is chosen (PCK-007).
+ * @property {CalendarDate} selectedDay The chosen date in the first place.
+ * @property {Marker} marker
+ */
+
+/**
+ * @typedef {object} WindowDates The first and last date the window covers in the first place
+ *   (PCK-009).
+ * @property {CalendarDate} first
+ * @property {CalendarDate} last The date of the window's last minute.
  */
 
 /**
@@ -172,48 +188,86 @@ function rowSegments(row, range) {
 }
 
 /**
- * The window from midnight to the next midnight of the marker's date in the first place. It is
- * 23 or 25 hours long on a day that place's clock changes (PCK-006).
- * @param {Settings} settings The places, in display order.
- * @param {Marker} marker
+ * The window of the selected day: from its first instant in the first place, `pickerHours` hours
+ * long, or the whole day when a clock change makes it longer (PCK-006, DEC-019).
+ * @param {Settings} settings The places, in display order, and the picker hours.
+ * @param {CalendarDate} selectedDay The chosen date in the first place.
  * @returns {PickerWindow | null} The window, or `null` when there are no places.
  */
-export function pickerWindow(settings, marker) {
+export function pickerWindow(settings, selectedDay) {
   const first = settings.places[0];
   if (first === undefined) return null;
-  const local = localDateTime(marker.instant, first.zone);
-  return {
-    from: instantAtLocal(first.zone, atMinutes(local, 0)),
-    to: instantAtLocal(first.zone, atMinutes(addDays(local, 1), 0)),
-  };
+  const from = instantAtLocal(first.zone, atMinutes(selectedDay, 0));
+  const dayEnd = instantAtLocal(first.zone, atMinutes(addDays(selectedDay, 1), 0));
+  return { from, to: Math.max(from + settings.pickerHours * msPerHour, dayEnd) };
+}
+
+/**
+ * @param {Settings} settings The places, in display order, and the picker hours.
+ * @param {CalendarDate} selectedDay The chosen date in the first place.
+ * @returns {WindowDates | null} The first and last date the window covers in the first place
+ *   (PCK-009), or `null` when there are no places.
+ */
+export function windowDates(settings, selectedDay) {
+  const range = pickerWindow(settings, selectedDay);
+  if (range === null) return null;
+  const last = localDateTime(range.to - msPerMinute, settings.places[0].zone);
+  return { first: selectedDay, last: { year: last.year, month: last.month, day: last.day } };
+}
+
+/**
+ * @param {Settings} settings
+ * @param {Marker} marker
+ * @returns {CalendarDate} The marker's date in the first place, or in UTC with no places.
+ */
+function markerDate(settings, marker) {
+  const { year, month, day } = localDateTime(marker.instant, settings.places[0]?.zone ?? "UTC");
+  return { year, month, day };
 }
 
 /**
  * The picker rows (PCK-001): for each place its local date and time at the marker (PCK-002) and
  * the segments of working, non-working and day-off time over the window (PCK-003, PCK-005).
- * @param {Settings} settings The places, in display order, and the working hours (SET-005).
+ * @param {Settings} settings The places, in display order, the working hours (SET-005) and the
+ *   picker hours.
  * @param {Marker} marker
  * @param {Record<string, Holiday[]>} holidays Holidays by country code; a missing country has none.
+ * @param {CalendarDate} [selectedDay] The day the window starts on (PCK-006); the marker's date in
+ *   the first place when left out.
  * @returns {PickerRow[]} One row per place, in display order; empty when there are no places.
  */
-export function buildPicker(settings, marker, holidays) {
-  const range = pickerWindow(settings, marker);
+export function buildPicker(
+  settings,
+  marker,
+  holidays,
+  selectedDay = markerDate(settings, marker),
+) {
+  const range = pickerWindow(settings, selectedDay);
   if (range === null) return [];
   return settings.places.map((place) => {
-    const row = {
-      place,
-      holidays: holidays[place.countryCode] ?? [],
-      workStartMinutes: settings.workStartMinutes,
-      workEndMinutes: settings.workEndMinutes,
-    };
     const local = localDateTime(marker.instant, place.zone);
     return {
       placeId: place.id,
       localDateTime: local,
       hijri: settings.showHijri ? hijriDate(local, place.hijriVariant, place.hijriAdjust) : null,
-      segments: rowSegments(row, range),
+      segments: rowSegments(rowContext(settings, place, holidays), range),
     };
   });
+}
+
+/**
+ * @param {Settings} settings
+ * @param {Place} place
+ * @param {Record<string, Holiday[]>} holidays Holidays by country code.
+ * @returns {RowContext} What every segment of the place's row needs.
+ */
+function rowContext(settings, place, holidays) {
+  return {
+    place,
+    holidays: holidays[place.countryCode] ?? [],
+    workStartMinutes: settings.workStartMinutes,
+    workEndMinutes: settings.workEndMinutes,
+  };
 }
 
 /**
@@ -235,15 +289,52 @@ export function markerOnDate(settings, marker, date) {
 }
 
 /**
- * Moves the marker by whole days in the first place and keeps its time of day there (PCK-007).
+ * Makes a date the selected day and moves the marker to it at the same time of day in the first
+ * place (PCK-007).
  * @param {Settings} settings The places, in display order.
- * @param {Marker} marker
- * @param {number} days For example -1 for the previous day and 1 for the next.
- * @returns {Marker} The moved marker, or the same marker when there are no places.
+ * @param {DayChoice} choice The current selected day and marker.
+ * @param {CalendarDate} date The chosen date in the first place.
+ * @returns {DayChoice}
  */
-export function shiftMarkerDay(settings, marker, days) {
-  const first = settings.places[0];
-  if (first === undefined) return marker;
-  const local = localDateTime(marker.instant, first.zone);
-  return markerOnDate(settings, marker, addDays(local, days));
+export function chooseDay(settings, choice, date) {
+  return { selectedDay: date, marker: markerOnDate(settings, choice.marker, date) };
+}
+
+/**
+ * Chooses the day that many days after the selected day (PCK-007, EX-020).
+ * @param {Settings} settings The places, in display order.
+ * @param {DayChoice} choice The current selected day and marker.
+ * @param {number} days For example -1 for the previous day and 1 for the next.
+ * @returns {DayChoice}
+ */
+export function shiftDay(settings, choice, days) {
+  return chooseDay(settings, choice, addDays(choice.selectedDay, days));
+}
+
+/**
+ * The marker at an instant, kept inside the window; the window does not move (PCK-006).
+ * @param {Settings} settings The places, in display order, and the picker hours.
+ * @param {DayChoice} choice The current selected day and marker.
+ * @param {number} instant UTC milliseconds.
+ * @returns {Marker} At the instant, or at the window's first or last minute when the instant is
+ *   outside it; at the instant when there are no places.
+ */
+export function markerInWindow(settings, choice, instant) {
+  const range = pickerWindow(settings, choice.selectedDay);
+  if (range === null) return { instant };
+  return { instant: Math.min(Math.max(instant, range.from), range.to - msPerMinute) };
+}
+
+/**
+ * Keeps the marker inside the window after the first place or the picker hours change: a marker
+ * outside it moves to the selected day at its time of day in the first place (DEC-019).
+ * @param {Settings} settings The new settings.
+ * @param {DayChoice} choice The current selected day and marker.
+ * @returns {Marker}
+ */
+export function keepMarkerInWindow(settings, choice) {
+  const range = pickerWindow(settings, choice.selectedDay);
+  const { instant } = choice.marker;
+  if (range === null || (instant >= range.from && instant < range.to)) return choice.marker;
+  return markerOnDate(settings, choice.marker, choice.selectedDay);
 }

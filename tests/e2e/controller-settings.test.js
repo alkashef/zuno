@@ -1,5 +1,5 @@
 // @ts-check
-/** @module controller-settings.test Settings workflows through src/controller.js with fake api, storage and clock (SET-001, SET-002, SET-004 to SET-006, SET-008 to SET-013, SET-015, HIJ-002, HIJ-003). */
+/** @module controller-settings.test Settings workflows through src/controller.js with fake api, storage and clock (SET-001, SET-002, SET-004 to SET-006, SET-008 to SET-013, SET-015, HIJ-002, HIJ-003, LAY-003, EX-019). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -48,6 +48,7 @@ function setup({ saved = savedWithNoPlaces(), store = { saved } } = {}) {
     holidaysFileName: "zuno-holidays.json",
     clock: { now: () => start },
     defaultHours: { start: 540, end: 1020 },
+    pickerLimits: { defaultHours: 24, minHours: 24, maxHours: 48 },
     defaultCityIds: config.defaultCityIds,
   });
   return { controller, calls, store, saves };
@@ -380,4 +381,27 @@ test("test_set_016_user_chooses_a_places_weekend_days", async () => {
   await controller.dispatch({ type: "editPlace", placeId: "a", changes: { weekendDays: null } });
   assert.equal(place()?.weekendDays, null);
   assert.equal(saves.length, 2);
+});
+
+test("test_lay_003_picker_hours_are_saved_and_restored", async () => {
+  const limits = { defaultHours: 24, minHours: 24, maxHours: 48 };
+  const saved = { ...defaultSettings(540, 1020), places: [createPlace("a", "tokyo")] };
+  const { controller, store, saves } = setup({ saved });
+  await controller.dispatch({ type: "open" });
+  await controller.dispatch({ type: "setPickerHours", hours: 30 });
+  assert.equal(saves.length, 1);
+  assert.equal(saves[0].pickerHours, 30);
+  for (const hours of [23, 49, 26.5]) {
+    await controller.dispatch({ type: "setPickerHours", hours });
+  }
+  assert.equal(saves.length, 1);
+  const reloaded = setup({
+    store: { saved: parseSettings(JSON.parse(JSON.stringify(store.saved)), limits) },
+  });
+  await reloaded.controller.dispatch({ type: "open" });
+  const state = reloaded.controller.getState();
+  assert.equal(state.settings?.pickerHours, 30);
+  const window = state.pickerWindow;
+  assert.ok(window);
+  assert.equal(window.to - window.from, 30 * 60 * 60 * 1000);
 });

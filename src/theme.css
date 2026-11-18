@@ -68,7 +68,7 @@
   --settings-width: 560px;
   --badge-size: 18px;
   --badge-offset: -5px;
-  --picker-width: 460px;
+  --picker-slot: 17.5px;
   --picker-max-height: calc(100vh - 15rem);
   --picker-info-height: 56px;
   --picker-track-height: 38px;

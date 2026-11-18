@@ -3,8 +3,8 @@
  * @module controller
  * The page workflows: applies an action to the page state, asks the injected `api` for the holidays
  * the shown month and the marker's window need, and tells subscribers about every new state
- * (PCK-004, PCK-007, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-001, SET-002,
- * SET-004 to SET-014, HIJ-002, HIJ-003, HOL-003, HOL-006 to HOL-012, DEC-007, DEC-016 to DEC-018).
+ * (PCK-004, PCK-006, PCK-007, PCK-009, LAY-003, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-001, SET-002,
+ * SET-004 to SET-014, HIJ-002, HIJ-003, HOL-003, HOL-006 to HOL-012, DEC-007, DEC-016 to DEC-019).
  * Pure apart from its injected `api`, `storage`, `holidayStorage`, `files` and `clock`. It touches no DOM (the
  * views do) and builds no picker, grid, notices or holiday-list logic itself (domain/* does).
  */
@@ -17,11 +17,20 @@ import {
   toHolidays,
   unavailableCountries,
 } from "./domain/holidays.js";
-import { buildPicker, markerOnDate, pickerWindow, shiftMarkerDay } from "./domain/picker.js";
+import {
+  buildPicker,
+  chooseDay,
+  keepMarkerInWindow,
+  markerInWindow,
+  pickerWindow,
+  shiftDay,
+  windowDates,
+} from "./domain/picker.js";
 import * as placeList from "./domain/places.js";
 import {
   defaultSettings,
   withDisplaySwitch,
+  withPickerHours,
   withTheme,
   withWorkingHours,
 } from "./domain/settings.js";
@@ -32,10 +41,14 @@ import { localDateTime } from "./domain/zones.js";
 /** @typedef {import("./domain/calendar.js").MonthRef} MonthRef */
 /** @typedef {import("./domain/holidays.js").Holiday} Holiday */
 /** @typedef {import("./domain/holidays.js").HolidayResult} HolidayResult */
+/** @typedef {import("./domain/picker.js").DayChoice} DayChoice */
 /** @typedef {import("./domain/picker.js").Marker} Marker */
+/** @typedef {import("./domain/picker.js").PickerWindow} PickerWindow */
+/** @typedef {import("./domain/picker.js").WindowDates} WindowDates */
 /** @typedef {import("./domain/picker.js").PickerRow} PickerRow */
 /** @typedef {import("./domain/places.js").Place} Place */
 /** @typedef {import("./domain/places.js").PlaceChanges} PlaceChanges */
+/** @typedef {import("./domain/settings.js").PickerLimits} PickerLimits */
 /** @typedef {import("./domain/settings.js").Settings} Settings */
 /** @typedef {import("./domain/user-holidays.js").HolidayEntry} HolidayEntry */
 /** @typedef {import("./domain/user-holidays.js").UserHolidays} UserHolidays */
@@ -57,6 +70,7 @@ import { localDateTime } from "./domain/zones.js";
  *   for settings that are not saved yet (SET-005).
  * @property {readonly string[]} defaultCityIds The cities of the default places, in order
  *   (SET-014).
+ * @property {PickerLimits} pickerLimits The hour slots the picker may show (LAY-003, DEC-019).
  */
 
 /**
@@ -70,7 +84,9 @@ import { localDateTime } from "./domain/zones.js";
  * @typedef {object} PageState
  * @property {Settings | null} settings The saved settings; `null` when none are saved.
  * @property {number} now The current instant (UTC milliseconds), updated by `tick` (CLK-003).
- * @property {Marker} marker The picker's chosen instant (PCK-004).
+ * @property {Marker} marker The picker's chosen instant (PCK-004); always inside the window.
+ * @property {CalendarDate} selectedDay The day the picker window starts on, in the first place
+ *   (PCK-006, DEC-019).
  * @property {MonthRef} month The month the grid shows (CAL-005).
  * @property {ResultsByCountryYear} holidayResults Every answer of the holiday service.
  * @property {UserHolidays} userHolidays The holidays the user added and hid (HOL-006 to HOL-008).
@@ -90,6 +106,9 @@ import { localDateTime } from "./domain/zones.js";
  * @typedef {object} PageModels What the views draw, derived from the state.
  * @property {boolean} isEmpty No places are saved (SET-007).
  * @property {PickerRow[]} picker
+ * @property {PickerWindow | null} pickerWindow The instants every picker row covers (PCK-006).
+ * @property {WindowDates | null} windowDates The window's first and last date in the first place
+ *   (PCK-009).
  * @property {DayFacts[][]} grid
  * @property {Notices} notices
  * @property {Record<string, string[]>} regions The region codes of each country's loaded holidays
@@ -109,7 +128,7 @@ import { localDateTime } from "./domain/zones.js";
  *   | { type: "editPlace", placeId: string, changes: PlaceChanges }
  *   | { type: "setWorkingHours", start: number, end: number }
  *   | { type: "setShowCountry", value: boolean } | { type: "setShowHijri", value: boolean }
- *   | { type: "setTheme", value: string }
+ *   | { type: "setTheme", value: string } | { type: "setPickerHours", hours: number }
  *   | { type: "exportHolidays" } | { type: "importHolidays", file: Blob }
  *   | ({ type: "addHoliday" | "removeHoliday" | "hideHoliday" | "showHoliday" } & HolidayEntry)} Action
  */
@@ -145,6 +164,16 @@ function monthAt(instant, settings) {
 }
 
 /**
+ * @param {number} instant UTC milliseconds.
+ * @param {Settings | null} settings
+ * @returns {CalendarDate} The date of the instant in the first place, or in UTC with no places.
+ */
+function dayAt(instant, settings) {
+  const { year, month, day } = localDateTime(instant, settings?.places[0]?.zone ?? "UTC");
+  return { year, month, day };
+}
+
+/**
  * @param {MonthRef} month
  * @param {number} offset Months to move; negative for earlier.
  * @returns {MonthRef}
@@ -155,14 +184,14 @@ function shiftMonth(month, offset) {
 }
 
 /**
- * The country-years the shown month and the marker's window need (design section 2.5).
+ * The country-years the shown month and the picker window need (design section 2.5).
  * @param {PageState} state
  * @returns {CountryYear[]} Without repeats.
  */
 function neededCountryYears(state) {
-  const { settings, marker, month } = state;
+  const { settings, selectedDay, month } = state;
   if (settings === null) return [];
-  const span = pickerWindow(settings, marker);
+  const span = pickerWindow(settings, selectedDay);
   const instants = span === null ? [] : [span.from, span.to - 1];
   const wanted = settings.places.flatMap((place) =>
     [month.year, ...instants.map((instant) => localDateTime(instant, place.zone).year)].map(
@@ -264,7 +293,8 @@ function noticesOf(state, settings) {
  */
 function emptyView(state) {
   const notices = { countries: [], placeIds: [] };
-  return { ...state, isEmpty: true, picker: [], grid: [], notices, regions: {} };
+  const models = { picker: [], pickerWindow: null, windowDates: null, grid: [], notices };
+  return { ...state, ...models, isEmpty: true, regions: {} };
 }
 
 /**
@@ -279,7 +309,9 @@ function derive(state) {
     ...state,
     isEmpty: false,
     regions: regionsByCountry(holidays),
-    picker: buildPicker(settings, state.marker, holidays),
+    picker: buildPicker(settings, state.marker, holidays, state.selectedDay),
+    pickerWindow: pickerWindow(settings, state.selectedDay),
+    windowDates: windowDates(settings, state.selectedDay),
     grid: buildMonth(settings, state.month, holidays, state.now),
     notices: noticesOf(state, settings),
   };
@@ -341,13 +373,14 @@ function requestMissing(ctx) {
  * @param {ControllerDeps} deps
  * @returns {Settings} The defaults, with the default places (SET-005, SET-014).
  */
-function defaultsOf({ defaultHours, defaultCityIds }) {
-  return defaultSettings(defaultHours.start, defaultHours.end, defaultCityIds);
+function defaultsOf({ defaultHours, defaultCityIds, pickerLimits }) {
+  const { start, end } = defaultHours;
+  return defaultSettings(start, end, defaultCityIds, pickerLimits.defaultHours);
 }
 
 /**
- * Loads the settings and the user's holidays, and puts the marker and the grid at now (PCK-004,
- * SET-007, SET-014, HOL-009). No valid holiday record means no added and no hidden holidays.
+ * Loads the settings and the user's holidays, and puts the marker and the grid at now and the
+ * selected day at today in the first place (PCK-004, SET-007, SET-014, HOL-009). No valid holiday record means no added and no hidden holidays.
  * @param {Context} ctx
  * @returns {Promise<void>}
  */
@@ -356,7 +389,8 @@ function open(ctx) {
   const userHolidays = ctx.deps.holidayStorage.load() ?? userHolidayList.emptyUserHolidays();
   const now = ctx.deps.clock.now();
   const month = monthAt(now, settings);
-  ctx.update({ settings, userHolidays, now, marker: { instant: now }, month });
+  const selectedDay = dayAt(now, settings);
+  ctx.update({ settings, userHolidays, now, marker: { instant: now }, selectedDay, month });
   return requestMissing(ctx);
 }
 
@@ -380,38 +414,42 @@ function tick(ctx) {
 }
 
 /**
- * Moves the marker and asks for any year its new window needs (PCK-002, PCK-007).
+ * Moves the marker, and the selected day when a day is chosen, and asks for any year the window
+ * needs (PCK-002, PCK-006, PCK-007).
  * @param {Context} ctx
- * @param {(settings: Settings, marker: Marker) => Marker} move
+ * @param {(settings: Settings, choice: DayChoice) => Partial<DayChoice>} move
  * @returns {Promise<void>}
  */
 function moveMarker(ctx, move) {
-  const { settings, marker } = ctx.read();
+  const { settings, selectedDay, marker } = ctx.read();
   if (settings === null) return Promise.resolve();
-  ctx.update({ marker: move(settings, marker) });
+  ctx.update(move(settings, { selectedDay, marker }));
   return requestMissing(ctx);
 }
 
 /**
- * Puts the marker at an instant, or on a date keeping its time of day in the first place (PCK-007).
+ * Puts the marker at an instant inside the window, which stays (PCK-006), or chooses a date and
+ * moves the marker to it at its time of day in the first place (PCK-007).
  * @param {Context} ctx
  * @param {Extract<Action, { type: "setMarker" }>} action
  * @returns {Promise<void>}
  */
 function setMarker(ctx, action) {
-  return moveMarker(ctx, (settings, marker) =>
-    "date" in action ? markerOnDate(settings, marker, action.date) : { instant: action.instant },
+  return moveMarker(ctx, (settings, choice) =>
+    "date" in action
+      ? chooseDay(settings, choice, action.date)
+      : { marker: markerInWindow(settings, choice, action.instant) },
   );
 }
 
 /**
- * Moves the marker by whole days in the first place (PCK-007).
+ * Chooses the day that many days after the selected day (PCK-007).
  * @param {Context} ctx
  * @param {Extract<Action, { type: "shiftMarkerDay" }>} action
  * @returns {Promise<void>}
  */
-function shiftDay(ctx, action) {
-  return moveMarker(ctx, (settings, marker) => shiftMarkerDay(settings, marker, action.days));
+function shiftMarkerDay(ctx, action) {
+  return moveMarker(ctx, (settings, choice) => shiftDay(settings, choice, action.days));
 }
 
 /**
@@ -477,6 +515,19 @@ function keepUsedCountries(results, places) {
 }
 
 /**
+ * @param {PageState} state
+ * @param {Settings} next
+ * @returns {DayChoice} The selected day and the marker under the new settings: the marker stays
+ *   inside the window (DEC-019); with no places before, the selected day is the marker's date in
+ *   the new first place.
+ */
+function settleDay(state, next) {
+  const hadPlaces = (state.settings?.places.length ?? 0) > 0;
+  const selectedDay = hadPlaces ? state.selectedDay : dayAt(state.marker.instant, next);
+  return { selectedDay, marker: keepMarkerInWindow(next, { selectedDay, marker: state.marker }) };
+}
+
+/**
  * Saves new settings, shows them, and asks for the holidays they need (SET-004). `null` is a
  * refused change: nothing is saved or shown.
  * @param {Context} ctx
@@ -485,11 +536,13 @@ function keepUsedCountries(results, places) {
  */
 function commitSettings(ctx, next) {
   if (next === null) return Promise.resolve();
-  const { holidayResults, selectedHoliday } = ctx.read();
+  const state = ctx.read();
+  const { holidayResults, selectedHoliday } = state;
   ctx.deps.storage.save(next);
   const shown = next.places.some((place) => place.id === selectedHoliday?.placeId);
   ctx.update({
     settings: next,
+    ...settleDay(state, next),
     holidayResults: keepUsedCountries(holidayResults, next.places),
     selectedHoliday: shown ? selectedHoliday : null,
   });
@@ -587,6 +640,16 @@ function setTheme(ctx, { value }) {
 }
 
 /**
+ * @param {Context} ctx
+ * @param {Extract<Action, { type: "setPickerHours" }>} action
+ * @returns {Promise<void>} Sets the picker's hour slots; hours outside the limits are refused
+ *   (LAY-003, DEC-019).
+ */
+function setPickerHours(ctx, { hours }) {
+  return commitSettings(ctx, withPickerHours(currentSettings(ctx), hours, ctx.deps.pickerLimits));
+}
+
+/**
  * @returns {Partial<Record<Action["type"], Handler>>} The handlers of the settings workflows.
  */
 function settingsHandlers() {
@@ -599,6 +662,7 @@ function settingsHandlers() {
     setShowCountry: displaySwitch("showCountry"),
     setShowHijri: displaySwitch("showHijri"),
     setTheme,
+    setPickerHours,
   });
 }
 
@@ -680,7 +744,7 @@ function handlers() {
     refresh,
     tick,
     setMarker,
-    shiftMarkerDay: shiftDay,
+    shiftMarkerDay,
     showMonth,
     selectHoliday,
     ...settingsHandlers(),
@@ -695,13 +759,15 @@ function handlers() {
 
 /**
  * @param {number} now UTC milliseconds.
- * @returns {PageState} The state before `open`: no settings, the marker and the grid at now.
+ * @returns {PageState} The state before `open`: no settings, the marker, the selected day and the
+ *   grid at now.
  */
 function initialState(now) {
   return {
     settings: null,
     now,
     marker: { instant: now },
+    selectedDay: dayAt(now, null),
     month: monthAt(now, null),
     holidayResults: {},
     userHolidays: userHolidayList.emptyUserHolidays(),
@@ -733,7 +799,8 @@ function createContext(deps, onChange) {
 
 /**
  * Creates the controller of the page workflows.
- * @param {ControllerDeps} deps The holiday api, the settings and holiday storages, the files and the clock.
+ * @param {ControllerDeps} deps The holiday api, the settings and holiday storages, the files, the
+ *   clock and the default settings values.
  * @returns {{ getState: () => PageView, dispatch: (action: Action) => Promise<void>, subscribe: (listener: (view: PageView) => void) => () => void }}
  *   `dispatch` settles when the action's holiday requests are answered; `subscribe` returns a
  *   function that unsubscribes. A rejected `api` call rejects `dispatch` (top-level handler).

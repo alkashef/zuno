@@ -1,11 +1,12 @@
 // @ts-check
-/** @module format.test Unit tests for src/domain/format.js (DSP-001 to DSP-003, PCK-007, SET-016, EX-005, EX-006). */
+/** @module format.test Unit tests for src/domain/format.js (DSP-001 to DSP-003, PCK-007, PCK-009, SET-016, EX-005, EX-006). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
   formatClock,
   formatDate,
+  formatDateRange,
   formatDayNames,
   formatHijri,
   formatMonth,
@@ -88,4 +89,22 @@ test("test_set_016_day_numbers_are_spelled_as_english_names", () => {
   assert.equal(formatDayNames([5, 6]), "Friday and Saturday");
   assert.equal(formatDayNames([7]), "Sunday");
   assert.equal(formatDayNames([1, 2, 7]), "Monday, Tuesday, and Sunday");
+});
+
+test("test_pck_009_date_range_is_one_date_or_first_and_last_with_an_en_dash", () => {
+  const nov20 = { year: 2026, month: 11, day: 20 };
+  assert.equal(formatDateRange(nov20, nov20), "20-Nov-26");
+  assert.equal(formatDateRange(nov20, { year: 2026, month: 11, day: 21 }), "20–21-Nov-26");
+  assert.equal(
+    formatDateRange({ year: 2026, month: 11, day: 30 }, { year: 2026, month: 12, day: 1 }),
+    "30-Nov-26 – 01-Dec-26",
+  );
+  assert.equal(
+    formatDateRange({ year: 2026, month: 12, day: 31 }, { year: 2027, month: 1, day: 1 }),
+    "31-Dec-26 – 01-Jan-27",
+  );
+  assert.equal(
+    formatDateRange({ year: 2025, month: 11, day: 30 }, { year: 2026, month: 11, day: 1 }),
+    "30-Nov-25 – 01-Nov-26",
+  );
 });

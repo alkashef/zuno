@@ -1,11 +1,12 @@
 // @ts-check
 /**
  * @module views/picker
- * Owns the time picker panel: the hour axis of the reference window, one row per place with its
+ * Owns the time picker panel: the hour axis of the picker window, one row per place with its
  * local date and time and its stretches of working, non-working and day-off time, and the marker,
  * moved by dragging or with the arrow keys (PCK-001 to PCK-003, PCK-005, PCK-006, DSP-001,
- * DSP-002, LAY-001). It keeps each row's marker time beside the marker line and its name clear of
- * both. It clones its markup from templates in index.html. It does not own the day
+ * DSP-002, LAY-001). It passes the number of hour slots to CSS (`--picker-hours`), which makes the
+ * panel that many slots of `--picker-slot` wide (DEC-019). It keeps each row's marker time beside
+ * the marker line and its name clear of both. It clones its markup from templates in index.html. It does not own the day
  * selector (views/day-selector.js, built by `deps.makeDaySelector`), computes no window or kind of
  * time (domain/picker.js does) and picks no colour (picker.css does, from theme.css).
  */
@@ -19,12 +20,14 @@ import { formatDate, formatHijri, formatOffset, formatTime } from "../domain/for
 /** @typedef {import("./day-selector.js").DaySelectorView} DaySelectorView */
 
 /**
- * @typedef {object} PickerView The part of the page view the picker draws.
+ * @typedef {object} PanelView The part of the page view the panel itself draws.
  * @property {boolean} isEmpty
  * @property {PickerRow[]} picker
  * @property {{ instant: number }} marker
- * @property {{ places: Place[], showCountry: boolean } | null} settings
+ * @property {{ places: Place[], showCountry: boolean, pickerHours: number } | null} settings
  */
+
+/** @typedef {PanelView & DaySelectorView} PickerView The part of the page view the picker draws. */
 
 /**
  * @typedef {object} Deps
@@ -292,6 +295,7 @@ function arrangeInfo(ctx) {
  */
 function update(ctx, view) {
   const range = windowOf(view.picker);
+  ctx.root.style.setProperty("--picker-hours", String(view.settings?.pickerHours));
   ctx.memo.range = range;
   ctx.memo.marker = view.marker.instant;
   drawMarker(ctx, view, range);
