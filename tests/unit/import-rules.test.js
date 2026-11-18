@@ -55,6 +55,12 @@ function isAllowed(file, target) {
     "src/log.js",
     "src/config.js",
   ];
+  /** @type {Record<string, string>} Data files that one domain module alone may read. */
+  const dataOwners = {
+    "data/cities.js": "src/domain/cities.js",
+    "data/holiday-table.js": "src/domain/holiday-table.js",
+  };
+  if (target in dataOwners) return file === dataOwners[target];
   if (target === "src/controller-holidays.js") return file === "src/controller.js";
   if (file === "src/main.js") return true;
   if (inDomain(file)) return inDomain(target) || target.startsWith("data/");
@@ -111,6 +117,18 @@ test("test_import_rules_broken_rules_are_reported", () => {
     "src/controller-holidays.js must not import src/clock.js",
     "src/controller-holidays.js must not import src/controller.js",
     "src/views/notices.js must not import src/controller-holidays.js",
+  ]);
+});
+
+test("test_import_rules_only_the_holiday_table_module_imports_the_holiday_table", () => {
+  const sources = {
+    "src/domain/holiday-table.js": 'import { holidayTable } from "../../data/holiday-table.js";',
+    "src/domain/holidays.js": 'import { holidayTable } from "../../data/holiday-table.js";',
+    "src/controller.js": 'import { holidayTable } from "../data/holiday-table.js";',
+  };
+  assert.deepEqual(findViolations(sources), [
+    "src/domain/holidays.js must not import data/holiday-table.js",
+    "src/controller.js must not import data/holiday-table.js",
   ]);
 });
 

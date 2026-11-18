@@ -8,6 +8,7 @@ config/.env
 data/*
 !data/.gitkeep
 !data/cities.js
+!data/holiday-table.js
 models/
 logs/
 *.before-*

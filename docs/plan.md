@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                                             | Description                                                                                                          | Model  | Effort | Status   |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------ | ------ | -------- |
-| **M31** Holiday table: generator and data             | A script writes the public holidays of seven countries for 2026 to 2028 into `data/`, and a domain module reads them | opus   | high   | Approved |
 | **M32** Holiday table in the page                     | Places in the seven countries show the table's holidays, with no request to the service                              | sonnet | high   | open     |
 | **M33** Notice skips countries with added holidays    | The "No holiday data" notice leaves out a country the user added a holiday for                                       | sonnet | medium | open     |
 | **M34** Real coastlines on the map                    | The map's outline is Natural Earth's coastlines, put into the page by the build                                      | sonnet | high   | open     |
@@ -28,40 +27,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M31 — Holiday table: generator and data
-
-- **Refs:** HOL-013, NFR-003, EX-022, DEC-024.
-- **Owner:** `scripts/make-holiday-table.mjs`, `data/holiday-table.js`,
-  `src/domain/holiday-table.js`.
-- **Tests first:** `test_hol_013_table_covers_seven_countries_for_2026_to_2028`,
-  `test_hol_013_riyadh_and_new_delhi_dates_ex_022`,
-  `test_hol_013_year_outside_the_table_gives_null`, `test_nfr_003_table_names_are_english`.
-- **Build:** add `date-holidays` as a dev dependency, pinned to the installed version. Write the
-  script and generate `data/holiday-table.js` as DEC-024 says (type `public`, whole country, English
-  names, 2026 to 2028, a header with the library, its version and the data's licence). Add
-  `domain/holiday-table.js` with `isTableCountry` and `tableHolidays`. Extend
-  `tests/unit/import-rules.test.js` for the rule that only `domain/holiday-table.js` imports the
-  table. README: the generator command, the dev dependency and the licence of the table
-  (CC BY-SA 3.0).
-- **Gate:** the generated table holds 2026-09-23 for `SA` and 2026-01-26 for `IN`. If the library
-  has no `public` holidays or no English names for one of the seven countries, or lacks one of those
-  two dates, stop as blocked and report what it gives.
-- **Approval:** User, 2026-11-18, dialogs (decision 27, "Built-in table from the library", and the
-  plan): the milestone may install `date-holidays` as a dev-only dependency. Nothing else.
-- **Blocked:** The milestone must install `date-holidays`, and the unattended session cannot run
-  `npm install`, because it waits for a permission prompt that nobody can answer.
-  - `.claude/settings.json` lists `Bash(npm install *)`, `PowerShell(npm install *)` and
-    `Edit(/package.json)` under `ask`. The run of
-    `npm install --save-dev --save-exact date-holidays` was refused ("requested permissions …
-    haven't granted it yet").
-  - CLAUDE.md "Git and destructive actions": "Never work around a block with a different command"
-    (for example `npm i` or a hand edit of `package.json`).
-  - `node_modules/date-holidays` does not exist, so no test or script can use the library.
-  - Nothing else was changed. To continue, approve one of these:
-    1. Run `npm install --save-dev --save-exact date-holidays` yourself and commit `package.json`
-       and `package-lock.json`. The milestone then runs again and skips the install.
-    2. Run the milestone in an interactive session and accept the `npm install` prompt.
 
 ### M32 — Holiday table in the page
 

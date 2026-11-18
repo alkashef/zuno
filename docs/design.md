@@ -4,8 +4,9 @@ How to build what `spec.md` says. If this file and the spec disagree, the spec w
 
 Review state: Approved. The user approved the design as a whole on 2026-11-18, in a dialog,
 including DEC-023 to DEC-027 and the changed DEC-005, DEC-015 and DEC-020. The code implements
-DEC-001 to DEC-022 (milestones up to M29). DEC-023 to DEC-027 are not built yet: `docs/plan.md`
-holds their milestones.
+DEC-001 to DEC-022 (milestones up to M29). DEC-023 to DEC-027 are not built yet, except the
+holiday table of DEC-024 and its reader (M31; the page uses them from M32): `docs/plan.md` holds
+their milestones.
 Spec baseline: `docs/spec.md` as approved on 2026-11-18, with the acceptance examples EX-011 to
 EX-026.
 Visual reference (not code to copy): the "Zuno UI" canvas,
@@ -271,10 +272,15 @@ not change. Licence: the library's code is ISC and its holiday data CC BY-SA 3.0
 (github.com/commenthol/date-holidays, read 2026-11-18), so `data/holiday-table.js` is under
 CC BY-SA 3.0, the README says so, and the Holidays section of the settings panel carries one credit
 line. Islamic holidays in the table are calculated; the library warns they "might not be correct as
-they are subject to the sighting of the moon" (spec section 7). Not verified yet, and checked by
-the milestone that adds the library: that it gives `public` holidays with English names for each
-of the seven countries, and the dates of EX-022. Estimate, not measured: about 250 entries, under
-20 KB. Alternatives: (a) a second holiday service: the search of 2026-11-18 found one free service
+they are subject to the sighting of the moon" (spec section 7). Verified in M31 with
+`date-holidays` 3.39.2: each of the seven countries has `public` holidays with English names, and
+the table holds the dates of EX-022. A holiday of several days (an Eid, up to four days in `SA`)
+gives one row per day, each with the holiday's name, so every day off is marked. The script reads
+the English name from the library's rules and fails if one is missing. `tableHolidays` throws for a
+country outside the table (a programming error). Measured: 253 rows, about 17 KB. The library's
+README puts its data under CC BY-SA 3.0, while its LICENSE file and `package.json` name
+CC BY-SA 4.0; the table's header names CC BY-SA 3.0, as the README and the spec do, and notes the
+LICENSE file. Alternatives: (a) a second holiday service: the search of 2026-11-18 found one free service
 without a key that claims these countries (holidays.abouts.co); it has no named operator and no
 terms, and it answered a request for Pakistan 2027 with Saudi Arabia's holidays of 2026, so it is
 rejected; (b) the library inside the page, rejected: it would be the first runtime dependency
@@ -354,7 +360,7 @@ at implementation.
 | `domain/weekends.js` | Weekend days of a place: the days the user chose for it (SET-016), else those of its country or territory (`countryWeekendDays`); `placeWeekendDays` gives a place's days, `isWeekend` asks about a date for a place, and `isWeekendChoice` validates a choice (`null` or 1 to 7 distinct days). | none | CAL-002, SET-016 |
 | `domain/cities.js` | The city list (`listCities`, in the table's order), one city by id (`cityOf`), country names (`countryName`), the countries and territories of the list, each once and sorted by English name (`listCountries`, for the Holidays section), and whether a code is one of them (`isListedCountry`). | `data/cities.js` | SET-002, SET-013, HOL-006, DEC-015 |
 | `domain/holidays.js` | Turns a `HolidayResult` into per-day facts for a place; lists regions; reports missing data. | none | HOL-003, HOL-004, REF-002 |
-| `domain/holiday-table.js` | The built-in holiday table (DEC-024, not built yet): `isTableCountry(code)` and `tableHolidays(code, year)`, a country's holidays of a year as `Holiday` rows with no regions, or `null` for a year the table does not cover. The only reader of `data/holiday-table.js`. | `data/holiday-table.js`, `domain/holidays.js` types | HOL-013, HOL-001, EX-022, EX-023 |
+| `domain/holiday-table.js` | The built-in holiday table (DEC-024, M31): `isTableCountry(code)` and `tableHolidays(code, year)`, a country's holidays of a year as `Holiday` rows with no regions, sorted by date, or `null` for a year the table does not cover; it throws for a country outside the table. The only reader of `data/holiday-table.js`. | `data/holiday-table.js`, `domain/holidays.js` types | HOL-013, HOL-001, EX-022, EX-023 |
 | `domain/user-holidays.js` | The holidays a user adds and hides (M24): `emptyUserHolidays`; `addHoliday`, `removeHoliday`, `hideHoliday` and `showHoliday`, each returning the new record or `null` for a refused change (adding or hiding refuses a date that is not a real calendar date, a name empty after trimming, a country no city of the list has, and an entry already in the list); `isAddedHoliday` (whether the holiday card offers Remove or Hide); `parseUserHolidays` (validates a stored value); `effectiveHolidays` (a country's service holidays without the hidden ones, plus the added ones as national holidays). `mergeUserHolidays(saved, imported)` (M25: the saved entries, then the imported ones the saved record lacks, so nothing is removed and no entry is doubled, HOL-011). | `domain/cities.js`, `domain/holidays.js` types | HOL-003, HOL-006 to HOL-012, DEC-017 |
 | `domain/places.js` | Adds a place from a city, removes, moves, relabels and edits places (label, region, weekend days, Hijri variant and adjustment); validates a stored place and fills in its country and zone from the city table; a place's map pin (`placePin`: position as percentages of the whole world from the city's coordinates, local time and date), and the parts of its name the views lay out apart (`placeFacts`: name, the city when a display name hides it, and the country while country names are on). | `domain/cities.js`, `domain/hijri.js`, `domain/zones.js`, `domain/format.js` | SET-001, SET-002, SET-006, SET-008, SET-009, SET-015, SET-016 |
 | `domain/settings.js` | Settings shape (version 2), defaults (with the default places and the picker hours), validation, the theme choices (`themes`, `withTheme`) and the picker hours (M26: `withPickerHours(settings, hours, limits)` refuses hours that are not a whole number within the `PickerLimits`; `parseSettings(value, limits)` gives a record without `pickerHours` the default and refuses one outside the limits; with no limits given, both mean the whole day only). | `domain/places.js` | SET-005, SET-007, SET-010 to SET-012, SET-014, SET-015, LAY-003, DEC-016 |
@@ -438,7 +444,7 @@ Exact versions of installed packages are in `package.json`.
 | Playwright | Browser tests | DEC-011 | Installed 1.65.1 in M11, dev-only, exact version. Licence Apache-2.0 (`node_modules/playwright/package.json`, checked 2026-11-17). Browsers are downloaded separately with `npx playwright install` (M11 installed Chromium; Firefox, WebKit and Edge come in M19). The tests build the page into a scratch folder, open it as a `file:` URL, fix the clock with `page.clock` and answer holiday requests by `context.route`. | playwright.dev/docs/browsers, 2026-11-17 |
 | Nager.Date | Public holidays | DEC-005 | Approved (DEC-005). Contract and CORS checked live in M2 (section 5). | nagerholidays.com/Api, 2026-11-17 |
 | IANA time-zone names | Zones of `data/cities.js` | DEC-015 | Each city's zone is an IANA name that `Intl.DateTimeFormat` accepts (checked by the unit test). | iana.org/time-zones |
-| `date-holidays` | Generates the built-in holiday table at development time | DEC-024 | Proposed dev-only dependency, approved by the user on 2026-11-18; not installed yet. Code ISC, data CC BY-SA 3.0. The README lists all seven countries. Its `public` holidays and English names for them are unverified until the milestone. | github.com/commenthol/date-holidays, 2026-11-18 |
+| `date-holidays` | Generates the built-in holiday table at development time | DEC-024 | Installed 3.39.2, dev-only, exact version, approved by the user on 2026-11-18. Code ISC; data CC BY-SA 3.0 by its README (its LICENSE file says 4.0). `public` holidays with English names for all seven countries, checked in M31. Run by `scripts/make-holiday-table.mjs` only; the page never imports it. | github.com/commenthol/date-holidays, 2026-11-18 |
 | Natural Earth 1:110m land | The map's outline | DEC-026 | Not downloaded yet. Public domain. One file, fetched once at development time. | github.com/nvkelso/natural-earth-vector, 2026-11-18 (licence and file size from memory, to be confirmed at download) |
 | GitHub Pages and GitHub Actions | Publishes the built page | DEC-023 | Needs the public repository on the `alkashef` account. Free for public repositories. | Prepared on 2026-11-18; not run yet |
 | Database, server, LLM, framework | none | | The page is static with one outside service. | |
@@ -651,7 +657,6 @@ Everything else follows DEC-006 and the top-level handler.
 | Issue and references | Owner | Evidence needed | Blocks what? |
 | --- | --- | --- | --- |
 | Weekend data lags a recent country change. DEC-003 | Accepted risk | EX-002 in four browsers. | None. |
-| `date-holidays` gives `public` holidays with English names for all seven countries, and the dates of EX-022. DEC-024 | Implementation | The generator's run and its unit tests. If a country lacks them, the milestone stops as blocked. | The holiday-table milestones. |
 | The built-in holiday table ends with 2028, and its Islamic holidays are calculated. DEC-024 | User | Generate the table again before 2029; correct a wrong day by hiding it and adding the right one. | None. |
 | Size of the real coastline path in the page (estimate 40 to 60 KB). DEC-026 | Implementation | The size of `data/map-outline.svg` after the first generation. | None; report it. |
 | The newer workflows (picker resize and hover, the holidays the user adds and hides, the day selector) run in the browser tests in Chromium only. NFR-002, DEC-011 | Implementation | The same workflows in Firefox, WebKit and Edge. | None; a milestone in the plan. |
