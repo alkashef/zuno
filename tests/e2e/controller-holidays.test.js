@@ -1,5 +1,5 @@
 // @ts-check
-/** @module controller-holidays.test Holiday workflows through src/controller.js with fake api, storages and clock (HOL-003, HOL-006 to HOL-009, EX-015, EX-016, DEC-017). */
+/** @module controller-holidays.test Holiday workflows through src/controller.js with fake api, storages, files and clock (HOL-003, HOL-006 to HOL-012, EX-015 to EX-018, DEC-017, DEC-018). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -23,9 +23,15 @@ const christmas = Object.freeze({ countryCode: "US", date: "2026-12-25", name: "
  */
 
 /**
+ * @typedef {object} FakeFiles The fake `files`: what it saved, and what each picked file reads as.
+ * @property {{ fileName: string, value: unknown }[]} saved
+ * @property {Map<Blob, import("../../src/controller.js").FileRead>} reads
+ */
+
+/**
  * @param {string[]} cityIds
  * @param {Stores} [stores]
- * @returns {{ controller: ReturnType<typeof createController>, stores: Stores, settingsSaves: Settings[], holidaySaves: UserHolidays[] }}
+ * @returns {{ controller: ReturnType<typeof createController>, stores: Stores, settingsSaves: Settings[], holidaySaves: UserHolidays[], fakeFiles: FakeFiles }}
  */
 function setup(cityIds, stores) {
   const places = cityIds.map((cityId, index) => createPlace(`place-${index + 1}`, cityId));
@@ -34,6 +40,8 @@ function setup(cityIds, stores) {
   const settingsSaves = [];
   /** @type {UserHolidays[]} */
   const holidaySaves = [];
+  /** @type {FakeFiles} */
+  const fakeFiles = { saved: [], reads: new Map() };
   const controller = createController({
     api: {
       getHolidays: async (countryCode, year) => ({
@@ -50,11 +58,16 @@ function setup(cityIds, stores) {
       load: () => shared.holidays,
       save: (record) => void holidaySaves.push((shared.holidays = record)),
     },
+    files: {
+      saveJson: (fileName, value) => void fakeFiles.saved.push({ fileName, value }),
+      readJson: async (file) => fakeFiles.reads.get(file) ?? { status: "unreadable" },
+    },
+    holidaysFileName: "zuno-holidays.json",
     clock: { now: () => start },
     defaultHours: { start: 540, end: 1020 },
     defaultCityIds: [],
   });
-  return { controller, stores: shared, settingsSaves, holidaySaves };
+  return { controller, stores: shared, settingsSaves, holidaySaves, fakeFiles };
 }
 
 /**
@@ -179,4 +192,81 @@ test("test_dec_017_holiday_actions_leave_the_settings_record_and_service_data_un
     assert.deepEqual(Object.keys(record).sort(), ["added", "hidden", "version"]);
   }
   assert.deepEqual(holidaySaves.at(-1), { version: 1, added: [], hidden: [] });
+});
+
+const iqbalDay = Object.freeze({ countryCode: "PK", date: "2026-11-09", name: "Iqbal Day" });
+
+/**
+ * @param {FakeFiles} fakeFiles
+ * @param {unknown} value What the picked file holds, as parsed JSON; `undefined` for text that is not JSON.
+ * @returns {File} A picked file that reads as that value.
+ */
+function pickedFile(fakeFiles, value) {
+  const file = new File(["fake"], "picked.json");
+  fakeFiles.reads.set(
+    file,
+    value === undefined ? { status: "unreadable" } : { status: "read", value },
+  );
+  return file;
+}
+
+test("test_hol_010_export_saves_the_added_and_hidden_holidays_to_a_file", async () => {
+  const { controller, fakeFiles } = setup(["mumbai", "new-york"]);
+  await controller.dispatch({ type: "open" });
+  await controller.dispatch({ type: "addHoliday", ...diwali });
+  await controller.dispatch({ type: "hideHoliday", ...christmas });
+  await controller.dispatch({ type: "exportHolidays" });
+  assert.deepEqual(fakeFiles.saved, [
+    {
+      fileName: "zuno-holidays.json",
+      value: { version: 1, added: [diwali], hidden: [christmas] },
+    },
+  ]);
+});
+
+test("test_hol_011_import_adds_the_files_holidays_to_the_saved_ones", async () => {
+  const first = setup(["mumbai"]);
+  await first.controller.dispatch({ type: "open" });
+  await first.controller.dispatch({ type: "addHoliday", ...diwali });
+  await first.controller.dispatch({ type: "exportHolidays" });
+  const exported = first.fakeFiles.saved[0].value;
+  const second = setup(["mumbai", "islamabad"]);
+  await second.controller.dispatch({ type: "open" });
+  await second.controller.dispatch({ type: "addHoliday", ...iqbalDay });
+  const file = pickedFile(second.fakeFiles, exported);
+  await second.controller.dispatch({ type: "importHolidays", file });
+  const merged = { version: 1, added: [iqbalDay, diwali], hidden: [] };
+  assert.deepEqual(second.controller.getState().userHolidays, merged);
+  assert.deepEqual(second.stores.holidays, merged);
+  assert.equal(second.controller.getState().holidayImport, null);
+  assert.deepEqual(holidaysInRow(second.controller, 0), ["2026-11-08 Diwali"]);
+  await second.controller.dispatch({ type: "importHolidays", file });
+  assert.deepEqual(second.stores.holidays, merged);
+});
+
+test("test_hol_011_import_keeps_every_saved_entry", async () => {
+  const { controller, stores, fakeFiles } = setup(["new-york"]);
+  await controller.dispatch({ type: "open" });
+  await controller.dispatch({ type: "hideHoliday", ...christmas });
+  const file = pickedFile(fakeFiles, { version: 1, added: [], hidden: [] });
+  await controller.dispatch({ type: "importHolidays", file });
+  assert.deepEqual(stores.holidays, { version: 1, added: [], hidden: [christmas] });
+});
+
+test("test_hol_012_invalid_file_changes_nothing_and_is_reported", async () => {
+  const { controller, holidaySaves, fakeFiles } = setup(["mumbai"]);
+  await controller.dispatch({ type: "open" });
+  await controller.dispatch({ type: "addHoliday", ...diwali });
+  const before = controller.getState().userHolidays;
+  const notJson = pickedFile(fakeFiles, undefined);
+  await controller.dispatch({ type: "importHolidays", file: notJson });
+  assert.equal(controller.getState().holidayImport, "refused");
+  const wrongShape = pickedFile(fakeFiles, { version: 2, added: "yes" });
+  await controller.dispatch({ type: "importHolidays", file: wrongShape });
+  assert.equal(controller.getState().holidayImport, "refused");
+  assert.equal(holidaySaves.length, 1);
+  assert.deepEqual(controller.getState().userHolidays, before);
+  const good = pickedFile(fakeFiles, { version: 1, added: [], hidden: [] });
+  await controller.dispatch({ type: "importHolidays", file: good });
+  assert.equal(controller.getState().holidayImport, null);
 });

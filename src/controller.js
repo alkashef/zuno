@@ -4,8 +4,8 @@
  * The page workflows: applies an action to the page state, asks the injected `api` for the holidays
  * the shown month and the marker's window need, and tells subscribers about every new state
  * (PCK-004, PCK-007, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-001, SET-002,
- * SET-004 to SET-014, HIJ-002, HIJ-003, HOL-003, HOL-006 to HOL-009, DEC-007, DEC-016, DEC-017). Pure
- * apart from its injected `api`, `storage`, `holidayStorage` and `clock`. It touches no DOM (the
+ * SET-004 to SET-014, HIJ-002, HIJ-003, HOL-003, HOL-006 to HOL-012, DEC-007, DEC-016 to DEC-018).
+ * Pure apart from its injected `api`, `storage`, `holidayStorage`, `files` and `clock`. It touches no DOM (the
  * views do) and builds no picker, grid, notices or holiday-list logic itself (domain/* does).
  */
 import { buildMonth } from "./domain/calendar.js";
@@ -41,6 +41,7 @@ import { localDateTime } from "./domain/zones.js";
 /** @typedef {import("./domain/user-holidays.js").UserHolidays} UserHolidays */
 /** @typedef {import("./domain/weekends.js").CalendarDate} CalendarDate */
 /** @typedef {Record<string, Record<string, HolidayResult>>} ResultsByCountryYear Keyed by country code, then year. */
+/** @typedef {{ status: "read", value: unknown } | { status: "unreadable" }} FileRead What a picked file holds (DEC-018). */
 
 /**
  * @typedef {object} ControllerDeps The outside world, injected so tests can pass fakes.
@@ -48,6 +49,9 @@ import { localDateTime } from "./domain/zones.js";
  * @property {{ load: () => Settings | null, save: (settings: Settings) => void }} storage
  * @property {{ load: () => UserHolidays | null, save: (record: UserHolidays) => void }} holidayStorage
  *   The record of the holidays the user added and hid (HOL-009, DEC-017).
+ * @property {{ saveJson: (fileName: string, value: unknown) => void, readJson: (file: Blob) => Promise<FileRead> }} files
+ *   Saves the holidays file and reads a picked one (HOL-010 to HOL-012, DEC-018).
+ * @property {string} holidaysFileName The name of the exported holidays file.
  * @property {{ now: () => number }} clock
  * @property {{ start: number, end: number }} defaultHours Working hours (minutes after midnight)
  *   for settings that are not saved yet (SET-005).
@@ -73,6 +77,7 @@ import { localDateTime } from "./domain/zones.js";
  * @property {SelectedHoliday | null} selectedHoliday
  * @property {boolean} noticesOpen
  * @property {boolean} settingsOpen
+ * @property {"refused" | null} holidayImport `refused` while the last imported file was refused (HOL-012).
  */
 
 /**
@@ -105,6 +110,7 @@ import { localDateTime } from "./domain/zones.js";
  *   | { type: "setWorkingHours", start: number, end: number }
  *   | { type: "setShowCountry", value: boolean } | { type: "setShowHijri", value: boolean }
  *   | { type: "setTheme", value: string }
+ *   | { type: "exportHolidays" } | { type: "importHolidays", file: Blob }
  *   | ({ type: "addHoliday" | "removeHoliday" | "hideHoliday" | "showHoliday" } & HolidayEntry)} Action
  */
 
@@ -639,6 +645,33 @@ function holidayHandlers() {
 }
 
 /**
+ * Saves the user's added and hidden holidays as a file (HOL-010).
+ * @param {Context} ctx
+ * @returns {void}
+ */
+function exportHolidays(ctx) {
+  ctx.deps.files.saveJson(ctx.deps.holidaysFileName, ctx.read().userHolidays);
+}
+
+/**
+ * Adds the holidays of a picked file to the saved ones (HOL-011). A file that is not JSON or not a
+ * holidays record changes nothing and is reported (HOL-012).
+ * @param {Context} ctx
+ * @param {Extract<Action, { type: "importHolidays" }>} action
+ * @returns {Promise<void>}
+ */
+async function importHolidays(ctx, { file }) {
+  const read = await ctx.deps.files.readJson(file);
+  const imported = read.status === "read" ? userHolidayList.parseUserHolidays(read.value) : null;
+  if (imported === null) {
+    ctx.update({ holidayImport: "refused" });
+    return;
+  }
+  ctx.update({ holidayImport: null });
+  commitUserHolidays(ctx, userHolidayList.mergeUserHolidays(ctx.read().userHolidays, imported));
+}
+
+/**
  * @returns {Record<Action["type"], Handler>} The handler of each action type.
  */
 function handlers() {
@@ -652,6 +685,8 @@ function handlers() {
     selectHoliday,
     ...settingsHandlers(),
     ...holidayHandlers(),
+    exportHolidays,
+    importHolidays,
     toggleNotices: (ctx) => ctx.update({ noticesOpen: !ctx.read().noticesOpen }),
     openSettings: (ctx) => ctx.update({ settingsOpen: true }),
     closeSettings: (ctx) => ctx.update({ settingsOpen: false }),
@@ -673,6 +708,7 @@ function initialState(now) {
     selectedHoliday: null,
     noticesOpen: false,
     settingsOpen: false,
+    holidayImport: null,
   };
 }
 
@@ -697,7 +733,7 @@ function createContext(deps, onChange) {
 
 /**
  * Creates the controller of the page workflows.
- * @param {ControllerDeps} deps The holiday api, the settings and holiday storages and the clock.
+ * @param {ControllerDeps} deps The holiday api, the settings and holiday storages, the files and the clock.
  * @returns {{ getState: () => PageView, dispatch: (action: Action) => Promise<void>, subscribe: (listener: (view: PageView) => void) => () => void }}
  *   `dispatch` settles when the action's holiday requests are answered; `subscribe` returns a
  *   function that unsubscribes. A rejected `api` call rejects `dispatch` (top-level handler).

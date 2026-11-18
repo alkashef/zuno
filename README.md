@@ -9,7 +9,10 @@ settings panel holds the places,
 the working hours, the display switches and the theme (Light, Dark, or Auto, which follows your
 system). You can add a public holiday the holiday service does not list (by country, date and
 name), remove it, and hide a listed holiday from its card in the month grid and show it again from
-the settings panel. Your added and hidden holidays are saved in the browser.
+the settings panel. Your added and hidden holidays are saved in the browser. "Export" in the
+Holidays section saves them to a file (`zuno-holidays.json`) that you can share, and "Import" adds the
+holidays of such a file to your own; a file that is not a Zuno holidays file is refused and nothing
+changes. Both use local files only.
 
 ## Stack
 

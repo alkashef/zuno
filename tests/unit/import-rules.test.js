@@ -47,7 +47,14 @@ function resolveTarget(file, specifier) {
  */
 function isAllowed(file, target) {
   const inDomain = (/** @type {string} */ p) => p.startsWith("src/domain/");
-  const leaves = ["src/api.js", "src/storage.js", "src/clock.js", "src/log.js", "src/config.js"];
+  const leaves = [
+    "src/api.js",
+    "src/storage.js",
+    "src/files.js",
+    "src/clock.js",
+    "src/log.js",
+    "src/config.js",
+  ];
   if (file === "src/main.js") return true;
   if (inDomain(file)) return inDomain(target) || target.startsWith("data/");
   if (file === "src/controller.js") return inDomain(target);
@@ -85,6 +92,7 @@ test("test_import_rules_broken_rules_are_reported", () => {
     "src/controller.js": 'import { now } from "./clock.js";',
     "src/views/map.js": 'import { holidayOn } from "../domain/holidays.js";',
     "src/clock.js": 'import { x } from "./domain/zones.js";',
+    "src/files.js": 'import { x } from "./controller.js";',
     "src/domain/format.js": 'import { y } from "./zones.js"; import "lodash";',
     "src/main.js": 'import { z } from "./domain/zones.js";',
   };
@@ -93,6 +101,7 @@ test("test_import_rules_broken_rules_are_reported", () => {
     "src/controller.js must not import src/clock.js",
     "src/views/map.js must not import src/domain/holidays.js",
     "src/clock.js must not import src/domain/zones.js",
+    "src/files.js must not import src/controller.js",
     "src/domain/format.js must not import lodash",
   ]);
 });

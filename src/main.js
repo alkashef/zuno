@@ -15,6 +15,7 @@ import { parseSettings } from "./domain/settings.js";
 import { isAddedHoliday, parseUserHolidays } from "./domain/user-holidays.js";
 import { countryWeekendDays, placeWeekendDays } from "./domain/weekends.js";
 import { localDateTime, zoneOffset } from "./domain/zones.js";
+import { createFiles } from "./files.js";
 import { log } from "./log.js";
 import { createStorage } from "./storage.js";
 import { bindActions } from "./views/actions.js";
@@ -52,6 +53,8 @@ const controller = createController({
     parse: parseUserHolidays,
     key: config.holidaysStorageKey,
   }),
+  files: createFiles({ doc: document, urls: URL }),
+  holidaysFileName: config.holidaysFileName,
   clock,
   defaultHours: { start: config.defaultWorkStartMinutes, end: config.defaultWorkEndMinutes },
   defaultCityIds: config.defaultCityIds,

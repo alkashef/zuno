@@ -10,6 +10,7 @@ import {
   emptyUserHolidays,
   hideHoliday,
   isAddedHoliday,
+  mergeUserHolidays,
   parseUserHolidays,
   removeHoliday,
   showHoliday,
@@ -106,4 +107,17 @@ test("test_hol_009_parse_accepts_a_valid_record_and_refuses_others", () => {
   for (const value of bad) {
     assert.equal(parseUserHolidays(value), null, JSON.stringify(value));
   }
+});
+
+test("test_hol_011_merge_adds_the_imported_entries_and_never_doubles_or_removes_one", () => {
+  const teamDay = { countryCode: "US", date: "2026-11-27", name: "Team Day" };
+  const saved = accepted(addHoliday(accepted(hideHoliday(emptyUserHolidays(), christmas)), diwali));
+  const imported = accepted(addHoliday(accepted(addHoliday(emptyUserHolidays(), diwali)), teamDay));
+  assert.deepEqual(mergeUserHolidays(saved, imported), {
+    version: 1,
+    added: [diwali, teamDay],
+    hidden: [christmas],
+  });
+  assert.deepEqual(mergeUserHolidays(saved, emptyUserHolidays()), saved);
+  assert.deepEqual(mergeUserHolidays(saved, saved), saved);
 });

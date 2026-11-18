@@ -63,6 +63,8 @@ function setup(saved, start, answer = invented) {
     },
     storage: { load: () => saved, save: () => {} },
     holidayStorage: { load: () => null, save: () => {} },
+    files: { saveJson: () => {}, readJson: async () => ({ status: "unreadable" }) },
+    holidaysFileName: "zuno-holidays.json",
     clock: { now: () => clock.time },
     defaultHours: { start: 540, end: 1020 },
     defaultCityIds: [],

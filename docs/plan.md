@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M25** Holidays file | Export the user's holidays to a file and import one; a bad file is refused | sonnet | high | open |
 | **M26** Picker window and selected day | Hour slots of a fixed width from midnight of the selected day, 24 hours or more, the date range in the day selector, the hours saved | opus | high | open |
 | **M27** Resize handle and hover time | Dragging the picker's left edge adds or removes hour slots; pointing at a row shows the local time and date there | sonnet | high | open |
 | **M28** Rounded look and split legend | Rounded corners, cyan weekend, the picker as a card, the legend in two parts, location icons, the settings sections in the canvas's order with lines | sonnet | high | open |
@@ -24,14 +23,6 @@ The visual reference for M26 to M28 is the "Zuno UI" canvas named at the top of 
 DEC-019 to DEC-021 state its sizes and colours. Existing tests that check behaviour a requirement
 of 2026-11-18 changed (SET-002, SET-003, SET-007, CAL-002, HOL-003, PCK-003, PCK-006, PCK-007) are
 updated in the milestone that changes it, and the report names them.
-
-### M25 — Holidays file
-
-- **Refs:** HOL-010, HOL-011, HOL-012, EX-017, EX-018, NFR-001, DEC-018.
-- **Owner:** `src/files.js`, `src/controller.js`, `src/views/settings-holidays.js`.
-- **Tests first:** `test_hol_010_export_saves_the_added_and_hidden_holidays_to_a_file` (controller with a fake `files`; browser: the download's name and content), `test_hol_011_import_adds_the_files_holidays_to_the_saved_ones` (EX-017; an entry already saved is not doubled), `test_hol_012_invalid_file_changes_nothing_and_is_reported` (EX-018: not JSON, and JSON of the wrong shape), `test_nfr_001_export_and_import_make_no_network_request` (browser).
-- **Build:** `files.js` (`saveJson`, `readJson`); `exportHolidays` and `importHolidays` in the controller with `files` injected; `holidayImport` in the page view; the Export and Import buttons and the refusal message in the Holidays section; `holidaysFileName` in `config.js`.
-- **Gate:** the export browser test passes in Chromium, Firefox, WebKit and Edge under the page's Content-Security-Policy; if a browser blocks the download, stop and report (DEC-018).
 
 ### M26 — Picker window and selected day
 

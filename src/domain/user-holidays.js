@@ -1,11 +1,12 @@
 // @ts-check
 /**
  * @module domain/user-holidays
- * The holidays a user adds and hides (HOL-003, HOL-006 to HOL-009, DEC-017): adds, removes, hides
- * and shows an entry, validates a stored record (`parseUserHolidays`), and applies the record to a
- * country's service holidays (`effectiveHolidays`). Pure: it saves nothing (the controller does,
- * through the injected holiday storage) and reads no service data (api.js and domain/holidays.js
- * do). A refused change returns `null`, so the caller knows to save nothing.
+ * The holidays a user adds and hides (HOL-003, HOL-006 to HOL-012, DEC-017): adds, removes, hides
+ * and shows an entry, validates a stored or imported record (`parseUserHolidays`), merges an
+ * imported record into the saved one (`mergeUserHolidays`), and applies the record to a country's
+ * service holidays (`effectiveHolidays`). Pure: it saves nothing (the controller does, through the
+ * injected holiday storage), reads no file (files.js does) and reads no service data (api.js and
+ * domain/holidays.js do). A refused change returns `null`, so the caller knows to save nothing.
  */
 import { isListedCountry } from "./cities.js";
 
@@ -179,6 +180,24 @@ export function parseUserHolidays(value) {
   const added = parseList(record.added);
   const hidden = parseList(record.hidden);
   return added === null || hidden === null ? null : { version: 1, added, hidden };
+}
+
+/**
+ * Merges an imported record into the saved one (HOL-011).
+ * @param {UserHolidays} saved
+ * @param {UserHolidays} imported A record that passed `parseUserHolidays`.
+ * @returns {UserHolidays} The saved entries, then the imported ones the saved record lacks; nothing
+ *   is removed and no entry appears twice.
+ */
+export function mergeUserHolidays(saved, imported) {
+  /** @param {ListName} list */
+  const merged = (list) =>
+    imported[list].reduce(
+      (entries, entry) =>
+        entries.some((each) => sameEntry(each, entry)) ? entries : [...entries, entry],
+      saved[list],
+    );
+  return { version: 1, added: merged("added"), hidden: merged("hidden") };
 }
 
 /**

@@ -44,6 +44,8 @@ function setup({ saved = savedWithNoPlaces(), store = { saved } } = {}) {
       },
     },
     holidayStorage: { load: () => null, save: () => {} },
+    files: { saveJson: () => {}, readJson: async () => ({ status: "unreadable" }) },
+    holidaysFileName: "zuno-holidays.json",
     clock: { now: () => start },
     defaultHours: { start: 540, end: 1020 },
     defaultCityIds: config.defaultCityIds,

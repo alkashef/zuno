@@ -11,6 +11,7 @@ export const config = Object.freeze({
   pickerAxisLabelEveryHours: 6,
   storageKey: "zuno.settings",
   holidaysStorageKey: "zuno.holidays",
+  holidaysFileName: "zuno-holidays.json",
   defaultWorkStartMinutes: 540,
   defaultWorkEndMinutes: 1020,
   workingHoursStepMinutes: 60,

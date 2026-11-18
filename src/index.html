@@ -485,6 +485,21 @@
               Add holiday
             </button>
           </form>
+          <div class="settings-file-actions">
+            <button type="button" class="button" data-role="holiday-export">Export</button>
+            <label class="button settings-file-button">
+              Import
+              <input
+                type="file"
+                class="settings-file-input"
+                accept=".json,application/json"
+                data-role="holiday-file-picker"
+              />
+            </label>
+          </div>
+          <p class="settings-hint settings-error" role="alert" data-role="import-refused" hidden>
+            The file was refused: it is not a Zuno holidays file. Nothing was changed.
+          </p>
           <h4 class="settings-label settings-holidays-heading">Added holidays</h4>
           <ul class="settings-holidays" data-role="added" hidden></ul>
           <p class="settings-hint" data-role="added-empty">No holidays added.</p>

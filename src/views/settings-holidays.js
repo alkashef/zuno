@@ -3,8 +3,9 @@
  * @module views/settings-holidays
  * Owns the Holidays section of the settings panel: the form that adds a holiday (a country or
  * territory of the city list, a date and a name), the list of added holidays with a Remove button
- * each, and the list of hidden holidays with a Show button each (HOL-006 to HOL-008). An empty
- * field is marked invalid and nothing is sent. It does not own the panel (views/settings.js does),
+ * each, and the list of hidden holidays with a Show button each (HOL-006 to HOL-008), the Export
+ * button and the Import file picker, and the message shown when an imported file was refused
+ * (HOL-010 to HOL-012). An empty field is marked invalid and nothing is sent. It does not own the panel (views/settings.js does),
  * validates no holiday beyond empty fields and saves nothing (the controller and
  * domain/user-holidays.js do).
  */
@@ -18,6 +19,7 @@ import { formatDate } from "../domain/format.js";
 /**
  * @typedef {object} HolidaysView The part of the page view the section draws.
  * @property {UserHolidays} userHolidays
+ * @property {"refused" | null} holidayImport `refused` while the last imported file was refused.
  */
 
 /**
@@ -155,7 +157,24 @@ function onClick(ctx, event) {
 
 /**
  * @param {SectionContext} ctx
- * @returns {void} Lists the countries in the add form and wires the form and the row buttons.
+ * @returns {void} Wires the Export button and the Import file picker (HOL-010, HOL-011). The picker
+ *   is cleared after each pick, so the same file can be chosen again.
+ */
+function wireFileButtons(ctx) {
+  part(ctx.section, "holiday-export").addEventListener("click", () => {
+    void ctx.deps.dispatch({ type: "exportHolidays" });
+  });
+  const input = /** @type {HTMLInputElement} */ (part(ctx.section, "holiday-file-picker"));
+  input.addEventListener("change", () => {
+    const [file] = input.files ?? [];
+    if (file !== undefined) void ctx.deps.dispatch({ type: "importHolidays", file });
+    input.value = "";
+  });
+}
+
+/**
+ * @param {SectionContext} ctx
+ * @returns {void} Lists the countries in the add form and wires the form and the buttons.
  */
 function setUp(ctx) {
   const country = formFields(ctx).country;
@@ -165,6 +184,7 @@ function setUp(ctx) {
     submitAdd(ctx);
   });
   ctx.section.addEventListener("click", (event) => onClick(ctx, event));
+  wireFileButtons(ctx);
 }
 
 /**
@@ -172,7 +192,7 @@ function setUp(ctx) {
  * @param {HTMLElement} section The Holidays section, inside the open panel.
  * @param {Deps} deps The controller's `dispatch` and the countries of the city list.
  * @returns {{ render: (view: HolidaysView) => void }} The section; `render` redraws the lists only
- *   when the user's holidays changed.
+ *   when the user's holidays changed, and shows the refusal message while an import is refused.
  * @throws {Error} When the page has no holiday-row template.
  */
 export function createHolidaysSection(doc, section, deps) {
@@ -188,6 +208,7 @@ export function createHolidaysSection(doc, section, deps) {
       const signature = JSON.stringify(view.userHolidays);
       if (signature !== ctx.memo.signature) drawLists(ctx, view);
       ctx.memo.signature = signature;
+      part(ctx.section, "import-refused").hidden = view.holidayImport !== "refused";
     },
   };
 }
