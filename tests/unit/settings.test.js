@@ -29,6 +29,14 @@ test("test_set_007_no_saved_places_means_empty_state", () => {
   assert.deepEqual(fresh().places, []);
 });
 
+test("test_set_014_default_settings_hold_the_default_places_in_order", () => {
+  const settings = defaultSettings(540, 1020, config.defaultCityIds);
+  assert.deepEqual(
+    settings.places.map((place) => [place.id, place.cityId]),
+    config.defaultCityIds.map((cityId, index) => ["place-" + (index + 1), cityId]),
+  );
+});
+
 test("test_set_010_country_names_off_by_default", () => {
   assert.equal(fresh().showCountry, false);
 });

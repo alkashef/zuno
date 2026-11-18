@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { config } from "../../src/config.js";
 import { createController } from "../../src/controller.js";
 import { createPlace, placeName } from "../../src/domain/places.js";
 import { defaultSettings, parseSettings } from "../../src/domain/settings.js";
@@ -12,12 +13,18 @@ import { zoneOffset } from "../../src/domain/zones.js";
 
 const start = Date.UTC(2026, 10, 17, 10);
 
+/** @returns {Settings} A saved record with no places, so the page starts empty (SET-007). */
+function savedWithNoPlaces() {
+  return { ...defaultSettings(540, 1020), places: [] };
+}
+
 /**
  * @param {{ saved?: Settings | null, store?: { saved: Settings | null } }} [options] Starting
- *   settings, or a storage record shared between controllers.
+ *   settings (a saved record with no places unless given; `null` is "nothing saved"), or a storage
+ *   record shared between controllers.
  * @returns {{ controller: ReturnType<typeof createController>, calls: string[], store: { saved: Settings | null }, saves: Settings[] }}
  */
-function setup({ saved = null, store = { saved } } = {}) {
+function setup({ saved = savedWithNoPlaces(), store = { saved } } = {}) {
   /** @type {string[]} */
   const calls = [];
   /** @type {Settings[]} */
@@ -38,6 +45,7 @@ function setup({ saved = null, store = { saved } } = {}) {
     },
     clock: { now: () => start },
     defaultHours: { start: 540, end: 1020 },
+    defaultCityIds: config.defaultCityIds,
   });
   return { controller, calls, store, saves };
 }
@@ -49,6 +57,50 @@ function setup({ saved = null, store = { saved } } = {}) {
 function placeIds(controller) {
   return (controller.getState().settings?.places ?? []).map((place) => place.id);
 }
+
+/**
+ * @param {ReturnType<typeof createController>} controller
+ * @returns {string[]} The city ids of the places in the settings, in order.
+ */
+function shownCityIds(controller) {
+  return (controller.getState().settings?.places ?? []).map((place) => place.cityId);
+}
+
+test("test_set_014_no_saved_settings_shows_the_seven_default_places_in_order", async () => {
+  const { controller, calls } = setup({ saved: null });
+  await controller.dispatch({ type: "open" });
+  const expected = ["tokyo", "cairo", "new-delhi", "madrid", "bogota", "riyadh", "islamabad"];
+  assert.deepEqual(shownCityIds(controller), expected);
+  assert.equal(controller.getState().isEmpty, false);
+  assert.equal(controller.getState().picker.length, 7);
+  const countries = ["CO", "EG", "ES", "IN", "JP", "PK", "SA"].map((code) => code + "-2026");
+  assert.deepEqual([...calls].sort(), countries);
+});
+
+test("test_set_014_defaults_are_not_saved_until_a_setting_changes", async () => {
+  const { controller, saves } = setup({ saved: null });
+  await controller.dispatch({ type: "open" });
+  assert.equal(saves.length, 0);
+  await controller.dispatch({ type: "setShowHijri", value: true });
+  assert.equal(saves.length, 1);
+  assert.deepEqual(
+    saves[0].places.map((place) => place.cityId),
+    config.defaultCityIds,
+  );
+});
+
+test("test_set_007_empty_page_only_when_the_settings_hold_no_places", async () => {
+  const first = setup({ saved: null });
+  await first.controller.dispatch({ type: "open" });
+  for (const place of [...(first.controller.getState().settings?.places ?? [])]) {
+    await first.controller.dispatch({ type: "removePlace", placeId: place.id });
+  }
+  assert.equal(first.controller.getState().isEmpty, true);
+  const second = setup({ store: first.store });
+  await second.controller.dispatch({ type: "open" });
+  assert.equal(second.controller.getState().isEmpty, true);
+  assert.deepEqual(shownCityIds(second.controller), []);
+});
 
 test("test_set_001_add_and_remove_place_workflow", async () => {
   const { controller, calls } = setup();
@@ -113,7 +165,7 @@ test("test_set_013_only_listed_cities_can_be_added", async () => {
   await controller.dispatch({ type: "open" });
   await controller.dispatch({ type: "addPlace", cityId: "nairobi" });
   assert.deepEqual(saves, []);
-  assert.equal(controller.getState().settings, null);
+  assert.deepEqual(controller.getState().settings?.places, []);
   assert.equal(controller.getState().isEmpty, true);
 });
 
@@ -135,8 +187,8 @@ test("test_set_015_version_1_record_is_read_as_no_saved_settings", async () => {
   const raw = { ...defaultSettings(540, 1020), version: 1, places: [createPlace("a", "riyadh")] };
   const { controller } = setup({ store: { saved: parseSettings(raw) } });
   await controller.dispatch({ type: "open" });
-  assert.equal(controller.getState().settings, null);
-  assert.equal(controller.getState().isEmpty, true);
+  assert.deepEqual(shownCityIds(controller), config.defaultCityIds);
+  assert.equal(controller.getState().isEmpty, false);
 });
 
 test("test_set_004_change_is_saved_and_restored_on_next_open", async () => {
@@ -157,7 +209,7 @@ test("test_set_004_refused_change_is_not_saved", async () => {
   await controller.dispatch({ type: "open" });
   await controller.dispatch({ type: "setWorkingHours", start: 600, end: 600 });
   assert.deepEqual(saves, []);
-  assert.equal(controller.getState().settings, null);
+  assert.equal(controller.getState().settings?.workStartMinutes, 540);
 });
 
 test("test_set_005_set_working_hours", async () => {
@@ -290,9 +342,10 @@ test("test_hij_003_adjust_hijri_per_place", async () => {
 });
 
 test("test_set_012_choose_theme_is_saved_and_a_wrong_value_refused", async () => {
-  const { controller, store } = setup();
+  const { controller, store } = setup({ saved: null });
   await controller.dispatch({ type: "open" });
-  assert.equal(controller.getState().settings, null);
+  assert.equal(controller.getState().settings?.theme, "auto");
+  assert.equal(Boolean(store.saved), false);
   await controller.dispatch({ type: "setTheme", value: "dark" });
   assert.equal(controller.getState().settings?.theme, "dark");
   assert.equal(store.saved?.theme, "dark");

@@ -4,7 +4,7 @@
  * The page workflows: applies an action to the page state, asks the injected `api` for the holidays
  * the shown month and the marker's window need, and tells subscribers about every new state
  * (PCK-004, PCK-007, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-001, SET-002,
- * SET-004 to SET-013, HIJ-002, HIJ-003, DEC-007, DEC-016). Pure apart from its injected `api`, `storage` and `clock`. It touches no DOM (the views
+ * SET-004 to SET-014, HIJ-002, HIJ-003, DEC-007, DEC-016). Pure apart from its injected `api`, `storage` and `clock`. It touches no DOM (the views
  * do) and builds no picker, grid or notices logic itself (domain/* does).
  */
 import { buildMonth } from "./domain/calendar.js";
@@ -45,6 +45,8 @@ import { localDateTime } from "./domain/zones.js";
  * @property {{ now: () => number }} clock
  * @property {{ start: number, end: number }} defaultHours Working hours (minutes after midnight)
  *   for settings that are not saved yet (SET-005).
+ * @property {readonly string[]} defaultCityIds The cities of the default places, in order
+ *   (SET-014).
  */
 
 /**
@@ -307,12 +309,20 @@ function requestMissing(ctx) {
 }
 
 /**
- * Loads the settings and puts the marker and the grid at now (PCK-004, SET-007).
+ * @param {ControllerDeps} deps
+ * @returns {Settings} The defaults, with the default places (SET-005, SET-014).
+ */
+function defaultsOf({ defaultHours, defaultCityIds }) {
+  return defaultSettings(defaultHours.start, defaultHours.end, defaultCityIds);
+}
+
+/**
+ * Loads the settings and puts the marker and the grid at now (PCK-004, SET-007, SET-014).
  * @param {Context} ctx
  * @returns {Promise<void>}
  */
 function open(ctx) {
-  const settings = ctx.deps.storage.load();
+  const settings = ctx.deps.storage.load() ?? defaultsOf(ctx.deps);
   const now = ctx.deps.clock.now();
   ctx.update({ settings, now, marker: { instant: now }, month: monthAt(now, settings) });
   return requestMissing(ctx);
@@ -419,11 +429,10 @@ function nextPlaceId(places) {
 
 /**
  * @param {Context} ctx
- * @returns {Settings} The saved settings, or the defaults when none are saved (SET-005, SET-007).
+ * @returns {Settings} The shown settings, or the defaults before the page is open (SET-005, SET-014).
  */
 function currentSettings(ctx) {
-  const { start, end } = ctx.deps.defaultHours;
-  return ctx.read().settings ?? defaultSettings(start, end);
+  return ctx.read().settings ?? defaultsOf(ctx.deps);
 }
 
 /**

@@ -58,7 +58,8 @@ export function launchBrowser(name = "chromium") {
 /**
  * @typedef {object} OpenOptions
  * @property {"light" | "dark"} [colorScheme] The operating-system colour scheme; light by default.
- * @property {Settings | null} [saved] The settings already saved in the browser, if any.
+ * @property {Settings | null} [saved] The settings already saved in the browser, if any; written
+ *   before the first load only, so a reload keeps what the page saved since.
  * @property {string[]} [failingCountries] Country codes whose holiday requests fail (no answer).
  * @property {string} [locale] The browser's language; `en-US` by default.
  */
@@ -86,7 +87,9 @@ export async function openPage(
   const context = await browser.newContext({ colorScheme, timezoneId: "UTC", locale });
   if (saved !== null) {
     const record = { key: config.storageKey, value: JSON.stringify(saved) };
-    await context.addInitScript(({ key, value }) => localStorage.setItem(key, value), record);
+    await context.addInitScript(({ key, value }) => {
+      if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
+    }, record);
   }
   /** @type {string[]} */
   const holidayRequests = [];

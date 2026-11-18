@@ -53,7 +53,9 @@ test("ui_map_001_pin_per_place_with_name_time_and_date", async () => {
   const name = withCountry.page.locator('[data-role="pin"] [data-role="pin-name"]');
   await name.first().waitFor();
   assert.equal(await name.nth(1).textContent(), "London, United Kingdom");
-  const empty = await openPage(browser, built.url);
+  const empty = await openPage(browser, built.url, {
+    saved: { ...defaultSettings(540, 1020), places: [] },
+  });
   assert.equal(await empty.page.locator('[data-role="map"]').count(), 0);
 });
 

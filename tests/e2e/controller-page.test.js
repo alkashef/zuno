@@ -64,6 +64,7 @@ function setup(saved, start, answer = invented) {
     storage: { load: () => saved, save: () => {} },
     clock: { now: () => clock.time },
     defaultHours: { start: 540, end: 1020 },
+    defaultCityIds: [],
   });
   return { controller, calls, clock };
 }
@@ -91,7 +92,7 @@ test("test_pck_004_open_puts_marker_at_now", async () => {
 });
 
 test("test_set_007_open_with_no_places_shows_empty_state", async () => {
-  const { controller, calls } = setup(null, utc(2026, 11, 17, 10));
+  const { controller, calls } = setup(settingsWith([]), utc(2026, 11, 17, 10));
   await controller.dispatch({ type: "open" });
   const state = controller.getState();
   assert.equal(state.isEmpty, true);

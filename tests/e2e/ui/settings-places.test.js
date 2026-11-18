@@ -71,6 +71,18 @@ test("ui_set_001_add_and_remove_a_place", async () => {
   assert.deepEqual(await listedNames(page), ["Riyadh"]);
 });
 
+test("ui_set_007_removing_all_seven_default_places_leaves_the_empty_page_after_reload", async () => {
+  const { page } = await openPage(browser, built.url);
+  await openSettings(page);
+  const names = ["Tokyo", "Cairo", "New Delhi", "Madrid", "Bogotá", "Riyadh", "Islamabad"];
+  for (const name of names) {
+    await page.getByRole("button", { name: `Remove ${name}`, exact: true }).click();
+  }
+  await page.reload();
+  assert.equal(await page.getByRole("button", { name: "Add a place" }).isVisible(), true);
+  assert.equal(await page.getByRole("heading", { name: "No places yet" }).isVisible(), true);
+});
+
 test("ui_set_001_escape_closes_panel_and_returns_focus_to_its_button", async () => {
   const { page } = await openPage(browser, built.url, { saved: savedPlaces(["washington-dc"]) });
   await openSettings(page);
@@ -111,7 +123,7 @@ test("test_set_013_add_a_place_lists_the_55_cities_with_their_countries", async 
 });
 
 test("ui_set_004_places_survive_reload", async () => {
-  const { page } = await openPage(browser, built.url);
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces([]) });
   await page.getByRole("button", { name: "Add a place" }).click();
   await addCity(page, "Riyadh, Saudi Arabia");
   await page.reload();

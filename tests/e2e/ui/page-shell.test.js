@@ -30,6 +30,11 @@ function oneUsPlace() {
   return { ...defaultSettings(540, 1020), places: [createPlace("place-1", "washington-dc")] };
 }
 
+/** @returns {import("../../../src/domain/settings.js").Settings} Saved settings that hold no places. */
+function noPlaces() {
+  return { ...defaultSettings(540, 1020), places: [] };
+}
+
 /**
  * @param {import("./page-fixture.js").Page} page
  * @returns {Promise<{ page: string, text: string }>} The computed colours of the page.
@@ -57,12 +62,23 @@ test("ui_thm_001_follows_light_and_dark_color_scheme", async () => {
 });
 
 test("ui_set_007_empty_page_prompts_to_add_a_place", async () => {
-  const empty = await openPage(browser, built.url);
+  const empty = await openPage(browser, built.url, { saved: noPlaces() });
   const prompt = empty.page.getByRole("button", { name: "Add a place" });
   assert.equal(await prompt.isVisible(), true);
   assert.equal(await empty.page.getByRole("heading", { name: "No places yet" }).isVisible(), true);
   const filled = await openPage(browser, built.url, { saved: oneUsPlace() });
   assert.equal(await filled.page.getByRole("button", { name: "Add a place" }).count(), 0);
+});
+
+test("ui_set_014_first_open_shows_the_seven_default_places_and_saves_nothing", async () => {
+  const { page } = await openPage(browser, built.url);
+  const names = page.locator('[data-role="pin"] [data-role="pin-name"]');
+  await names.first().waitFor();
+  const expected = ["Tokyo", "Cairo", "New Delhi", "Madrid", "Bogotá", "Riyadh", "Islamabad"];
+  assert.deepEqual(await names.allTextContents(), expected);
+  assert.equal(await page.getByRole("button", { name: "Add a place" }).count(), 0);
+  const stored = await page.evaluate(() => Object.keys(localStorage));
+  assert.deepEqual(stored, []);
 });
 
 test("ui_ref_001_refresh_button_refetches_holidays", async () => {

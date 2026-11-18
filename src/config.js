@@ -13,5 +13,14 @@ export const config = Object.freeze({
   defaultWorkStartMinutes: 540,
   defaultWorkEndMinutes: 1020,
   workingHoursStepMinutes: 60,
+  defaultCityIds: Object.freeze([
+    "tokyo",
+    "cairo",
+    "new-delhi",
+    "madrid",
+    "bogota",
+    "riyadh",
+    "islamabad",
+  ]),
   logLevel: "warn",
 });

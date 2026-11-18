@@ -404,9 +404,10 @@ invalid and is read as no saved settings (DEC-016).
   `load() -> Settings | null` returns `null` (and logs a warning for a bad record) when nothing
   valid is stored; `save(settings) -> void`.
 - `clock.now() -> number`, `clock.prefersDark() -> boolean`.
-- `controller.createController({ api, storage, clock, defaultHours }) -> { getState, dispatch, subscribe }`.
-  `defaultHours` (`{ start, end }`, minutes after midnight, from `config.js` through `main.js`) are the
-  working hours for settings not saved yet.
+- `controller.createController({ api, storage, clock, defaultHours, defaultCityIds }) -> { getState, dispatch, subscribe }`.
+  `defaultHours` (`{ start, end }`, minutes after midnight) and `defaultCityIds` (the default places'
+  cities, in order) come from `config.js` through `main.js`; with no valid saved record `open` uses
+  `domain/settings.defaultSettings(start, end, cityIds)`, and nothing is saved until a setting changes.
   Actions: `open`, `refresh`, `tick`, `setMarker`, `shiftMarkerDay`, `showMonth`, `addPlace`,
   `removePlace`, `movePlace`, `editPlace`, `setWorkingHours`, `setShowCountry`, `setShowHijri`,
   `selectHoliday`, `toggleNotices`, `openSettings`, `closeSettings`. `setMarker` takes an

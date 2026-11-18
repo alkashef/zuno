@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone | Description | Model | Effort | Status |
 | --- | --- | --- | --- | --- |
-| **M22** Default places | Seven places show when nothing is saved; the empty page shows only when the settings hold no places | sonnet | medium | open |
 | **M23** Weekend days per place | The user chooses a place's weekend days; the month grid and the picker follow them | sonnet | high | open |
 | **M24** Holidays the user adds and hides | Add, remove, hide and show holidays per country, saved in the browser, from the settings panel and the holiday card | opus | high | open |
 | **M25** Holidays file | Export the user's holidays to a file and import one; a bad file is refused | sonnet | high | open |
@@ -27,14 +26,6 @@ The visual reference for M26 to M28 is the "Zuno UI" canvas named at the top of 
 DEC-019 to DEC-021 state its sizes and colours. Existing tests that check behaviour a requirement
 of 2026-11-18 changed (SET-002, SET-003, SET-007, CAL-002, HOL-003, PCK-003, PCK-006, PCK-007) are
 updated in the milestone that changes it, and the report names them.
-
-### M22 — Default places
-
-- **Refs:** SET-014, SET-007, EX-011, DEC-016.
-- **Owner:** `src/domain/settings.js`, `src/controller.js`.
-- **Tests first:** `test_set_014_no_saved_settings_shows_the_seven_default_places_in_order` (EX-011, controller and browser), `test_set_014_defaults_are_not_saved_until_a_setting_changes`, `test_set_007_empty_page_only_when_the_settings_hold_no_places` (remove all seven, then reload: the empty page).
-- **Build:** `defaultCityIds` in `config.js`, passed by `main.js`; `defaultSettings` holds the default places; the controller uses it when storage has no valid record; `isEmpty` is true only for settings with no places.
-- **Gate:** the browser tests that relied on an empty first page set their own saved settings.
 
 ### M23 — Weekend days per place
 

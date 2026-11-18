@@ -1,11 +1,11 @@
 // @ts-check
 /**
  * @module domain/settings
- * The settings shape, defaults and validation (SET-005, SET-007, SET-010 to SET-012, SET-015,
+ * The settings shape, defaults and validation (SET-005, SET-007, SET-010 to SET-012, SET-014, SET-015,
  * DEC-016). Invalid input is refused by returning `null`; it is not an error. It does not check
  * one place (domain/places.js does).
  */
-import { isUnlistedPlace, restorePlace } from "./places.js";
+import { createPlace, isUnlistedPlace, restorePlace } from "./places.js";
 
 /** @typedef {import("./places.js").Place} Place */
 
@@ -54,13 +54,15 @@ export function isWorkingHours(start, end) {
 /**
  * @param {number} workStartMinutes Default start (from config).
  * @param {number} workEndMinutes Default end (from config).
- * @returns {Settings} Settings with no places, country names and Hijri off, and the theme on Auto
- *   (SET-007, SET-010 to SET-012).
+ * @param {readonly string[]} [cityIds] The cities of the default places, in order (from config);
+ *   none when left out.
+ * @returns {Settings} Settings with one place per city id, country names and Hijri off, and the
+ *   theme on Auto (SET-007, SET-010 to SET-012, SET-014).
  */
-export function defaultSettings(workStartMinutes, workEndMinutes) {
+export function defaultSettings(workStartMinutes, workEndMinutes, cityIds = []) {
   return {
     version: settingsVersion,
-    places: [],
+    places: cityIds.map((cityId, index) => createPlace(`place-${index + 1}`, cityId)),
     workStartMinutes,
     workEndMinutes,
     showCountry: false,

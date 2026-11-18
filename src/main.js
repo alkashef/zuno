@@ -46,6 +46,7 @@ const controller = createController({
   storage: createStorage({ store: localStorage, parse: parseSettings }),
   clock,
   defaultHours: { start: config.defaultWorkStartMinutes, end: config.defaultWorkEndMinutes },
+  defaultCityIds: config.defaultCityIds,
 });
 const lookup = { cities: listCities(), placeFacts, offsetAt: zoneOffset };
 const views = [
