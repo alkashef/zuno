@@ -39,6 +39,7 @@ export async function buildToScratch() {
     outFile,
     holidayServiceBaseUrl: config.holidayServiceBaseUrl,
     mapOutlineFile: path.resolve(import.meta.dirname, "../../../data/map-outline.svg"),
+    builtAt: new Date(Date.UTC(2026, 10, 18, 14, 32)),
   });
   return {
     url: pathToFileURL(outFile).href,

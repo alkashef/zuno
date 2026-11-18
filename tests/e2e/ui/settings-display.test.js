@@ -257,3 +257,10 @@ test("ui_dec_020_settings_sections_are_in_the_canvas_order_with_a_line_after_eac
     "0px",
   );
 });
+
+test("ui_ver_001_settings_footer_shows_the_version_ex_026", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["riyadh"]) });
+  await openSettings(page);
+  const footer = page.locator(".settings-footer");
+  assert.match((await footer.textContent()) ?? "", /Version 2026\.11\.18\.1432/);
+});

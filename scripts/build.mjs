@@ -4,7 +4,7 @@
  * Builds the one-file page dist/zuno.html (PKG-001, DEC-002, DEC-012). Bundles src/main.js and
  * src/styles.css with esbuild, inlines both into
  * src/index.html, puts the map's coastline (data/map-outline.svg, DEC-026) in place of the marker
- * <!--zuno:map-outline-->, and adds a Content-Security-Policy tag
+ * <!--zuno:map-outline-->, the version (VER-001, DEC-025) in place of <!--zuno:version-->, and adds a Content-Security-Policy tag
  * that allows only the inline script and style, data-URI images and the holiday host. It does not run the page or
  * read any setting except through the command-line entry at the bottom.
  */
@@ -21,6 +21,7 @@ import { build } from "esbuild";
  * @property {string} outFile Path of the built HTML file.
  * @property {string} holidayServiceBaseUrl Base URL of the holiday service.
  * @property {string} mapOutlineFile Path of the map's outline (data/map-outline.svg, DEC-026).
+ * @property {Date} builtAt The time of the build, written into the page as its version (DEC-025).
  */
 
 /**
@@ -66,10 +67,25 @@ function cspTag(script, style, holidayServiceBaseUrl) {
 }
 
 /**
+ * @param {Date} builtAt
+ * @returns {string} The version, `YYYY.MM.DD.HHmm` from the UTC parts of the time (VER-001).
+ */
+export function versionText(builtAt) {
+  const [date, time] = builtAt.toISOString().split("T");
+  return `${date.replaceAll("-", ".")}.${time.slice(0, 2)}${time.slice(3, 5)}`;
+}
+
+/**
  * Writes the one-file page.
  * @param {BuildOptions} options
  */
-export async function buildPage({ srcDir, outFile, holidayServiceBaseUrl, mapOutlineFile }) {
+export async function buildPage({
+  srcDir,
+  outFile,
+  holidayServiceBaseUrl,
+  mapOutlineFile,
+  builtAt,
+}) {
   const { script: rawScript, style } = await bundle(srcDir);
   // A literal "</script" inside the bundle would end the element early.
   const script = rawScript.replaceAll("</script", "<\\/script");
@@ -77,6 +93,7 @@ export async function buildPage({ srcDir, outFile, holidayServiceBaseUrl, mapOut
   const outline = (await readFile(mapOutlineFile, "utf8")).trim();
   const html = template
     .replace("<!--zuno:map-outline-->", () => outline)
+    .replace("<!--zuno:version-->", () => versionText(builtAt))
     .replace("<!--zuno:csp-->", () => cspTag(script, style, holidayServiceBaseUrl))
     .replace("<!--zuno:style-->", () => `<style>${style}</style>`)
     .replace("<!--zuno:script-->", () => `<script>${script}</script>`);
@@ -93,6 +110,7 @@ async function main() {
     outFile: path.join(root, "dist", "zuno.html"),
     holidayServiceBaseUrl: config.holidayServiceBaseUrl,
     mapOutlineFile: path.join(root, "data", "map-outline.svg"),
+    builtAt: new Date(),
   });
 }
 

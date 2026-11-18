@@ -14,7 +14,9 @@ name), remove it, and hide a listed holiday from its card in the month grid and 
 the settings panel. Your added and hidden holidays are saved in the browser. "Export" in the
 Holidays section saves them to a file (`zuno-holidays.json`) that you can share, and "Import" adds the
 holidays of such a file to your own; a file that is not a Zuno holidays file is refused and nothing
-changes. Both use local files only.
+changes. Both use local files only. The settings panel ends with the version: the word "Version" and the
+date and time of the build in UTC (for example 2026.11.18.1432), so you can tell which build a copy
+is. Two builds of the same code have different versions.
 
 ## Stack
 

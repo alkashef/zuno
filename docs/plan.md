@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                                             | Description                                                                                                          | Model  | Effort | Status   |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------ | ------ | -------- |
-| **M40** Version in the settings panel                 | The settings footer shows "Version" and the build's date and time in UTC                                             | sonnet | medium | open     |
 | **M41** No 24-hour fallback in the settings reader    | `parseSettings` needs its limits; no default in code                                                                 | sonnet | low    | open     |
 | **M42** Newer workflows in four browsers              | The workflows added since M21 also run in Firefox, WebKit and Edge                                                   | sonnet | medium | open     |
 | **M43** Publish to GitHub Pages                       | Every push to `main` builds the page and publishes it                                                                | sonnet | medium | blocked  |
@@ -19,20 +18,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M40 — Version in the settings panel
-
-- **Refs:** VER-001, DSP-001, EX-026, DEC-025.
-- **Owner:** `scripts/build.mjs`, `src/index.html`.
-- **Tests first:** `test_ver_001_version_text_from_the_build_time_ex_026`,
-  `test_ver_001_built_page_holds_the_version_and_no_marker`,
-  `ui_ver_001_settings_footer_shows_the_version_ex_026`.
-- **Build:** `buildPage` takes `builtAt`; `versionText(builtAt)` gives `YYYY.MM.DD.HHmm` in UTC; the
-  build replaces the marker `<!--zuno:version-->` after the word "Version" in the settings panel's
-  footer. The command-line entry passes the current time; `tests/e2e/ui/page-fixture.js` and the
-  build tests pass a fixed time. README: what the version means.
-- **Gate:** a page built with 2026-11-18 14:32 UTC shows "Version 2026.11.18.1432" in the settings
-  panel.
 
 ### M41 — No 24-hour fallback in the settings reader
 

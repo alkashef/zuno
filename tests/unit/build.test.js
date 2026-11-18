@@ -8,10 +8,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
-import { buildPage } from "../../scripts/build.mjs";
+import { buildPage, versionText } from "../../scripts/build.mjs";
 
 const srcDir = fileURLToPath(new URL("../../src", import.meta.url));
 const holidayServiceBaseUrl = "https://holidays.example.test/api/v4";
+const builtAt = new Date(Date.UTC(2026, 10, 18, 14, 32));
 const mapOutlineFile = fileURLToPath(new URL("../../data/map-outline.svg", import.meta.url));
 
 /**
@@ -27,7 +28,13 @@ async function buildToText(outlineText) {
       outlineFile = path.join(scratch, "outline.svg");
       await writeFile(outlineFile, outlineText);
     }
-    await buildPage({ srcDir, outFile, holidayServiceBaseUrl, mapOutlineFile: outlineFile });
+    await buildPage({
+      srcDir,
+      outFile,
+      holidayServiceBaseUrl,
+      mapOutlineFile: outlineFile,
+      builtAt,
+    });
     return await readFile(outFile, "utf8");
   } finally {
     await rm(scratch, { recursive: true });
@@ -96,4 +103,15 @@ test("test_pkg_001_built_page_holds_the_outline_and_no_marker", async () => {
   const real = await buildToText();
   assert.doesNotMatch(real, /zuno:map-outline/);
   assert.match(real, /<path class="map-land" d="M[^"]{20000,}"/);
+});
+
+test("test_ver_001_version_text_from_the_build_time_ex_026", () => {
+  assert.equal(versionText(builtAt), "2026.11.18.1432");
+  assert.equal(versionText(new Date(Date.UTC(2027, 0, 5, 3, 7))), "2027.01.05.0307");
+});
+
+test("test_ver_001_built_page_holds_the_version_and_no_marker", async () => {
+  const html = await buildToText();
+  assert.match(html, /Version\s+<span>2026\.11\.18\.1432<\/span>/);
+  assert.doesNotMatch(html, /zuno:version/);
 });
