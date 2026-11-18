@@ -196,12 +196,15 @@ function neededResultsByCountry(holidayResults, needed) {
  * @param {ResultsByCountryYear} holidayResults
  * @param {CountryYear[]} needed The country-years the shown month and the picker window need.
  * @param {Place[]} places The state's places.
+ * @param {UserHolidays} userHolidays A country with a holiday added in it is not listed as having
+ *   no data; a hidden holiday does not count (HOL-014).
  * @returns {Notices}
  */
-export function noticesOf(holidayResults, needed, places) {
+export function noticesOf(holidayResults, needed, places, userHolidays) {
   const byCountry = neededResultsByCountry(holidayResults, needed);
+  const withAdded = new Set(userHolidays.added.map((entry) => entry.countryCode));
   return {
-    countries: unavailableCountries(byCountry),
+    countries: unavailableCountries(byCountry).filter((code) => !withAdded.has(code)),
     placeIds: placesMissingRegionalData(places, byCountry).map((place) => place.id),
   };
 }

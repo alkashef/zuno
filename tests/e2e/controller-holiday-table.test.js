@@ -92,3 +92,16 @@ test("test_hol_013_year_after_the_table_is_unavailable_ex_023", async () => {
   assert.deepEqual(controller.getState().notices.countries, ["SA"]);
   assert.deepEqual(requests, []);
 });
+
+test("test_hol_014_riyadh_2029_before_and_after_adding_ex_023", async () => {
+  const { controller } = setup(["riyadh"], new Date("2029-01-10T09:00:00Z"));
+  await controller.dispatch({ type: "open" });
+  assert.deepEqual(controller.getState().notices.countries, ["SA"]);
+  await controller.dispatch({
+    type: "addHoliday",
+    countryCode: "SA",
+    date: "2029-02-22",
+    name: "Founding Day",
+  });
+  assert.deepEqual(controller.getState().notices.countries, []);
+});

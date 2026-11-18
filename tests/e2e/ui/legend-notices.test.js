@@ -1,5 +1,5 @@
 // @ts-check
-/** @module legend-notices.test Headless-browser tests of the legend and the notices card in Chromium (LEG-001, REF-002, HOL-004). */
+/** @module legend-notices.test Headless-browser tests of the legend and the notices card in Chromium (LEG-001, REF-002, HOL-004, HOL-014). */
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
@@ -142,4 +142,19 @@ test("ui_hol_004_missing_region_listed_with_national_shown", async () => {
     text.includes(placeName ?? "?") && /regional/i.test(text) && /national/i.test(text),
     text,
   );
+});
+
+test("ui_hol_014_notice_goes_after_the_user_adds_a_holiday", async () => {
+  const saved = withPlaces([createPlace("place-1", "cairo")]);
+  const { page } = await openPage(browser, built.url, { saved, failingCountries: ["EG"] });
+  const badge = page.locator('[data-role="notices-badge"]');
+  await badge.waitFor();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  const section = page.getByRole("region", { name: "Holidays" });
+  await section.getByRole("combobox", { name: "Country" }).selectOption({ label: "Egypt" });
+  await section.getByLabel("Date").fill("2026-11-20");
+  await section.getByRole("textbox", { name: "Name" }).fill("Invented Day");
+  await section.getByRole("button", { name: "Add holiday" }).click();
+  await badge.waitFor({ state: "hidden" });
+  assert.equal(await badge.isHidden(), true);
 });

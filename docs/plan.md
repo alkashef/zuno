@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                                             | Description                                                                                                          | Model  | Effort | Status   |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------ | ------ | -------- |
-| **M33** Notice skips countries with added holidays    | The "No holiday data" notice leaves out a country the user added a holiday for                                       | sonnet | medium | open     |
 | **M34** Real coastlines on the map                    | The map's outline is Natural Earth's coastlines, put into the page by the build                                      | sonnet | high   | open     |
 | **M35** Half-transparent map labels                   | The map shows through the city labels, and their text stays readable                                                 | sonnet | low    | open     |
 | **M36** Hijri day look and "Day" label                | The Hijri day has no chip and regular weight, a darker shade on tinted cells, and the corner reads "Day"             | sonnet | medium | open     |
@@ -26,17 +25,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M33 — Notice skips countries with added holidays
-
-- **Refs:** HOL-014, REF-002, EX-023.
-- **Owner:** `src/controller-holidays.js`.
-- **Tests first:** `test_hol_014_notice_leaves_out_a_country_with_an_added_holiday`,
-  `test_hol_014_riyadh_2029_before_and_after_adding_ex_023`,
-  `ui_hol_014_notice_goes_after_the_user_adds_a_holiday`.
-- **Build:** `noticesOf` leaves a country out of the no-data list while the user's record holds at
-  least one added holiday for it. A hidden holiday does not count.
-- **Gate:** EX-023 passes as written, in the controller test and in the browser test.
 
 ### M34 — Real coastlines on the map
 

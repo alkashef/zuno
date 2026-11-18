@@ -112,10 +112,24 @@ test("test_ref_002_notices_list_unavailable_countries_from_the_needed_years_only
     { countryCode: "US", year: 2026 },
     { countryCode: "IN", year: 2026 },
   ];
-  assert.deepEqual(noticesOf(holidayResults, needed, [losAngeles, mumbai]), {
+  assert.deepEqual(noticesOf(holidayResults, needed, [losAngeles, mumbai], emptyUserHolidays()), {
     countries: ["US"],
     placeIds: [],
   });
+});
+
+test("test_hol_014_notice_leaves_out_a_country_with_an_added_holiday", () => {
+  const down = /** @type {const} */ ({ status: "unavailable", reason: "down" });
+  const holidayResults = { US: { 2026: down }, IN: { 2026: down } };
+  const needed = [
+    { countryCode: "US", year: 2026 },
+    { countryCode: "IN", year: 2026 },
+  ];
+  const places = [losAngeles, mumbai];
+  const added = { version: /** @type {const} */ (1), added: [diwali], hidden: [] };
+  assert.deepEqual(noticesOf(holidayResults, needed, places, added).countries, ["US"]);
+  const hiddenOnly = { version: /** @type {const} */ (1), added: [], hidden: [{ ...diwali }] };
+  assert.deepEqual(noticesOf(holidayResults, needed, places, hiddenOnly).countries, ["IN", "US"]);
 });
 
 test("test_hol_004_notices_list_places_whose_region_has_no_regional_data", () => {
@@ -124,10 +138,18 @@ test("test_hol_004_notices_list_places_whose_region_has_no_regional_data", () =>
       2026: /** @type {const} */ ({ status: "loaded", holidays: usRecords2026().slice(0, 1) }),
     },
   };
-  assert.deepEqual(noticesOf(holidayResults, [{ countryCode: "US", year: 2026 }], [losAngeles]), {
-    countries: [],
-    placeIds: ["place-1"],
-  });
+  assert.deepEqual(
+    noticesOf(
+      holidayResults,
+      [{ countryCode: "US", year: 2026 }],
+      [losAngeles],
+      emptyUserHolidays(),
+    ),
+    {
+      countries: [],
+      placeIds: ["place-1"],
+    },
+  );
 });
 
 test("test_cal_006_holiday_at_gives_the_cells_holiday_or_null", () => {

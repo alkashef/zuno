@@ -211,6 +211,7 @@ function derive(state) {
   const { settings } = state;
   if (settings === null || settings.places.length === 0) return emptyView(state);
   const holidays = holidaysByCountry(state, settings);
+  const needed = neededCountryYears(state);
   return {
     ...state,
     isEmpty: false,
@@ -219,7 +220,7 @@ function derive(state) {
     pickerWindow: pickerWindow(settings, state.selectedDay),
     windowDates: windowDates(settings, state.selectedDay),
     grid: buildMonth(settings, state.month, holidays, state.now),
-    notices: noticesOf(state.holidayResults, neededCountryYears(state), settings.places),
+    notices: noticesOf(state.holidayResults, needed, settings.places, state.userHolidays),
   };
 }
 
