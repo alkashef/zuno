@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                                             | Description                                                                                                          | Model  | Effort | Status   |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------ | ------ | -------- |
-| **M39** Weekend equal to the country's is the default | A place whose ticked days equal its country's weekend stores no choice of its own                                    | sonnet | low    | open     |
 | **M40** Version in the settings panel                 | The settings footer shows "Version" and the build's date and time in UTC                                             | sonnet | medium | open     |
 | **M41** No 24-hour fallback in the settings reader    | `parseSettings` needs its limits; no default in code                                                                 | sonnet | low    | open     |
 | **M42** Newer workflows in four browsers              | The workflows added since M21 also run in Firefox, WebKit and Edge                                                   | sonnet | medium | open     |
@@ -20,16 +19,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M39 — Weekend equal to the country's is the default
-
-- **Refs:** SET-017, SET-016, EX-024.
-- **Owner:** `src/domain/places.js`.
-- **Tests first:** `test_set_017_weekend_equal_to_the_countrys_stores_no_choice_ex_024`,
-  `test_set_017_edit_place_back_to_the_default_is_saved`.
-- **Build:** an edit that sets a place's weekend days to exactly the weekend of its country stores
-  `null` for the place's weekend days. The order of the days does not matter.
-- **Gate:** EX-024 passes as written.
 
 ### M40 — Version in the settings panel
 

@@ -143,3 +143,18 @@ test("test_set_016_restored_place_without_weekend_days_gets_null", () => {
   assert.equal(countryCode, "SA");
   assert.equal(zone, "Asia/Riyadh");
 });
+
+test("test_set_017_weekend_equal_to_the_countrys_stores_no_choice_ex_024", () => {
+  const places = [createPlace("a", "london")];
+  const own = editPlace(places, "a", { weekendDays: [5, 6] });
+  assert.deepEqual(own[0].weekendDays, [5, 6]);
+  const back = editPlace(own, "a", { weekendDays: [7, 6] });
+  assert.equal(back[0].weekendDays, null);
+});
+
+test("test_set_017_edit_place_back_to_the_default_is_saved", () => {
+  const places = [createPlace("a", "london")];
+  const edited = editPlace(places, "a", { weekendDays: [6, 7], label: "Home" });
+  assert.equal(edited[0].weekendDays, null);
+  assert.equal(edited[0].label, "Home");
+});

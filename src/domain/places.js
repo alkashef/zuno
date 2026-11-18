@@ -9,7 +9,7 @@
 import { cityOf, countryName } from "./cities.js";
 import { formatDate, formatTime } from "./format.js";
 import { HijriVariant, isHijriAdjust, isHijriVariant } from "./hijri.js";
-import { isWeekendChoice } from "./weekends.js";
+import { countryWeekendDays, isWeekendChoice } from "./weekends.js";
 import { localDateTime } from "./zones.js";
 
 /** @typedef {import("./hijri.js").HijriVariantName} HijriVariantName */
@@ -166,7 +166,20 @@ export function movePlace(places, id, offset) {
 /** @typedef {Partial<Omit<Place, "id" | "cityId" | "countryCode" | "zone">>} PlaceChanges */
 
 /**
- * Changes fields of a place (SET-006, SET-009, SET-016, HIJ-002, HIJ-003). The id and the city, with its
+ * @param {Place} place
+ * @returns {Place} The place with `null` weekend days when its days equal its country's, in any
+ *   order (SET-017).
+ */
+function withDefaultWeekend(place) {
+  const own = place.weekendDays;
+  if (own === null) return place;
+  const country = countryWeekendDays(place.countryCode);
+  const same = own.length === country.length && country.every((day) => own.includes(day));
+  return same ? { ...place, weekendDays: null } : place;
+}
+
+/**
+ * Changes fields of a place (SET-006, SET-009, SET-016, SET-017, HIJ-002, HIJ-003). The id and the city, with its
  * country and zone, do not change.
  * @param {Place[]} places
  * @param {string} id
@@ -177,7 +190,7 @@ export function editPlace(places, id, changes) {
   return places.map((place) => {
     const { cityId, countryCode, zone } = place;
     const edited = { ...place, ...changes, id: place.id, cityId, countryCode, zone };
-    return place.id === id && isPlace(edited) ? edited : place;
+    return place.id === id && isPlace(edited) ? withDefaultWeekend(edited) : place;
   });
 }
 
