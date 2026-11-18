@@ -1,7 +1,7 @@
 /**
  * The settings panel: a fixed side panel with the working hours, the display switches and theme,
- * the list of places with their editors, the add form, the Holidays section (its add form and the
- * rows of added and hidden holidays) and the footer. It holds no colour or size
+ * the add form, the list of places with their editors, the Holidays section (its add form and the
+ * rows of added and hidden holidays) and the footer, each section ending with a line. It holds no colour or size
  * value of its own (theme.css does) and does not style the page behind it.
  */
 .settings {
@@ -34,6 +34,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-row);
+  padding-bottom: var(--space-4);
+  border-bottom: var(--line-width) solid var(--color-line-card);
 }
 
 .settings-section-tight {
@@ -70,6 +72,7 @@
   height: var(--control-height);
   padding: 0 var(--space-control);
   border: var(--line-width) solid var(--color-line-input);
+  border-radius: var(--radius-control);
   background: var(--color-card);
   color: var(--color-text);
   font: inherit;
@@ -135,6 +138,7 @@
   justify-content: center;
   gap: var(--space-tight);
   border: var(--line-width) solid var(--color-line-input);
+  border-radius: var(--radius-small);
   cursor: pointer;
 }
 
@@ -159,6 +163,7 @@
 .settings-place {
   padding: var(--space-2) var(--space-2) var(--space-2) var(--space-row);
   border: var(--line-width) solid var(--color-line-control);
+  border-radius: var(--radius-control);
 }
 
 .settings-place[data-open="true"] {
@@ -186,6 +191,7 @@
   justify-content: center;
   padding: 0;
   border: var(--line-width) solid var(--color-line-control);
+  border-radius: var(--radius-chip);
   background: var(--color-card);
   color: var(--color-text);
   cursor: pointer;
@@ -271,8 +277,6 @@
 
 .settings-footer {
   margin-top: auto;
-  padding-top: var(--space-marker);
-  border-top: var(--line-width) solid var(--color-line-hairline);
   color: var(--color-text-muted);
   font-size: var(--font-size-small);
 }
@@ -333,6 +337,7 @@
   gap: var(--space-row);
   padding: var(--space-1) var(--space-1) var(--space-1) var(--space-row);
   border: var(--line-width) solid var(--color-line-control);
+  border-radius: var(--radius-control);
 }
 
 .settings-holiday-text {

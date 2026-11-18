@@ -1,11 +1,12 @@
 // @ts-check
 /**
  * @module views/map
- * Owns the world map: a static SVG of simplified outlines (DEC-010) and one pin per place, labelled
- * with the place's name, current local time and date (MAP-001, CLK-001, CLK-003). It clones its
- * markup from templates in index.html and places each pin through the CSS custom properties
- * `--pin-left` and `--pin-top`, and puts each label on the side of its pin where it covers no other
- * label or pin and stays on the map. It computes no position, time or date (the injected `pinOf`
+ * Owns the world map: a static SVG of simplified outlines (DEC-021) and one pin per place, a
+ * location icon with its tip on the place, labelled with the place's name, current local time and
+ * date (MAP-001, CLK-001, CLK-003). It clones its markup from templates in index.html and places
+ * each pin through the CSS custom properties `--pin-left` and `--pin-top`, and puts each label on
+ * the side of its icon (offsets from the custom properties `--map-label-gap-*`) where it covers no
+ * other label or icon and stays on the map. It computes no position, time or date (the injected `pinOf`
  * does) and picks no colour (map.css does, from theme.css).
  */
 
@@ -41,8 +42,15 @@
  */
 
 /**
+ * @typedef {object} Gaps How far a label stands from the tip of its icon, in pixels.
+ * @property {number} side Beside the icon: from the tip's x to the label's near edge.
+ * @property {number} above From the tip's y up to the label's bottom edge.
+ * @property {number} below From the tip's y down to the label's top edge.
+ */
+
+/**
  * @typedef {object} Marker One pin as the label placement sees it.
- * @property {Rect} dot The pin's dot.
+ * @property {Rect} icon The pin's icon; its bottom centre is the tip, on the place.
  * @property {number} width The label's width.
  * @property {number} height The label's height.
  */
@@ -119,26 +127,27 @@ function sharedArea(a, b) {
 /**
  * @param {Marker} marker
  * @param {LabelSpot} spot
- * @param {number} gap Pixels between the pin's centre and the label.
- * @returns {Rect} The label's box at that spot.
+ * @param {Gaps} gaps
+ * @returns {Rect} The label's box at that spot: beside the icon it is centred on the icon's middle.
  */
-function labelRect(marker, spot, gap) {
-  const x = marker.dot.left + marker.dot.width / 2;
-  const y = marker.dot.top + marker.dot.height / 2;
+function labelRect(marker, spot, gaps) {
+  const x = marker.icon.left + marker.icon.width / 2;
+  const middle = marker.icon.top + marker.icon.height / 2;
+  const tip = marker.icon.top + marker.icon.height;
   const { width, height } = marker;
   const corners = {
-    right: { left: x + gap, top: y - height / 2 + spot.shift },
-    left: { left: x - gap - width, top: y - height / 2 + spot.shift },
-    above: { left: x - width / 2 + spot.shift, top: y - gap - height },
-    below: { left: x - width / 2 + spot.shift, top: y + gap },
+    right: { left: x + gaps.side, top: middle - height / 2 + spot.shift },
+    left: { left: x - gaps.side - width, top: middle - height / 2 + spot.shift },
+    above: { left: x - width / 2 + spot.shift, top: tip - gaps.above - height },
+    below: { left: x - width / 2 + spot.shift, top: tip + gaps.below },
   };
   return { ...corners[spot.side], width, height };
 }
 
 /**
  * @param {Marker} marker
- * @returns {LabelSpot[]} The spots to try, the preferred first: beside the pin, raised or lowered by
- *   half the label's height, above or below the pin, then further away.
+ * @returns {LabelSpot[]} The spots to try, the preferred first: beside the icon, raised or lowered by
+ *   half the label's height, above or below the icon, then further away.
  */
 function spotsOf(marker) {
   const { width, height } = marker;
@@ -164,29 +173,29 @@ function spotsOf(marker) {
  * @param {Scene} scene
  * @param {number} index The label being placed.
  * @param {Rect} rect A box for that label.
- * @returns {number} How bad the box is: the area it covers of other labels and pins, plus four
+ * @returns {number} How bad the box is: the area it covers of other labels and icons, plus four
  *   times its area off the map.
  */
 function badness(scene, index, rect) {
   const offMap = rect.width * rect.height - sharedArea(rect, scene.view);
   return scene.markers.reduce((sum, marker, other) => {
     if (other === index) return sum;
-    return sum + sharedArea(rect, scene.labels[other]) + sharedArea(rect, marker.dot);
+    return sum + sharedArea(rect, scene.labels[other]) + sharedArea(rect, marker.icon);
   }, 4 * offMap);
 }
 
 /**
  * @param {Scene} scene
  * @param {number} index The label to place.
- * @param {number} gap Pixels between a pin's centre and its label.
+ * @param {Gaps} gaps
  * @returns {{ spot: LabelSpot, rect: Rect, cost: number }} The label's least bad spot, given where
  *   the other labels are now.
  */
-function bestSpot(scene, index, gap) {
+function bestSpot(scene, index, gaps) {
   const marker = scene.markers[index];
   return spotsOf(marker)
     .map((spot) => {
-      const rect = labelRect(marker, spot, gap);
+      const rect = labelRect(marker, spot, gaps);
       return { spot, rect, cost: badness(scene, index, rect) };
     })
     .reduce((a, b) => (b.cost < a.cost ? b : a));
@@ -195,20 +204,20 @@ function bestSpot(scene, index, gap) {
 /**
  * @param {Marker[]} markers
  * @param {Rect} view The map view.
- * @param {number} gap Pixels between a pin's centre and its label.
+ * @param {Gaps} gaps
  * @returns {LabelSpot[]} One spot per label, chosen so labels cover as little as possible of each
- *   other, of the pins and of the area off the map: first each label in turn from west to east,
+ *   other, of the icons and of the area off the map: first each label in turn from west to east,
  *   then every label again while one of them still finds a better spot.
  */
-function chooseSpots(markers, view, gap) {
+function chooseSpots(markers, view, gaps) {
   const empty = { left: 0, top: 0, width: 0, height: 0 };
   const scene = { markers, view, labels: markers.map(() => empty) };
   const spots = markers.map((marker) => spotsOf(marker)[0]);
   const order = markers.map((_, index) => index);
-  order.sort((a, b) => markers[a].dot.left - markers[b].dot.left);
+  order.sort((a, b) => markers[a].icon.left - markers[b].icon.left);
   for (let round = 0; round < placementRounds; round += 1) {
     const moved = order.filter((index) => {
-      const best = bestSpot(scene, index, gap);
+      const best = bestSpot(scene, index, gaps);
       const better = round === 0 || best.cost < badness(scene, index, scene.labels[index]);
       if (better) [spots[index], scene.labels[index]] = [best.spot, best.rect];
       return better;
@@ -234,6 +243,20 @@ function rectIn(element, origin) {
 }
 
 /**
+ * @param {HTMLElement} view The map view.
+ * @returns {Gaps} The label offsets the stylesheet defines.
+ */
+function gapsOf(view) {
+  const read = (/** @type {string} */ name) =>
+    Number.parseFloat(getComputedStyle(view).getPropertyValue(name));
+  return {
+    side: read("--map-label-gap-side"),
+    above: read("--map-label-gap-above"),
+    below: read("--map-label-gap-below"),
+  };
+}
+
+/**
  * @param {HTMLElement} view The map view with its pins drawn.
  * @returns {void} Moves each label to the spot `chooseSpots` gives it.
  */
@@ -244,12 +267,11 @@ function placeLabels(view) {
   );
   const markers = pins.map((pin) => {
     const label = /** @type {HTMLElement} */ (pin.querySelector(".map-pin-label"));
-    const dot = rectIn(/** @type {Element} */ (pin.querySelector(".map-pin-dot")), origin);
-    return { dot, width: label.offsetWidth, height: label.offsetHeight };
+    const icon = rectIn(/** @type {Element} */ (pin.querySelector(".map-pin-icon")), origin);
+    return { icon, width: label.offsetWidth, height: label.offsetHeight };
   });
-  const gap = Number.parseFloat(getComputedStyle(view).getPropertyValue("--space-marker"));
   const viewRect = { left: 0, top: 0, width: origin.width, height: origin.height };
-  chooseSpots(markers, viewRect, gap).forEach((spot, index) => {
+  chooseSpots(markers, viewRect, gapsOf(view)).forEach((spot, index) => {
     pins[index].dataset.side = spot.side;
     pins[index].style.setProperty("--label-shift", `${spot.shift}px`);
   });

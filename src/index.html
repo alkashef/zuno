@@ -58,40 +58,42 @@
     </header>
     <main class="page" data-role="page"></main>
 
-    <template id="legend-template">
-      <footer class="legend" data-role="legend" aria-label="Legend">
-        <span class="legend-title">Legend</span>
-        <ul class="legend-list">
-          <li class="legend-item">
-            <span class="legend-swatch legend-swatch-working" data-role="legend-swatch"></span>
-            <span data-role="legend-name">Working hours (picker)</span>
-          </li>
-          <li class="legend-item">
-            <span class="legend-swatch legend-swatch-non-working" data-role="legend-swatch"></span>
-            <span data-role="legend-name">Non-working hours (picker)</span>
-          </li>
-          <li class="legend-item">
-            <span class="legend-swatch legend-swatch-day-off" data-role="legend-swatch"></span>
-            <span data-role="legend-name">Day off: weekend or holiday (picker)</span>
-          </li>
-          <li class="legend-item">
-            <span class="legend-swatch legend-swatch-weekend" data-role="legend-swatch"></span>
-            <span data-role="legend-name">Weekend (month view)</span>
-          </li>
-          <li class="legend-item">
-            <span class="legend-swatch legend-swatch-holiday" data-role="legend-swatch"></span>
-            <span data-role="legend-name">Public holiday (month view)</span>
-          </li>
-          <li class="legend-item">
-            <span class="legend-swatch legend-swatch-split" data-role="legend-swatch"></span>
-            <span data-role="legend-name">Weekend and holiday (month view)</span>
-          </li>
-          <li class="legend-item">
-            <span class="legend-swatch legend-swatch-today" data-role="legend-swatch"></span>
-            <span data-role="legend-name">Today (month view)</span>
-          </li>
-        </ul>
-      </footer>
+    <template id="legend-month-template">
+      <ul class="legend-list">
+        <li class="legend-item">
+          <span class="legend-swatch legend-swatch-weekend" data-role="legend-swatch"></span>
+          <span data-role="legend-name">Weekend</span>
+        </li>
+        <li class="legend-item">
+          <span class="legend-swatch legend-swatch-holiday" data-role="legend-swatch"></span>
+          <span data-role="legend-name">Public holiday</span>
+        </li>
+        <li class="legend-item">
+          <span class="legend-swatch legend-swatch-split" data-role="legend-swatch"></span>
+          <span data-role="legend-name">Weekend and holiday</span>
+        </li>
+        <li class="legend-item">
+          <span class="legend-swatch legend-swatch-today" data-role="legend-swatch"></span>
+          <span data-role="legend-name">Today</span>
+        </li>
+      </ul>
+    </template>
+
+    <template id="legend-picker-template">
+      <ul class="legend-list">
+        <li class="legend-item">
+          <span class="legend-swatch legend-swatch-working" data-role="legend-swatch"></span>
+          <span data-role="legend-name">Working hours</span>
+        </li>
+        <li class="legend-item">
+          <span class="legend-swatch legend-swatch-non-working" data-role="legend-swatch"></span>
+          <span data-role="legend-name">Non-working hours</span>
+        </li>
+        <li class="legend-item">
+          <span class="legend-swatch legend-swatch-day-off" data-role="legend-swatch"></span>
+          <span data-role="legend-name">Day off: weekend or holiday</span>
+        </li>
+      </ul>
     </template>
 
     <template id="notice-item-template">
@@ -141,7 +143,10 @@
 
     <template id="map-pin-template">
       <li class="map-pin" data-role="pin">
-        <span class="map-pin-dot" aria-hidden="true"></span>
+        <svg class="map-pin-icon" viewBox="0 0 24 22" aria-hidden="true" focusable="false">
+          <path class="map-pin-body" d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" />
+          <circle class="map-pin-hole" cx="12" cy="10" r="2.5" />
+        </svg>
         <span class="map-pin-label">
           <span class="map-pin-name" data-role="pin-name"></span>
           <span class="map-pin-time" data-role="pin-time"></span>
@@ -181,6 +186,13 @@
             <tbody data-role="body"></tbody>
           </table>
         </div>
+        <div
+          class="legend"
+          data-role="legend"
+          data-legend="month"
+          role="group"
+          aria-label="Legend of the month view"
+        ></div>
       </section>
     </template>
 
@@ -238,7 +250,7 @@
     </template>
 
     <template id="picker-template">
-      <section class="picker" data-role="picker" aria-labelledby="picker-title">
+      <section class="picker" data-role="picker" aria-label="Meeting time">
         <button
           type="button"
           class="picker-resize"
@@ -247,7 +259,6 @@
         >
           <span class="picker-resize-grip"></span>
         </button>
-        <h2 id="picker-title" class="picker-title">Meeting time</h2>
         <div data-role="day-selector-slot"></div>
         <div class="picker-scroll" data-role="scroll">
           <div class="picker-axis" data-role="axis"></div>
@@ -263,6 +274,13 @@
             ></div>
           </div>
         </div>
+        <div
+          class="legend"
+          data-role="legend"
+          data-legend="picker"
+          role="group"
+          aria-label="Legend of the picker"
+        ></div>
       </section>
     </template>
 
@@ -277,8 +295,10 @@
             <p class="picker-sub" data-role="sub" hidden></p>
           </div>
           <div class="picker-mark" data-role="mark">
-            <span class="picker-time" data-role="local-time"></span>
-            <span class="picker-date" data-role="local-date"></span>
+            <p class="picker-when">
+              <span class="picker-time" data-role="local-time"></span>
+              <span class="picker-date" data-role="local-date"></span>
+            </p>
             <span class="picker-hijri" data-role="local-hijri" hidden></span>
           </div>
         </div>
@@ -423,14 +443,6 @@
           </fieldset>
           <p class="settings-hint">Auto follows the light or dark setting of your system.</p>
         </section>
-        <section class="settings-section" aria-labelledby="settings-places-title">
-          <h3 id="settings-places-title" class="settings-heading">Places</h3>
-          <p class="settings-hint settings-hint-large">
-            The first place is the reference for the meeting-time picker. Use the arrows to change
-            the order.
-          </p>
-          <ul class="settings-places" data-role="places"></ul>
-        </section>
         <section
           class="settings-section settings-section-tight"
           aria-labelledby="settings-add-title"
@@ -456,6 +468,14 @@
             </button>
           </form>
           <p class="settings-hint">The new place uses the time zone of the city.</p>
+        </section>
+        <section class="settings-section" aria-labelledby="settings-places-title">
+          <h3 id="settings-places-title" class="settings-heading">Places</h3>
+          <p class="settings-hint settings-hint-large">
+            The first place is the reference for the meeting-time picker. Use the arrows to change
+            the order.
+          </p>
+          <ul class="settings-places" data-role="places"></ul>
         </section>
         <section
           class="settings-section"

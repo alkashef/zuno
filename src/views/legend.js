@@ -1,31 +1,34 @@
 // @ts-check
 /**
  * @module views/legend
- * Owns the legend: a banner fixed to the bottom of the page that names every colour the page uses
- * for working hours, non-working hours and days off in the picker, and for weekends, public
- * holidays, both at once and today in the month grid (LEG-001). It
- * clones its markup from a `<template>` in index.html, shows only while places are saved, and
- * picks no colour (legend.css does).
+ * Owns the contents of the legend (LEG-001, DEC-020). The legend is in two parts, each at the
+ * bottom of its card: the month grid's part names the colours of weekends, public holidays, both
+ * at once and today; the picker's part names the colours of working hours, non-working hours and
+ * days off. Each card's template holds an empty part marked `data-legend="month"` or
+ * `data-legend="picker"`; this view fills each from the template `#legend-<name>-template` and
+ * empties it again on the empty page. It does not build the cards (views/month-grid.js and
+ * views/picker.js do), clones its markup from index.html and picks no colour (legend.css does).
  */
 
 /**
  * @param {Document} doc The page.
- * @returns {{ render: (view: { isEmpty: boolean }) => void }} The legend; `render` shows or
- *   removes the banner to match `view.isEmpty`.
- * @throws {Error} When the page has no legend template.
+ * @returns {{ render: (view: { isEmpty: boolean }) => void }} The legend; `render` fills every
+ *   legend part that is on the page and still empty, or, while `view.isEmpty`, empties them.
  */
 export function createLegend(doc) {
-  const template = doc.querySelector("#legend-template");
-  if (!(template instanceof HTMLTemplateElement)) {
-    throw new Error("legend: the page has no #legend-template");
-  }
   return {
     render(view) {
-      const banner = doc.querySelector('[data-role="legend"]');
-      if (!view.isEmpty && banner === null) {
-        doc.body.append(template.content.cloneNode(true));
-      } else if (view.isEmpty) {
-        banner?.remove();
+      const parts = [...doc.querySelectorAll("[data-legend]")].filter(
+        (part) => part instanceof HTMLElement,
+      );
+      for (const part of parts) {
+        const name = part.dataset.legend ?? "";
+        const template = doc.querySelector(`#legend-${name}-template`);
+        if (!(template instanceof HTMLTemplateElement)) {
+          throw new Error(`legend: the page has no #legend-${name}-template`);
+        }
+        if (view.isEmpty) part.replaceChildren();
+        else if (part.childElementCount === 0) part.append(template.content.cloneNode(true));
       }
     },
   };

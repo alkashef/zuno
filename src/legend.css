@@ -1,35 +1,19 @@
 /**
- * Styles the legend banner (fixed to the bottom, full width) and the notices button, badge and
- * card in the header. It holds no colour value (theme.css does) and does not style the views the
- * legend explains.
+ * Styles the two legend parts (LEG-001), one at the bottom of the month grid card and one at the
+ * bottom of the picker card, and the notices button, badge and card in the header. It holds no
+ * colour value (theme.css does) and does not style the cards that hold the legend parts (the
+ * month grid's and the picker's sheets do).
  */
 .legend {
-  position: sticky;
-  z-index: 5;
-  bottom: 0;
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: var(--space-legend);
-  padding: var(--space-control) var(--space-page);
-  border-top: var(--line-width) solid var(--color-line-card);
-  background: var(--color-card);
-  box-shadow: var(--shadow-up);
+  margin-top: var(--space-marker);
+  padding-top: var(--space-control);
+  border-top: var(--line-width) solid var(--color-line-hairline);
   font-size: var(--font-size-caption);
-}
-
-.legend-title {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-tiny);
-  font-weight: bold;
-  letter-spacing: var(--letter-spacing-caps);
-  text-transform: uppercase;
 }
 
 .legend-list {
   display: flex;
   min-width: 0;
-  flex: 1;
   flex-wrap: wrap;
   gap: var(--space-tight) var(--space-legend);
   margin: 0;
@@ -47,6 +31,7 @@
   width: var(--swatch-size);
   height: var(--swatch-size);
   border: var(--line-width) solid var(--color-line-swatch);
+  border-radius: var(--radius-swatch);
 }
 
 .legend-swatch-weekend {
@@ -102,6 +87,7 @@
   align-items: center;
   justify-content: center;
   padding: 0 var(--space-1);
+  border-radius: var(--radius-round);
   background: var(--color-text);
   color: var(--color-on-text);
   font-size: var(--font-size-tiny);
@@ -123,6 +109,7 @@
   gap: var(--space-tight);
   padding: var(--space-marker) var(--space-3);
   border: var(--line-width) solid var(--color-line-control);
+  border-radius: var(--radius-popover);
   background: var(--color-card);
   box-shadow: var(--shadow-large);
   color: var(--color-text);

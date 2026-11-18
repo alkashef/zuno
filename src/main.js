@@ -81,7 +81,6 @@ const views = [
   createTheme(document),
   createHeader(document),
   createEmptyPage(document),
-  createLegend(document),
   createNotices(document, { dispatch: controller.dispatch, placeName, countryName }),
   createMap(document, { placeName, pinOf: placePin }),
   createMonthGrid(document, {
@@ -109,6 +108,7 @@ const views = [
     makeHover: (rows) =>
       createPickerHover(rows, { localAt: localDateTime, stepMinutes: config.pickerStepMinutes }),
   }),
+  createLegend(document),
   createSettingsPanel(document, {
     defaultHours: { start: config.defaultWorkStartMinutes, end: config.defaultWorkEndMinutes },
     hoursStepMinutes: config.workingHoursStepMinutes,

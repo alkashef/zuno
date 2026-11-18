@@ -322,7 +322,7 @@ function buildBand(ctx, days) {
 /**
  * @param {Document} doc
  * @param {string} date `YYYY-MM-DD`.
- * @returns {HTMLTableCellElement} The column header of one day: its number and its weekday.
+ * @returns {HTMLTableCellElement} The column header of one day: its weekday above its number.
  */
 function buildDayHead(doc, date) {
   const head = doc.createElement("th");
@@ -335,7 +335,7 @@ function buildDayHead(doc, date) {
   const weekday = doc.createElement("span");
   weekday.className = "month-grid-weekday";
   weekday.textContent = formatWeekday({ year, month, day });
-  head.append(number, weekday);
+  head.append(weekday, number);
   return head;
 }
 

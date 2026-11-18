@@ -1,7 +1,7 @@
 /**
- * The time picker panel on the right of the page: its title, the day selector with its month
- * calendar, the hour axis, the rows with their names, marker times and coloured stretches, and the
- * marker line with its handle. It does not style the page shell (layout.css), the settings panel
+ * The time picker card on the right of the page: its resize handle, the day selector with its
+ * month calendar, the hour axis, the rows with their names, marker times and coloured stretches,
+ * and the marker line with its handle. It does not style the page shell (layout.css), the settings panel
  * (settings.css) or any other view, and it holds no colour or size value of its own (theme.css
  * does).
  */
@@ -10,18 +10,19 @@
   display: flex;
   min-width: 0;
   flex-direction: column;
-  padding: var(--space-card) var(--space-card) var(--space-5);
-  border-left: var(--line-width) solid var(--color-line-card);
+  padding: var(--space-card);
+  border: var(--line-width) solid var(--color-line-card);
+  border-radius: var(--radius-card);
   background: var(--color-card);
 }
 
-/* The strip that changes the panel's width, centred on the panel's left edge (LAY-002). */
+/* The strip that changes the card's width, centred on the card's left border, in the gap (LAY-002). */
 .picker-resize {
   position: absolute;
   z-index: 6;
   top: 0;
   bottom: 0;
-  left: calc(-0.5 * var(--resize-width));
+  left: calc(-0.5 * (var(--resize-width) + var(--line-width)));
   display: flex;
   width: var(--resize-width);
   align-items: center;
@@ -45,11 +46,6 @@
   .picker-resize {
     display: none;
   }
-}
-
-.picker-title {
-  margin-bottom: var(--space-control);
-  font-size: var(--font-size-heading);
 }
 
 .day-selector {
@@ -84,6 +80,7 @@
   width: var(--calendar-width);
   padding: var(--space-control);
   border: var(--line-width) solid var(--color-line-control);
+  border-radius: var(--radius-popover);
   background: var(--color-card);
   box-shadow: var(--shadow-large);
 }
@@ -103,6 +100,7 @@
   justify-content: center;
   padding: 0;
   border: 0;
+  border-radius: var(--radius-small);
   background: transparent;
   color: var(--color-text);
   cursor: pointer;
@@ -140,6 +138,7 @@
   min-height: var(--control-height-small);
   padding: 0;
   border: 0;
+  border-radius: var(--radius-small);
   font-size: var(--font-size-small);
   font-weight: normal;
 }
@@ -200,15 +199,17 @@
 .picker-row {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-tight);
   margin: 0 calc(-1 * var(--space-row));
-  padding: var(--space-control) var(--space-row) var(--space-row);
+  padding: var(--space-2) var(--space-row);
   border-top: var(--line-width) solid var(--color-line-hairline);
 }
 
+/* The name and the marker time share one grid cell, so the row is as tall as the taller of them;
+   each is moved along by a margin that views/picker.js sets (`--name-left`, `--mark-left`). */
 .picker-info {
-  position: relative;
-  min-height: var(--picker-info-height);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .picker-row[data-reference="true"],
@@ -217,13 +218,12 @@
 }
 
 .picker-who {
-  position: absolute;
-  top: 0;
-  left: var(--name-left, 0);
   display: flex;
   width: var(--name-width, 100%);
   flex-direction: column;
   gap: var(--line-width);
+  grid-area: 1 / 1;
+  margin-left: var(--name-left, 0);
 }
 
 .picker-content[data-name-side="end"] .picker-who {
@@ -252,7 +252,8 @@
 }
 
 .picker-zone,
-.picker-sub {
+.picker-sub,
+.picker-date {
   color: var(--color-text-muted);
   font-size: var(--font-size-caption);
 }
@@ -262,12 +263,19 @@
 }
 
 .picker-mark {
-  position: absolute;
-  top: 0;
-  left: var(--mark-left, 0);
   display: flex;
   flex-direction: column;
+  grid-area: 1 / 1;
+  justify-self: start;
+  margin-left: var(--mark-left, 0);
   white-space: nowrap;
+}
+
+.picker-when {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0;
 }
 
 .picker-time {
@@ -275,13 +283,9 @@
   font-weight: bold;
 }
 
-.picker-date,
-.picker-hijri {
-  font-size: var(--font-size-caption);
-}
-
 .picker-hijri {
   color: var(--color-hijri);
+  font-size: var(--font-size-caption);
 }
 
 .picker-band {
@@ -295,6 +299,7 @@
   bottom: calc(100% + var(--space-hairline));
   left: var(--hover-x, 0);
   padding: var(--space-hairline) var(--space-tight);
+  border-radius: var(--radius-small);
   background: var(--color-text);
   color: var(--color-on-text);
   font-size: var(--font-size-caption);
@@ -317,8 +322,9 @@
 
 .picker-track {
   position: relative;
-  height: var(--picker-track-height);
+  height: var(--picker-band-height);
   overflow: hidden;
+  border-radius: var(--radius-small);
 }
 
 .picker-track::after {
@@ -374,6 +380,7 @@
   width: var(--handle-size);
   height: var(--handle-size);
   border: var(--handle-border) solid var(--color-card);
+  border-radius: var(--radius-round);
   background: var(--color-marker);
   box-shadow: 0 0 0 var(--line-width) var(--color-marker);
   cursor: grab;

@@ -1,5 +1,5 @@
 /**
- * The design tokens of the page (DEC-009): every colour, line, corner, shadow, spacing and type
+ * The design tokens of the page (DEC-020): every colour, line, corner radius, shadow, spacing and type
  * value, as CSS custom properties, taken from the "Zuno UI" canvas. Each colour holds its light and
  * its dark value in `light-dark()`; `color-scheme` picks one. With no `data-theme` on the root
  * the operating system's setting decides, and `views/theme.js` sets `data-theme` to light or dark
@@ -27,9 +27,9 @@
   --color-non-working: light-dark(#e4f1f1, #1a2030);
   --color-day-off: light-dark(#0f4c5c, #6e5be6);
   --color-text-on-tint: light-dark(#0e2a33, #07090d);
-  --color-weekend: light-dark(#ffd166, #f2b63d);
+  --color-weekend: light-dark(#88d5e7, #3fb6e0);
   --color-holiday: light-dark(#ff6b6b, #ff4f8b);
-  --color-today: light-dark(#6c5ce7, #5bc8ff);
+  --color-today: light-dark(#6c5ce7, #ffd166);
   --color-hijri: light-dark(#c0267c, #c7aeff);
   --color-chip: light-dark(#fff, #07090d);
   --color-reference: light-dark(#dff3f3, #161b2a);
@@ -45,13 +45,16 @@
     0 16px 40px light-dark(rgb(14 60 70 / 22%), transparent),
     0 14px 40px light-dark(transparent, rgb(0 0 0 / 60%)),
     0 0 0 1px light-dark(transparent, rgb(255 255 255 / 5%));
-  --shadow-up:
-    0 -6px 20px light-dark(rgb(14 60 70 / 8%), transparent),
-    0 -8px 24px light-dark(transparent, rgb(0 0 0 / 50%));
 
-  /* Shapes and sizes: square corners, 1 px lines, 44 px controls. */
+  /* Shapes and sizes: rounded corners (month-grid cells stay square), 1 px lines, 44 px controls. */
   --line-width: 1px;
-  --radius: 0;
+  --radius-card: 14px;
+  --radius-control: 10px;
+  --radius-small: 8px;
+  --radius-chip: 6px;
+  --radius-swatch: 4px;
+  --radius-popover: 12px;
+  --radius-map: 10px;
   --radius-round: 999px;
   --control-height: 44px;
   --control-height-small: 36px;
@@ -75,16 +78,19 @@
   --grip-width: 4px;
   --grip-height: 44px;
   --picker-max-height: calc(100vh - 15rem);
-  --picker-info-height: 56px;
-  --picker-track-height: 38px;
+  --picker-band-height: 28px;
   --marker-width: 3px;
   --marker-halo: 1.5px;
   --handle-size: 22px;
   --handle-border: 3px;
   --axis-height: 22px;
   --map-min-height: 160px;
-  --map-pin-size: 16px;
-  --map-pin-border: 3px;
+  --map-pin-width: 24px;
+  --map-pin-height: 22px;
+  --map-pin-stroke: 1.5px;
+  --map-label-gap-side: 18px;
+  --map-label-gap-above: 28px;
+  --map-label-gap-below: 8px;
   --grid-max-height: 300px;
   --grid-min-width: 840px;
   --grid-place-width: 130px;

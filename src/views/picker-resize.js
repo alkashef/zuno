@@ -53,10 +53,12 @@ function measure(handle, hours, maxHours) {
   const page = panel?.closest('[data-role="page"]');
   if (!panel || !page) throw new Error("picker-resize: the handle is not inside the page");
   const slot = lengthOf(panel, "--picker-slot");
+  const pageStyle = getComputedStyle(page);
   const mapWidth =
     panel.getBoundingClientRect().left -
     page.getBoundingClientRect().left -
-    Number.parseFloat(getComputedStyle(page).paddingLeft);
+    Number.parseFloat(pageStyle.paddingLeft) -
+    Number.parseFloat(pageStyle.columnGap);
   const spare = Math.floor((mapWidth - lengthOf(panel, "--map-min-width")) / slot);
   return { slot, ceiling: Math.min(maxHours, hours + Math.max(0, spare)) };
 }

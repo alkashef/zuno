@@ -1,5 +1,5 @@
 /**
- * The month grid: its card under the map, the month buttons and title, the Hijri month band, the
+ * The month grid: its card (joined under the map, rounded at the bottom), the month buttons and title, the Hijri month band, the
  * day headers, the place rows with their weekend, holiday, split, today and selected cells, and the
  * holiday card. It does not style the picker (picker.css) or the page shell (layout.css), and it
  * holds no colour or size value of its own (theme.css does).
@@ -11,6 +11,7 @@
   padding: var(--space-card);
   border: var(--line-width) solid var(--color-line-card);
   border-top: none;
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
   background: var(--color-card);
 }
 
@@ -135,6 +136,7 @@
   justify-content: center;
   padding: 0;
   border: 0;
+  border-radius: 0;
   background: transparent;
   color: inherit;
   font: inherit;
@@ -143,6 +145,7 @@
 
 .month-grid-hijri {
   padding: var(--space-chip) var(--space-hairline);
+  border-radius: var(--radius-chip);
   color: var(--color-hijri);
   font-size: var(--font-size-tiny);
   font-weight: var(--font-weight-strong);
@@ -187,6 +190,7 @@
   gap: var(--space-1);
   padding: var(--space-control) var(--space-marker);
   border: var(--line-width) solid var(--color-line-control);
+  border-radius: var(--radius-popover);
   background: var(--color-card);
   box-shadow: var(--shadow-large);
   white-space: normal;
@@ -202,6 +206,7 @@
   width: var(--swatch-size);
   height: var(--swatch-size);
   flex: none;
+  border-radius: var(--radius-swatch);
   background: var(--color-holiday);
 }
 
@@ -253,6 +258,7 @@
   justify-content: center;
   padding: 0;
   border: 0;
+  border-radius: var(--radius-chip);
   background: transparent;
   color: var(--color-hijri);
   cursor: pointer;
@@ -271,6 +277,7 @@
   width: var(--note-width);
   padding: var(--space-control) var(--space-marker);
   border: var(--line-width) solid var(--color-line-control);
+  border-radius: var(--radius-popover);
   background: var(--color-card);
   box-shadow: var(--shadow-large);
   color: var(--color-text-secondary);

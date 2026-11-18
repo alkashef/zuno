@@ -94,7 +94,9 @@ test("ui_map_001_map_and_month_grid_share_the_left_column_without_a_gap", async 
     const size = `${viewport.width}x${viewport.height}`;
     assert.ok(Math.abs(map.y + map.height - grid.y) <= 1, `map meets the month grid at ${size}`);
     assert.ok(Math.abs(map.x - grid.x) <= 1 && Math.abs(map.width - grid.width) <= 1, size);
-    assert.ok(Math.abs(picker.x + picker.width - viewport.width) <= 1, `picker at right ${size}`);
+    const margin = viewport.width - (picker.x + picker.width);
+    assert.ok(margin > 0, `the picker card is not flush to the page edge at ${size}`);
+    assert.ok(Math.abs(map.x - margin) <= 1, `equal side margins at ${size}`);
     assert.ok(Math.abs(picker.y - (header.y + header.height)) <= 1, `picker under header ${size}`);
     assert.ok(Math.abs(map.y - picker.y) <= 1, `map starts level with the picker at ${size}`);
     assert.ok(grid.y + grid.height >= picker.y + picker.height - 1, `no gap under grid ${size}`);
@@ -160,4 +162,143 @@ test("ui_cal_001_month_grid_fills_its_card", async () => {
     );
   });
   assert.ok(Math.abs(table.width - (width - padding)) <= 1, `${table.width} vs ${width - padding}`);
+});
+
+/**
+ * @param {Page} page
+ * @param {string} selector
+ * @param {string} property A camel-case computed style property.
+ * @returns {Promise<string>} That property of the first element the selector matches.
+ */
+function styleOf(page, selector, property) {
+  return page
+    .locator(selector)
+    .first()
+    .evaluate((element, name) => {
+      const view = /** @type {Window} */ (element.ownerDocument.defaultView);
+      const style = /** @type {Record<string, string>} */ (
+        /** @type {unknown} */ (view.getComputedStyle(element))
+      );
+      return style[name];
+    }, property);
+}
+
+/** @returns {import("../../../src/domain/settings.js").Settings} Three places, Hijri on. */
+function withHijri() {
+  const places = ["tokyo", "cairo", "madrid"].map((code, index) =>
+    createPlace(`place-${index + 1}`, code),
+  );
+  return { ...defaultSettings(540, 1020), places, showHijri: true };
+}
+
+test("ui_dec_020_picker_is_a_card_with_no_heading_and_the_date_sits_beside_the_time", async () => {
+  const { page } = await openPage(browser, built.url, { saved: withHijri() });
+  await page.setViewportSize(viewports[1]);
+  await page.locator('[data-role="row"]').first().waitFor();
+  assert.equal(await page.getByRole("heading", { name: "Meeting time" }).count(), 0);
+  assert.equal(await page.getByRole("region", { name: "Meeting time" }).count(), 1);
+  const [map] = await boxesOf(page, '[data-role="map"]');
+  const [picker] = await boxesOf(page, '[data-role="picker"]');
+  const [area] = await boxesOf(page, '[data-role="page"]');
+  const padding = Number.parseFloat(await styleOf(page, '[data-role="page"]', "paddingRight"));
+  for (const side of ["Top", "Right", "Bottom", "Left"]) {
+    assert.equal(await styleOf(page, ".picker", `border${side}Width`), "1px", side);
+  }
+  assert.ok(padding > 0);
+  assert.ok(Math.abs(picker.x + picker.width - (viewports[1].width - padding)) <= 1);
+  assert.ok(Math.abs(picker.x - (map.x + map.width) - 20) <= 1, "a 20 px gap between the cards");
+  assert.ok(Math.abs(area.y + area.height - (picker.y + picker.height) - 20) <= 1, "page bottom");
+  const [handle] = await boxesOf(page, '[data-role="resize"]');
+  assert.ok(Math.abs(handle.x + handle.width / 2 - (picker.x + 0.5)) <= 1, "handle on the border");
+  const [row] = await boxesOf(page, '[data-role="row"]');
+  const [time] = await boxesOf(page, '[data-role="local-time"]');
+  const [date] = await boxesOf(page, '[data-role="local-date"]');
+  const [hijri] = await boxesOf(page, '[data-role="local-hijri"]');
+  assert.ok(Math.abs(time.y + time.height / 2 - (date.y + date.height / 2)) <= 4, "same line");
+  assert.ok(date.x >= time.x + time.width && date.x - (time.x + time.width) <= 12);
+  assert.ok(hijri.y >= time.y + time.height - 1, "the Hijri date is below");
+  assert.equal(await styleOf(page, '[data-role="local-time"]', "fontWeight"), "700");
+  for (const property of ["fontSize", "color"]) {
+    const sameAs = await styleOf(page, '[data-role="zone"]', property);
+    assert.equal(await styleOf(page, '[data-role="local-date"]', property), sameAs, property);
+  }
+  assert.equal(await styleOf(page, '[data-role="row"]', "paddingTop"), "8px");
+  assert.equal(await styleOf(page, '[data-role="row"]', "paddingBottom"), "8px");
+  assert.equal(await styleOf(page, '[data-role="row"]', "paddingLeft"), "10px");
+  const [band] = await boxesOf(page, ".picker-band");
+  assert.equal(band.height, 28);
+  const [info] = await boxesOf(page, '[data-role="info"]');
+  assert.ok(Math.abs(band.y - (info.y + info.height) - 6) <= 1, "6 px between text and band");
+  assert.ok(Math.abs(row.height - (1 + 8 + info.height + 6 + 28 + 8)) <= 1, "row height");
+  const [who] = await boxesOf(page, '[data-role="who"]');
+  const [mark] = await boxesOf(page, '[data-role="mark"]');
+  assert.ok(Math.abs(info.height - Math.max(who.height, mark.height)) <= 1, "as tall as the text");
+  const reference = await styleOf(page, '[data-role="row"]', "backgroundColor");
+  const other = await styleOf(page, '[data-role="row"][data-reference="false"]', "backgroundColor");
+  assert.notEqual(reference, other);
+});
+
+test("ui_dec_020_month_grid_weekday_sits_above_the_day_number", async () => {
+  const { page } = await openPage(browser, built.url, { saved: withHijri() });
+  await page.locator("th.month-grid-day").first().waitFor();
+  const [weekday] = await boxesOf(page, ".month-grid-weekday");
+  const [number] = await boxesOf(page, ".month-grid-day-number");
+  assert.ok(weekday.y + weekday.height <= number.y + 1, "the weekday is above the number");
+});
+
+test("ui_dec_021_each_place_is_a_location_icon_with_its_tip_on_the_place", async () => {
+  const page = await openSixPlaces(viewports[1]);
+  const pins = await page.locator('[data-role="pin"]').evaluateAll((all) =>
+    all.map((pin) => {
+      const view = /** @type {Window} */ (pin.ownerDocument.defaultView);
+      const point = pin.getBoundingClientRect();
+      const icon = /** @type {SVGElement} */ (pin.querySelector(".map-pin-icon"));
+      const box = icon.getBoundingClientRect();
+      const rect = /** @type {HTMLElement} */ (
+        pin.querySelector(".map-pin-label")
+      ).getBoundingClientRect();
+      const body = view.getComputedStyle(/** @type {Element} */ (icon.querySelector("path")));
+      return {
+        tip: { x: point.x, y: point.y },
+        icon: { x: box.x, y: box.y, width: box.width, height: box.height },
+        label: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+        side: /** @type {HTMLElement} */ (pin).dataset.side ?? "",
+        fill: body.fill,
+        stroke: body.stroke,
+        holes: icon.querySelectorAll("circle").length,
+      };
+    }),
+  );
+  const marker = await page.locator("body").evaluate((body) => {
+    const probe = body.ownerDocument.createElement("span");
+    probe.style.color = "var(--color-marker)";
+    body.append(probe);
+    const view = /** @type {Window} */ (body.ownerDocument.defaultView);
+    const colour = view.getComputedStyle(probe).color;
+    probe.remove();
+    return colour;
+  });
+  assert.equal(pins.length, 6);
+  const wanted = { right: 18, left: 18, above: 28, below: 8 };
+  for (const pin of pins) {
+    assert.deepEqual([pin.icon.width, pin.icon.height], [24, 22]);
+    assert.ok(Math.abs(pin.icon.x + 12 - pin.tip.x) <= 0.5, "the tip is on the place");
+    assert.ok(Math.abs(pin.icon.y + 22 - pin.tip.y) <= 0.5, "the tip is on the place");
+    assert.equal(pin.fill, marker);
+    assert.equal(pin.stroke, "rgb(255, 255, 255)");
+    assert.equal(pin.holes, 1);
+    const offsets = {
+      right: pin.label.x - pin.tip.x,
+      left: pin.tip.x - (pin.label.x + pin.label.width),
+      above: pin.tip.y - (pin.label.y + pin.label.height),
+      below: pin.label.y - pin.tip.y,
+    };
+    const side = /** @type {keyof typeof wanted} */ (pin.side);
+    assert.ok(Math.abs(offsets[side] - wanted[side]) <= 0.5, `${side}: ${offsets[side]}`);
+  }
+  for (const [index, pin] of pins.entries()) {
+    const others = pins.filter((_, other) => other !== index).map((other) => other.icon);
+    assert.ok(!others.some((icon) => overlaps(pin.label, icon)), "a label covers another icon");
+    assert.ok(!overlaps(pin.label, pin.icon), "a label covers its own icon");
+  }
 });

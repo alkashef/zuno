@@ -1,8 +1,8 @@
 /**
- * The layout of the page shell: the header row, the page area (the map above the month grid on the
- * left, the picker panel on the right), the empty page and the error screen. It does not style the
- * views themselves (each has its own sheet), and it holds no colour or size value of its own
- * (theme.css does).
+ * The layout of the page shell: the header row, the page area (the map joined above the month grid
+ * as one card on the left, the picker as its own card on the right, a card gap between them), the
+ * empty page and the error screen with their corners. It does not style the views themselves (each
+ * has its own sheet), and it holds no colour or size value of its own (theme.css does).
  */
 body {
   display: flex;
@@ -42,7 +42,8 @@ body {
   flex: 1;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-rows: 1fr auto;
-  padding-left: var(--space-page);
+  column-gap: var(--space-card);
+  padding: 0 var(--space-page) var(--space-card);
 }
 
 .page > .map {
@@ -55,10 +56,12 @@ body {
   grid-row: 2;
 }
 
-/* The panel is as wide as its hour slots (`--picker-hours`, set by views/picker.js) plus its own
-   padding and left border, so a slot keeps one width whatever the number of hours (DEC-019). */
+/* The card is as wide as its hour slots (`--picker-hours`, set by views/picker.js) plus its own
+   padding and borders, so a slot keeps one width whatever the number of hours (DEC-019). */
 .page > .picker {
-  width: calc(var(--picker-hours) * var(--picker-slot) + 2 * var(--space-card) + var(--line-width));
+  width: calc(
+    var(--picker-hours) * var(--picker-slot) + 2 * (var(--space-card) + var(--line-width))
+  );
   grid-column: 2;
   grid-row: 1 / span 2;
 }
@@ -66,13 +69,13 @@ body {
 @media (width <= 60rem) {
   .page {
     grid-template-columns: minmax(0, 1fr);
-    padding-right: var(--space-page);
   }
 
   .page > .picker {
     width: auto;
     grid-column: 1;
     grid-row: 3;
+    margin-top: var(--space-card);
   }
 
   .page > .picker > .picker-scroll {
@@ -88,9 +91,10 @@ body {
   flex-direction: column;
   align-items: center;
   gap: var(--space-marker);
-  margin: var(--space-page) var(--space-page) 0 0;
+  margin-top: var(--space-page);
   padding: var(--space-empty) var(--space-4);
   border: var(--line-width) dashed var(--color-line-input);
+  border-radius: var(--radius-card);
   background: var(--color-card);
   text-align: center;
 }
@@ -101,6 +105,7 @@ body {
   height: var(--empty-icon-box);
   align-items: center;
   justify-content: center;
+  border-radius: var(--radius-popover);
   background: var(--color-non-working);
 }
 
@@ -129,6 +134,7 @@ body {
 .crash {
   padding: var(--space-3) var(--space-4);
   border: var(--line-width) solid var(--color-danger);
+  border-radius: var(--radius-card);
   background: var(--color-card);
   color: var(--color-danger);
 }

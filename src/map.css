@@ -1,7 +1,8 @@
 /**
- * The world map: its card, the sea, the land outline, and the pins with their labels. It does not
- * style the page shell (layout.css) or the other views, and it holds no colour or size value of its
- * own (theme.css does).
+ * The world map: its card (joined above the month grid, rounded at the top), the sea, the land
+ * outline, and the pins, each a location icon with its label. It does not style the page shell
+ * (layout.css) or the other views, and it holds no colour or size value of its own (theme.css
+ * does).
  */
 .map {
   display: flex;
@@ -9,6 +10,7 @@
   flex-direction: column;
   padding: var(--space-card);
   border: var(--line-width) solid var(--color-line-card);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
   background: var(--color-card);
 }
 
@@ -18,6 +20,7 @@
   min-height: var(--map-min-height);
   flex: 1;
   overflow: hidden;
+  border-radius: var(--radius-map);
   background: var(--color-map-sea);
 }
 
@@ -58,16 +61,31 @@
   left: var(--pin-left);
 }
 
-.map-pin-dot {
+/* The pin's point is the top-left corner of its box; the icon is moved up and left so that its
+   tip, the bottom centre, is on that point (DEC-021). */
+.map-pin-icon {
   display: block;
-  width: var(--map-pin-size);
-  height: var(--map-pin-size);
-  border: var(--map-pin-border) solid var(--color-card);
-  background: var(--color-marker);
-  box-shadow: 0 0 0 var(--line-width) var(--color-marker);
-  transform: translate(-50%, -50%);
+  width: var(--map-pin-width);
+  height: var(--map-pin-height);
+  overflow: visible;
+  transform: translate(calc(-0.5 * var(--map-pin-width)), calc(-1 * var(--map-pin-height)));
 }
 
+.map-pin-body {
+  fill: var(--color-marker);
+  stroke: var(--color-card);
+  stroke-linejoin: round;
+  stroke-width: var(--map-pin-stroke);
+}
+
+.map-pin-hole {
+  fill: var(--color-card);
+}
+
+/*
+ * A label sits beside, above or below the icon. The offsets are measured from the tip, and
+ * views/map.js reads the same custom properties to choose the side.
+ */
 .map-pin-label {
   position: absolute;
   top: 0;
@@ -76,23 +94,33 @@
   flex-direction: column;
   padding: var(--space-1) var(--space-row);
   border: var(--line-width) solid var(--color-line-control);
+  border-radius: var(--radius-small);
   background: var(--color-card);
   box-shadow: var(--shadow-small);
   color: var(--color-text);
-  transform: translate(var(--space-marker), calc(-50% + var(--label-shift, 0px)));
+  transform: translate(
+    var(--map-label-gap-side),
+    calc(-50% - 0.5 * var(--map-pin-height) + var(--label-shift, 0px))
+  );
   white-space: nowrap;
 }
 
 .map-pin[data-side="above"] .map-pin-label {
-  transform: translate(calc(-50% + var(--label-shift, 0px)), calc(-100% - var(--space-marker)));
+  transform: translate(
+    calc(-50% + var(--label-shift, 0px)),
+    calc(-100% - var(--map-label-gap-above))
+  );
 }
 
 .map-pin[data-side="below"] .map-pin-label {
-  transform: translate(calc(-50% + var(--label-shift, 0px)), var(--space-marker));
+  transform: translate(calc(-50% + var(--label-shift, 0px)), var(--map-label-gap-below));
 }
 
 .map-pin[data-side="left"] .map-pin-label {
-  transform: translate(calc(-100% - var(--space-marker)), calc(-50% + var(--label-shift, 0px)));
+  transform: translate(
+    calc(-100% - var(--map-label-gap-side)),
+    calc(-50% - 0.5 * var(--map-pin-height) + var(--label-shift, 0px))
+  );
 }
 
 .map-pin-name {

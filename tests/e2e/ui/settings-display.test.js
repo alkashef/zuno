@@ -201,3 +201,45 @@ test("ui_thm_001_saved_dark_theme_applies_on_open_over_a_light_system", async ()
   await page.locator('html[data-theme="dark"]').waitFor({ state: "attached" });
   assert.equal(await pageBackground(page), "rgb(7, 9, 13)");
 });
+
+test("ui_dec_020_settings_sections_are_in_the_canvas_order_with_a_line_after_each", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["riyadh"]) });
+  await openSettings(page);
+  const headings = await page.locator(".settings-section > .settings-heading").allTextContents();
+  assert.deepEqual(headings, ["Working hours", "Display", "Add a place", "Places", "Holidays"]);
+  const lineColour = await page.locator("body").evaluate((body) => {
+    const probe = body.ownerDocument.createElement("span");
+    probe.style.color = "var(--color-line-card)";
+    body.append(probe);
+    const view = /** @type {Window} */ (body.ownerDocument.defaultView);
+    const colour = view.getComputedStyle(probe).color;
+    probe.remove();
+    return colour;
+  });
+  const sections = await page.locator(".settings-section").evaluateAll((all) =>
+    all.map((section) => {
+      const view = /** @type {Window} */ (section.ownerDocument.defaultView);
+      const { borderBottomWidth, borderBottomColor, paddingBottom } =
+        view.getComputedStyle(section);
+      return { borderBottomWidth, borderBottomColor, paddingBottom };
+    }),
+  );
+  assert.equal(sections.length, 5);
+  for (const section of sections) {
+    assert.deepEqual(section, {
+      borderBottomWidth: "1px",
+      borderBottomColor: lineColour,
+      paddingBottom: "24px",
+    });
+  }
+  const footer = page.locator(".settings-footer");
+  assert.equal(await footer.evaluate((element) => element.nextElementSibling === null), true);
+  assert.equal(
+    await footer.evaluate(
+      (element) =>
+        /** @type {Window} */ (element.ownerDocument.defaultView).getComputedStyle(element)
+          .borderTopWidth,
+    ),
+    "0px",
+  );
+});
