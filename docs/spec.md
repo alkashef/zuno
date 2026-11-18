@@ -28,6 +28,7 @@ chosen time across all places.
 - Light and dark themes that follow the operating system (THM-001).
 - A refresh button.
 - A picker panel whose width the user can change (LAY-002, LAY-003).
+- A border between the map and the month grid that the user can move (LAY-004, LAY-005).
 - Public holidays that the user adds or hides, with export to and import from a holidays file (HOL-006 to HOL-012).
 - A built-in table of public holidays for the seven countries that the holiday service does not cover (HOL-013).
 - A version, shown in the settings panel (VER-001).
@@ -151,6 +152,8 @@ chosen time across all places.
 | HOL-012 | If an imported file is not a valid holidays file, then the system shall change nothing and tell the user that the file was refused. | Must | Confirmed | A wrong file must not damage the saved holidays. | Agent inference, approved by the user (2026-11-18) | SCN-002 | |
 | LAY-002 | When the user drags the left edge of the picker panel, the system shall change the panel's width to follow the drag by adding or removing hour slots at the end of the picker window, within the limits the design sets. | Must | Confirmed | The user chooses how much room the map and the picker get, and how many hours the picker shows. | User request (2026-11-18, canvas comments; confirmed in dialogs) | SCN-001 | |
 | LAY-003 | When the user changes the picker panel's width, the system shall save it in the browser and restore it on the next visit. | Must | Confirmed | The user sets the width once. | User decision (2026-11-18, dialog) | SCN-001 | |
+| LAY-004 | When the user drags the border between the map and the month grid, the system shall change the map's height to follow the drag, within the limits the design sets, and give the month grid the rest of the column. | Must | Confirmed | The user chooses how much room the map and the month grid get. | User request (2026-11-19, canvas: "make the border between the monthly and the world map container movable too") | SCN-001, SCN-002 | |
+| LAY-005 | When the user changes the map's height, the system shall save it in the browser and restore it on the next visit. | Must | Confirmed | The user sets the height once. | User request (2026-11-19, "app remembers location") | SCN-001, SCN-002 | |
 | SET-016 | The system shall let the user choose, for each place, which days of the week are its weekend, with the weekend of the place's country or territory as the default. | Must | Confirmed | The built-in weekend of a country can differ from a team's real days off. | User request (2026-11-18, canvas comment: "add weekend days, in case the user wants to override the defaults") | SCN-001, SCN-002 | |
 | PCK-008 | While the pointer is over a picker row's window (PCK-006), the system shall show that place's local time and date at the pointer's position. | Must | Confirmed | The user reads a place's time at any point without moving the marker. | User request (2026-11-18, canvas comment: "when the user hovers over a time slot, the local time is displayed") | SCN-001 | |
 | HOL-013 | The system shall take the national public holidays of India, Israel, Malaysia, Pakistan, Saudi Arabia, Taiwan and the United Arab Emirates, for the years 2026 to 2028, from a holiday table built into the page. | Must | Confirmed | The holiday service has no data for these countries, which hold 12 of the 55 cities and 3 of the 7 default places. | User decision (2026-11-18, dialog: built-in table from an open-source holiday library) | SCN-002 | EX-022, EX-023 |
@@ -266,6 +269,9 @@ HOL-001, HOL-008 and DSP-001; PCK-004, REF-002, HOL-002 and NFR-001 confirmed as
 SCN-002 confirmed, with the colouring of SCN-001 corrected and a second alternate path in SCN-002; the
 built-in holiday table in the scope, the constraints and the glossary; the new and the resolved items in
 section 7; and the acceptance examples EX-022 to EX-026.
+
+Changes approved by the user on 2026-11-19, in a dialog: new requirements LAY-004 and LAY-005 (a
+movable border between the map and the month grid, saved in the browser), from the canvas.
 
 ## 9. City list
 
