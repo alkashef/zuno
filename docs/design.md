@@ -10,8 +10,9 @@ CAL-006), and the change the user requested on 2026-11-18 (SET-012 and the chang
 Visual reference (not code to copy): the "Zuno UI" canvas,
 https://claude.ai/artifact/2GmNVHXyaLzy3E5XxUJPRB (light and dark Main page, Settings panel and
 empty state). The app is called Zuno. The page shows the title "Zuno" and the subtitle "Many time
-zones, One team!" and no logo (user request 2026-11-18); the canvas still shows the working title
-"Global Timer".
+zones, One team!" and no logo (user request 2026-11-18). The canvas was updated to the built page
+on 2026-11-18 (title and subtitle, theme setting, holiday card, region codes, full empty-page
+header).
 
 ## 1. Decisions
 
@@ -337,9 +338,9 @@ is 1; an unknown version is invalid (DEC-008).
   as the map grows and shrinks (the map stretches to fill its space; DEC-010). Each label sits beside,
   above or below its pin, wherever it covers no other label or pin.
 - Month grid: previous and next month buttons; a Hijri month band and Hijri day in each cell only
-  while Hijri is on; a place row with an information button only while a holiday cell in that row is
-  selected; selecting a holiday cell opens a card with its name, date and (if Hijri is on) Hijri
-  date. While Hijri is on, an information button beside the Hijri month band opens a card with the
+  while Hijri is on; selecting a holiday cell outlines it and opens a card beside that place's name
+  with the holiday's name, date and (if Hijri is on) Hijri date. The card's close button or Escape
+  closes it. While Hijri is on, an information button beside the Hijri month band opens a card with the
   note that Hijri dates are calculated and may differ from official announcements (HIJ-004). The header and Hijri band stay in view while the rows scroll vertically.
 - Picker panel (right side, flush to the page edge): day selector (previous day, a date button that
   opens a month calendar, next day); hour axis; one row per place with the marker. The marker
