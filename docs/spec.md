@@ -172,6 +172,17 @@ No load-time limit is set. A page of this size has no stated performance need; a
 | EX-009 | PCK-005 | Saudi Arabia place, marker at 2:00 PM local on Friday 2026-11-20. | The row at the marker shows the third (day-off) colour, not the working-hours colour. | User (2026-11-17) |
 | EX-010 | HIJ-001, HIJ-002, HIJ-003, SET-011 | Hijri calendar on. Gregorian date 2026-11-16, Umm al-Qura variant, adjustment 0, then +1. Calculated with the browser's built-in calendar on 2026-11-16. | With adjustment 0: 06-Jumada II-1448. With +1: 07-Jumada II-1448. | User (2026-11-17) |
 | EX-004 | CAL-003, HOL-001 | United States place, December 2026. | 2026-12-25 is marked as a public holiday (Christmas Day). | User (2026-11-17) |
+| EX-011 | SET-014 | No settings are saved in the browser. The page opens. | The places are Tokyo, Cairo, New Delhi, Madrid, Bogotá, Riyadh and Islamabad, in that order. | User (2026-11-18) |
+| EX-012 | SET-002, SET-013 | The user adds the city Mumbai. | A place named Mumbai, in India, at UTC+5:30. The list of cities to add has the 55 cities of section 9; Nairobi is not offered. | User (2026-11-18) |
+| EX-013 | SET-015 | The saved settings hold London and a place whose city is not in the city list. The page opens. | Only London is shown. | User (2026-11-18) |
+| EX-014 | SET-016, CAL-002 | A New Delhi place with its weekend set to Saturday and Sunday, and a Riyadh place left unchanged. November 2026. | New Delhi: 2026-11-21 and 2026-11-22 are marked weekend. Riyadh: Friday 2026-11-20 and Saturday 2026-11-21 are marked weekend. | User (2026-11-18) |
+| EX-015 | HOL-006, HOL-003 | The user adds the holiday "Diwali" on 2026-11-08 for India. Places: Mumbai and Pune. | Both rows show 2026-11-08 as a public holiday named Diwali. | User (2026-11-18) |
+| EX-016 | HOL-008, HOL-003 | A New York place, December 2026 (EX-004). The user hides Christmas Day, 2026-12-25, then shows it again. | While hidden, 2026-12-25 is not a holiday for New York. Shown again, it is. | User (2026-11-18) |
+| EX-017 | HOL-010, HOL-011 | Browser A holds the added holiday of EX-015 and exports. Browser B holds "Iqbal Day", 2026-11-09, Pakistan, and imports that file. | Browser B holds both holidays. | User (2026-11-18) |
+| EX-018 | HOL-012 | The user imports a file whose text is `hello`. | The saved holidays are unchanged and the page says the file was refused. | User (2026-11-18) |
+| EX-019 | PCK-006, PCK-009, LAY-002, LAY-003 | First place Tokyo, selected day 2026-11-20, the picker at 24 slots. Then the user widens it by 6 slots. Then the page is reloaded. | At 24 slots the window runs from 12:00 AM on 20-Nov-26 to 12:00 AM on 21-Nov-26 in Tokyo and the day selector shows 20-Nov-26. At 30 slots the window ends at 6:00 AM on 21-Nov-26, each slot is as wide as before, and the day selector shows 20–21-Nov-26. After the reload the picker still has 30 slots. | User (2026-11-18) |
+| EX-020 | PCK-006, PCK-007 | EX-019 at 30 slots. The user drags the marker to 2:00 AM on 21-Nov-26 in Tokyo, then chooses the next day. | After the drag the window still starts at 12:00 AM on 20-Nov-26. After "next day" the selected day is 2026-11-21 and the marker is at 2:00 AM on 21-Nov-26 in Tokyo. | User (2026-11-18) |
+| EX-021 | PCK-008 | First place Tokyo, selected day 2026-11-20, and a Bogotá place. The pointer is over Bogotá's row at 10:00 AM Tokyo time. | The page shows 8:00 PM · 19-Nov-26 for Bogotá. | User (2026-11-18) |
 
 ## 7. Assumptions and open questions
 
@@ -193,7 +204,7 @@ missing (HOL-004).
 | Holiday data for seven countries | The approved holiday service (DEC-005) lists no data for India, Israel, Malaysia, Pakistan, Saudi Arabia, Taiwan and the United Arab Emirates (its list of countries, read 2026-11-18): 12 of the 55 cities, 3 of the 7 default places. The user first decided to find a second source (HOL-005) and then, the same day, that holidays added by the user replace it (HOL-006); HOL-005 is withdrawn and nothing waits for a second source. | Those countries show no holidays until a user adds them or imports a holidays file. | User | Resolved 2026-11-18. A second holiday service may be added later as an improvement; it would need the user's approval as a new outside data flow. |
 | A holiday the user adds (HOL-006) | Assumption, approved by the user on 2026-11-18: it is a single date and does not repeat every year. | Fixed-date holidays must be entered again for each year. | User | Revisit if yearly re-entry proves a burden. |
 | Importing a holidays file (HOL-011) | Assumption, approved by the user on 2026-11-18: an import adds to the saved holidays and never replaces them. Export and import use local files only, so NFR-001 still holds. | A user who wants to start over must remove entries one by one. | User | Revisit if users ask for "replace all". |
-| Acceptance examples for the 2026-11-18 requirements | None written yet for SET-013 to SET-016, HOL-006 to HOL-012, LAY-002, LAY-003 and PCK-008. | Tests would rest on unreviewed expectations. | User | Propose examples and have the user review them before `/write-plan`. |
+| Acceptance examples for the 2026-11-18 requirements | EX-011 to EX-021, approved by the user on 2026-11-18 in a dialog. HOL-007, HOL-009 and LAY-003's saving are covered inside EX-015 to EX-019. | Tests would rest on unreviewed expectations. | User | Resolved 2026-11-18. |
 | Limits of the picker panel's width (LAY-002) | The lower limit is the whole day (PCK-006), so the panel cannot be narrower than its 24 hour slots; the upper limit is left to the design. | A panel too wide hides the map; on a small screen the map gets only what the 24 slots leave. | Design | Set and justify the limits in `/write-design`. |
 
 ## 8. Review and approval
@@ -222,8 +233,8 @@ HOL-012, changed requirement HOL-003, HOL-005 withdrawn, and the three assumptio
 section 7 (single date, import merges, local files only). Approved last, in chat: changed
 requirements PCK-006 and LAY-002 (hour slots of a fixed width, at least the whole day, resizing
 adds or removes slots) and the matching wording of PCK-003 and PCK-008; then the selected day
-(changed PCK-006 and PCK-007, new PCK-009, new glossary entry). The design does not yet reflect
-these changes: the next step is `/write-design`.
+(changed PCK-006 and PCK-007, new PCK-009, new glossary entry). The user approved the acceptance examples EX-011 to
+EX-021 on 2026-11-18, in a dialog.
 
 ## 9. City list
 
