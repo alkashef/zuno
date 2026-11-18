@@ -175,11 +175,14 @@ test("test_set_013_only_listed_cities_can_be_added", async () => {
   assert.equal(controller.getState().isEmpty, true);
 });
 
+/** The whole day only: 24, 24, 24. */
+const wholeDay = { defaultHours: 24, minHours: 24, maxHours: 24 };
+
 test("test_set_015_saved_place_outside_the_list_is_dropped", async () => {
   const { countryCode, zone, ...london } = createPlace("place-1", "london");
   const unlisted = { ...london, id: "place-2", cityId: "nairobi" };
   const raw = { ...defaultSettings(540, 1020), places: [london, unlisted] };
-  const { controller } = setup({ store: { saved: parseSettings(raw) } });
+  const { controller } = setup({ store: { saved: parseSettings(raw, wholeDay) } });
   await controller.dispatch({ type: "open" });
   const places = controller.getState().settings?.places ?? [];
   assert.deepEqual(
@@ -191,7 +194,7 @@ test("test_set_015_saved_place_outside_the_list_is_dropped", async () => {
 
 test("test_set_015_version_1_record_is_read_as_no_saved_settings", async () => {
   const raw = { ...defaultSettings(540, 1020), version: 1, places: [createPlace("a", "riyadh")] };
-  const { controller } = setup({ store: { saved: parseSettings(raw) } });
+  const { controller } = setup({ store: { saved: parseSettings(raw, wholeDay) } });
   await controller.dispatch({ type: "open" });
   assert.deepEqual(shownCityIds(controller), config.defaultCityIds);
   assert.equal(controller.getState().isEmpty, false);

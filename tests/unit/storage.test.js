@@ -8,6 +8,9 @@ import { defaultSettings, parseSettings } from "../../src/domain/settings.js";
 import { parseUserHolidays } from "../../src/domain/user-holidays.js";
 import { createStorage } from "../../src/storage.js";
 
+/** The whole day only: 24, 24, 24. */
+const wholeDay = { defaultHours: 24, minHours: 24, maxHours: 24 };
+
 /** @returns {{ store: { getItem: (k: string) => string | null, setItem: (k: string, v: string) => void }, data: Map<string, string> }} */
 function fakeStore() {
   /** @type {Map<string, string>} */
@@ -23,7 +26,11 @@ function fakeStore() {
 
 test("test_set_004_settings_round_trip_in_storage", () => {
   const { store, data } = fakeStore();
-  const storage = createStorage({ store, parse: parseSettings, key: "k" });
+  const storage = createStorage({
+    store,
+    parse: (value) => parseSettings(value, wholeDay),
+    key: "k",
+  });
   assert.equal(storage.load(), null);
   const settings = {
     ...defaultSettings(540, 1020),
@@ -37,7 +44,11 @@ test("test_set_004_settings_round_trip_in_storage", () => {
 
 test("test_hol_009_user_holidays_round_trip_under_their_own_key", () => {
   const { store, data } = fakeStore();
-  const settings = createStorage({ store, parse: parseSettings, key: "settings" });
+  const settings = createStorage({
+    store,
+    parse: (value) => parseSettings(value, wholeDay),
+    key: "settings",
+  });
   const holidays = createStorage({ store, parse: parseUserHolidays, key: "holidays" });
   assert.equal(holidays.load(), null);
   const record = {
@@ -58,7 +69,12 @@ test("test_set_004_invalid_record_loads_as_null_and_logs_warning", () => {
     /** @type {string[]} */
     const warnings = [];
     const log = { warn: (/** @type {string} */ message) => void warnings.push(message) };
-    const storage = createStorage({ store, parse: parseSettings, key: "k", log });
+    const storage = createStorage({
+      store,
+      parse: (value) => parseSettings(value, wholeDay),
+      key: "k",
+      log,
+    });
     assert.equal(storage.load(), null);
     assert.equal(warnings.length, 1);
     assert.match(warnings[0], /"k"/);

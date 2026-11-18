@@ -39,13 +39,6 @@ export const settingsVersion = 2;
 const minutesPerDay = 24 * 60;
 const hoursPerDay = 24;
 
-/** The whole day only (PCK-006): the limits when the caller gives none. */
-const wholeDay = Object.freeze({
-  defaultHours: hoursPerDay,
-  minHours: hoursPerDay,
-  maxHours: hoursPerDay,
-});
-
 /**
  * @param {unknown} value
  * @returns {value is number} Whether it is a whole number of minutes within one day.
@@ -150,12 +143,13 @@ function hasValidDisplay(record, limits) {
  * one without `pickerHours` gets the default hours (LAY-003). A place whose city is not in the list
  * is dropped (SET-015).
  * @param {unknown} value
- * @param {PickerLimits} [limits] The picker hour limits (from config); the whole day only when left
- *   out (PCK-006).
+ * @param {PickerLimits} limits The picker hour limits (from config); required.
  * @returns {Settings | null} The settings when valid, else `null`. Any version but 2, such as a
  *   version 1 record of places by country, is invalid (DEC-016), and so are hours outside the limits.
+ * @throws {TypeError} When `limits` is missing.
  */
-export function parseSettings(value, limits = wholeDay) {
+export function parseSettings(value, limits) {
+  if (limits === undefined) throw new TypeError("parseSettings: the argument `limits` is missing");
   if (typeof value !== "object" || value === null) return null;
   /** @type {Record<string, unknown>} */
   const record = { theme: "auto", pickerHours: limits.defaultHours, ...value };

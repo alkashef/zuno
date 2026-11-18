@@ -58,12 +58,15 @@ test("test_set_011_hijri_off_by_default", () => {
 
 test("test_set_004_parse_accepts_valid_and_refuses_invalid", () => {
   const valid = { ...fresh(), places: [createPlace("a", "riyadh")] };
-  assert.deepEqual(parseSettings(valid), valid);
-  assert.equal(parseSettings({ ...valid, version: 3 }), null);
-  assert.equal(parseSettings({ ...valid, showHijri: "yes" }), null);
-  assert.equal(parseSettings({ ...valid, places: [valid.places[0], valid.places[0]] }), null);
-  assert.equal(parseSettings({ ...valid, places: [{ id: "x" }] }), null);
-  assert.equal(parseSettings("text"), null);
+  assert.deepEqual(parseSettings(valid, limits), valid);
+  assert.equal(parseSettings({ ...valid, version: 3 }, limits), null);
+  assert.equal(parseSettings({ ...valid, showHijri: "yes" }, limits), null);
+  assert.equal(
+    parseSettings({ ...valid, places: [valid.places[0], valid.places[0]] }, limits),
+    null,
+  );
+  assert.equal(parseSettings({ ...valid, places: [{ id: "x" }] }, limits), null);
+  assert.equal(parseSettings("text", limits), null);
 });
 
 test("test_set_010_set_011_display_switch_changes_one_switch_and_refuses_non_booleans", () => {
@@ -90,8 +93,15 @@ test("test_set_012_theme_is_auto_by_default_and_refuses_other_values", () => {
 test("test_set_012_saved_record_without_theme_gets_auto_and_a_wrong_theme_is_refused", () => {
   const { theme, ...older } = { ...fresh(), places: [createPlace("a", "riyadh")] };
   assert.equal(theme, "auto");
-  assert.deepEqual(parseSettings(older), { ...older, theme: "auto" });
-  assert.equal(parseSettings({ ...older, theme: "blue" }), null);
+  assert.deepEqual(parseSettings(older, limits), { ...older, theme: "auto" });
+  assert.equal(parseSettings({ ...older, theme: "blue" }, limits), null);
+});
+
+test("test_lay_003_parse_settings_without_limits_throws", () => {
+  const withoutLimits = /** @type {(value: unknown) => unknown} */ (
+    /** @type {unknown} */ (parseSettings)
+  );
+  assert.throws(() => withoutLimits(fresh()), { name: "TypeError", message: /limits/ });
 });
 
 test("test_set_015_saved_place_outside_the_list_is_dropped", () => {
@@ -99,27 +109,33 @@ test("test_set_015_saved_place_outside_the_list_is_dropped", () => {
   const { countryCode, zone, ...stored } = london;
   const unlisted = { ...stored, id: "b", cityId: "nairobi" };
   const record = { ...fresh(), places: [stored, unlisted] };
-  assert.deepEqual(parseSettings(record), {
+  assert.deepEqual(parseSettings(record, limits), {
     ...fresh(),
     places: [{ ...stored, countryCode, zone }],
   });
-  assert.equal(parseSettings({ ...record, places: [stored, { ...unlisted, cityId: 7 }] }), null);
+  assert.equal(
+    parseSettings({ ...record, places: [stored, { ...unlisted, cityId: 7 }] }, limits),
+    null,
+  );
 });
 
 test("test_set_015_version_1_record_is_read_as_no_saved_settings", () => {
   const record = { ...fresh(), places: [createPlace("a", "riyadh")] };
-  assert.equal(parseSettings({ ...record, version: 1 }), null);
+  assert.equal(parseSettings({ ...record, version: 1 }, limits), null);
   assert.equal(fresh().version, 2);
 });
 
 test("test_set_016_saved_record_without_weekend_days_gets_the_countrys", () => {
   const { weekendDays, ...older } = createPlace("a", "riyadh");
   assert.equal(weekendDays, null);
-  const parsed = parseSettings({ ...fresh(), places: [older] });
+  const parsed = parseSettings({ ...fresh(), places: [older] }, limits);
   assert.equal(parsed?.places[0].weekendDays, null);
   assert.deepEqual(placeWeekendDays(/** @type {Place} */ (parsed?.places[0])), [5, 6]);
   assert.equal(parsed?.version, 2);
-  assert.equal(parseSettings({ ...fresh(), places: [{ ...older, weekendDays: [] }] }), null);
+  assert.equal(
+    parseSettings({ ...fresh(), places: [{ ...older, weekendDays: [] }] }, limits),
+    null,
+  );
 });
 
 test("test_lay_003_saved_record_without_picker_hours_gets_24", () => {

@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                                             | Description                                                                                                          | Model  | Effort | Status   |
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------ | ------ | -------- |
-| **M41** No 24-hour fallback in the settings reader    | `parseSettings` needs its limits; no default in code                                                                 | sonnet | low    | open     |
 | **M42** Newer workflows in four browsers              | The workflows added since M21 also run in Firefox, WebKit and Edge                                                   | sonnet | medium | open     |
 | **M43** Publish to GitHub Pages                       | Every push to `main` builds the page and publishes it                                                                | sonnet | medium | blocked  |
 
@@ -19,18 +18,6 @@ Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
 
-### M41 — No 24-hour fallback in the settings reader
-
-- **Refs:** LAY-003, DEC-016, DEC-019.
-- **Owner:** `src/domain/settings.js`.
-- **Tests first:** `test_lay_003_parse_settings_without_limits_throws`.
-- **Build:** remove the default value of the `limits` parameter of `parseSettings` and the constant
-  behind it; a call without limits throws a `TypeError` that names the missing argument. Every
-  caller passes its limits.
-- **Gate:** no expected result of an existing test changes.
-- **Approval:** User, 2026-11-18, dialog (the plan): the milestone may add the missing limits
-  argument (the whole day: 24, 24, 24) to the existing tests that call `parseSettings` without it.
-  Name each changed test file in the report. Nothing else.
 
 ### M42 — Newer workflows in four browsers
 
