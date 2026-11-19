@@ -1,4 +1,4 @@
-# Publishes the one-file page to GitHub Pages (PKG-001, DEC-023).
+# Publishes the one-file page to GitHub Pages and attaches it to the release "latest" (PKG-001, DEC-023).
 name: Publish to GitHub Pages
 
 on:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -35,3 +35,12 @@ jobs:
           path: site-out
       - id: deployment
         uses: actions/deploy-pages@v5
+      - name: Attach the page to the release "latest"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view latest >/dev/null 2>&1; then
+            gh release delete latest --cleanup-tag --yes
+          fi
+          notes="Download zuno.html and open it in your browser. Built from $GITHUB_SHA. The same page is online at https://alkashef.github.io/zuno/."
+          gh release create latest dist/zuno.html --target "$GITHUB_SHA" --latest --title "Zuno (latest build)" --notes "$notes"

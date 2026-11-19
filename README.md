@@ -1,5 +1,25 @@
 # Zuno
 
+Meeting times, weekends and public holidays across time zones, in one page.
+
+[![Open Zuno](https://img.shields.io/badge/Open-Zuno-12B886?style=for-the-badge)](https://alkashef.github.io/zuno/)
+[![Download zuno.html](https://img.shields.io/badge/Download-zuno.html-0F4C5C?style=for-the-badge)](https://github.com/alkashef/zuno/releases/latest/download/zuno.html)
+
+## Use Zuno
+
+- **Online:** open https://alkashef.github.io/zuno/. Nothing to install.
+- **Download:** get [zuno.html](https://github.com/alkashef/zuno/releases/latest/download/zuno.html)
+  and double-click it to open it in your browser. It is one file: you can share it by email or on a
+  shared drive. It is rebuilt on every change; the settings panel shows its version.
+- **Install as an app:** open the online page, then use your browser's own menu. In Chrome, choose
+  Cast, save and share, then Install page as app. In Edge, choose Apps, then Install this site as an
+  app. In Safari on a Mac, choose File, then Add to Dock. Zuno then opens in its own window.
+
+Your places, settings and holidays stay in your browser; nothing is sent anywhere except the
+country and year asked of the public-holiday service. The online page, an installed app and a
+downloaded file each keep their own settings. Use Export and Import in the settings panel's
+Holidays section to carry your holidays between them.
+
 ## What it does
 
 A timer app that tracks time across time zones: a world map with a location icon and the local time
@@ -37,7 +57,7 @@ Plain JavaScript, HTML and CSS, bundled into one file by esbuild 0.28.2. Browser
 | `config/` | `.env` (never committed) and `.env.example`. |
 | `scripts/` | `build.mjs` (the build), `make-holiday-table.mjs` (generates the holiday table), `make-map.mjs` (downloads the coastline data and generates the map's outline), `check.py` (the checks), `milestones-runner.py`, `cleanup.py`, setup scripts. |
 | `.claude/` | Claude Code settings, including the hook that checks each edit. |
-| `.github/` | `workflows/pages.yml`: builds the page and publishes it to GitHub Pages on every push to `main`. |
+| `.github/` | `workflows/pages.yml`: builds the page, publishes it to GitHub Pages and attaches it to the release `latest` on every push to `main`. |
 | `.githooks/` | `pre-commit`: refuses a commit unless the checks pass. |
 | `.vscode/` | Shared editor settings. |
 
@@ -102,7 +122,9 @@ node scripts/make-map.mjs              # writes data/map-outline.svg from it
 ## How to publish
 
 Every push to `main` publishes the page to GitHub Pages: the workflow in
-`.github/workflows/pages.yml` builds `dist/zuno.html` and deploys it as the site's `index.html`.
+`.github/workflows/pages.yml` builds `dist/zuno.html`, deploys it as the site's `index.html`, and
+attaches the same file to the GitHub Release `latest` (made again at the pushed commit), which is
+where the README's download link points.
 The repository's Settings, Pages must have the source "GitHub Actions". The site's address is
 https://alkashef.github.io/zuno/. To publish again without a new commit, run the workflow "Publish
 to GitHub Pages" from the repository's Actions tab.
