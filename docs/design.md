@@ -39,7 +39,7 @@ One current decision per topic. Replaced decisions live in Git history.
 | DEC-020 | All colours and shapes are CSS custom properties in `theme.css`, each colour with its light and dark value in `light-dark()`; `views/theme.js` sets `data-theme` from the theme setting. Cards, buttons, inputs and popovers have rounded corners; month-grid cells stay square. Weekends are cyan. | THM-001, SET-012, LEG-001. Replaces DEC-009 (user decisions on the canvas, 2026-11-18: rounded corners, cyan weekend). Changed by user decisions of 2026-11-18 (dialogs): a smaller month header, the corner label "Day", half-transparent map labels. Changed by user requests of 2026-11-19 (canvas): the cards run edge to edge (the page area has no padding and no gap between the left column and the picker; only the header keeps the side padding `--space-page`), and month-grid cells are 32 px tall. |
 | DEC-028 | The map's height is the setting `mapHeight` in the settings record: the map card's height in whole pixels, from `mapMinHeight` to `mapMaxHeight`, or `null`, where the map takes the height the month grid leaves (the layout before LAY-004). A handle on the border between the map and the month grid sets it; while `mapHeight` is a number the month grid fills the rest of the left column and its rows scroll inside it. | LAY-004, LAY-005, DEC-016, DEC-019. User request 2026-11-19 (canvas), spec change approved the same day. |
 | DEC-022 | The controller has two modules. `controller.js` keeps the state, `createController`, the page, settings and picker workflows and the requests to the holiday service. `controller-holidays.js` holds the holiday side: loading the user's holiday record, the holiday actions, the holidays the page uses and the notices. Only `controller.js` imports it; it imports `domain/*` only. | DEC-007, DEC-017, DEC-018. `controller.js` passed the 300-line mark (user decision 2026-11-18). Behaviour does not change. |
-| DEC-023 | The page is published to GitHub Pages by a GitHub Actions workflow (`.github/workflows/pages.yml`) in a public repository on the user's personal account `alkashef`: on every push to `main` it builds `dist/zuno.html` and deploys it as the site's `index.html`. The same file can also be opened from disk. The delivered app stays one file. | PKG-001. Replaces DEC-013. User decisions 2026-11-18: run from GitHub Pages or the local desktop, publish automatically; move the repository to `alkashef` and use Pages (dialog). |
+| DEC-023 | The page is published to GitHub Pages by a GitHub Actions workflow (`.github/workflows/pages.yml`) in a public repository on the user's personal account `alkashef`: on every push to `main` it builds `dist/zuno.html`, deploys it as the site's `index.html`, and attaches the same file to the GitHub Release `latest` (made again at that commit), so anyone can download it from `https://github.com/alkashef/zuno/releases/latest/download/zuno.html`. The same file can also be opened from disk. The delivered app stays one file. The README links to the site and to the download, and explains the browsers' own "install as an app" menus; the repository's description and website point to the site. | PKG-001. Replaces DEC-013. User decisions 2026-11-18: run from GitHub Pages or the local desktop, publish automatically; move the repository to `alkashef` and use Pages (dialog). User decision 2026-11-19 (dialog): an "Open Zuno" and a "Download" link in the README, the file on a release, no install button inside the app. |
 | DEC-024 | The public holidays of the seven countries the holiday service does not cover come from a table in `data/holiday-table.js`. A development script generates it for 2026 to 2028 with the open-source library `date-holidays`, a dev-only tool. The page carries the table, sends no request for those countries, and treats a table holiday like a service holiday. | HOL-013, HOL-001, HOL-003, HOL-008, REF-002, NFR-001, EX-022, EX-023. User decision 2026-11-18 (dialog), which also approves the dev dependency. |
 | DEC-025 | The version is the build's date and time in UTC, written `YYYY.MM.DD.HHmm`. `scripts/build.mjs` writes it into the settings panel's footer in place of a marker in `index.html`. The build gets the time as an argument. | VER-001, DSP-001, EX-026. User decisions 2026-11-18 (dialogs: build date, settings footer, wording). |
 | DEC-026 | The world map's outline is real coastlines: Natural Earth's 1:110m land data (public domain), kept in `data/`, turned by a development script into one SVG path on the map's whole-world grid, and put into the page by the build. No country borders. Each place is still a location icon whose tip is on the place, with a label placed by `views/map.js` where it covers no other label or icon. | MAP-001. Replaces DEC-021. User decisions 2026-11-18 (dialogs: real coastlines only; the milestone downloads the data once). |
@@ -273,9 +273,14 @@ source "GitHub Actions" in the repository's settings. The repository is public, 
 address can open the page and read the code; the page holds no secret and no user data. Settings
 and holidays are saved per origin: the page on Pages and a copy opened from disk each keep their
 own (the holidays file carries holidays between them). The version (DEC-025) of the published page
-is the time of the workflow's build. Precondition, the user's to do: a public repository on
-`alkashef` with this history, and this clone's remote pointing to it. Validation: the workflow run
-succeeds and the site's address answers with the page. Opening the file from disk is covered by the
+is the time of the workflow's build. The release step (2026-11-19) needs `contents: write`;
+it runs after the deployment, deletes the release `latest` with its tag if it exists, and creates it
+again at the pushed commit with `dist/zuno.html` attached, using the `gh` command line that GitHub's
+runners carry. A cancelled run can leave no release until the next push. Alternatives for the
+download: (e) a link to the site and "save the page", rejected by the user as less obvious; (f) an
+install button inside the app (a web app manifest and a service worker), rejected: it needs extra
+files, breaking PKG-001, and does not work from a downloaded copy. Validation: the workflow run
+succeeds, the site's address answers with the page, and the download address answers with the file. Opening the file from disk is covered by the
 browser tests, which load it as a `file:` URL.
 
 **DEC-024.** Table countries: India, Israel, Malaysia, Pakistan, Saudi Arabia, Taiwan and the
@@ -426,7 +431,7 @@ Create a folder only when it is listed here.
 | `tests/e2e/` | Workflow tests through `controller.js` with fakes for `api`, `storage` and `clock`. |
 | `tests/e2e/ui/` | Playwright tests of the built file. |
 | `scripts/` | Adds `build.mjs` and, with DEC-024 and DEC-026, the development scripts `make-holiday-table.mjs` and `make-map.mjs`. The other scripts are unchanged. |
-| `.github/workflows/` | With DEC-023: `pages.yml`, the workflow that builds the page and publishes it to GitHub Pages. |
+| `.github/workflows/` | With DEC-023: `pages.yml`, the workflow that builds the page, publishes it to GitHub Pages and attaches it to the release `latest`. |
 | `docs/`, `config/`, `.claude/`, `.githooks/`, `.vscode/` | Unchanged. `config/.env` stays unused: the page has no secrets and no environment. |
 
 ### 2.3 Settings
@@ -471,7 +476,7 @@ Exact versions of installed packages are in `package.json`.
 | IANA time-zone names | Zones of `data/cities.js` | DEC-015 | Each city's zone is an IANA name that `Intl.DateTimeFormat` accepts (checked by the unit test). | iana.org/time-zones |
 | `date-holidays` | Generates the built-in holiday table at development time | DEC-024 | Installed 3.39.2, dev-only, exact version, approved by the user on 2026-11-18. Code ISC; data CC BY-SA 3.0 by its README (its LICENSE file says 4.0). `public` holidays with English names for all seven countries, checked in M31. Run by `scripts/make-holiday-table.mjs` only; the page never imports it. | github.com/commenthol/date-holidays, 2026-11-18 |
 | Natural Earth 1:110m land | The map's outline | DEC-026 | Downloaded on 2026-11-18 by `scripts/make-map.mjs --download`: `data/ne_110m_land.geojson`, 138 KB. Public domain (Natural Earth's terms of use). One file, fetched once at development time. | github.com/nvkelso/natural-earth-vector, 2026-11-18 |
-| GitHub Pages and GitHub Actions | Publishes the built page | DEC-023 | Needs the public repository on the `alkashef` account. Free for public repositories. | Prepared on 2026-11-18; not run yet |
+| GitHub Pages and GitHub Actions | Publishes the built page and attaches it to the release `latest` | DEC-023 | Free for public repositories. | Pages live since M43 (2026-11-18); the release step added on 2026-11-19 |
 | Database, server, LLM, framework | none | | The page is static with one outside service. | |
 
 ### 2.5 Critical flows and operations
@@ -693,5 +698,4 @@ Everything else follows DEC-006 and the top-level handler.
 | --- | --- | --- | --- |
 | Weekend data lags a recent country change. DEC-003 | Accepted risk | EX-002 in four browsers. | None. |
 | The built-in holiday table ends with 2028, and its Islamic holidays are calculated. DEC-024 | User | Generate the table again before 2029; correct a wrong day by hiding it and adding the right one. | None. |
-| Publishing needs a public repository on the `alkashef` account and this clone's remote pointing to it. DEC-023 | User | The repository exists and a push succeeds. | The Pages milestone. |
 | The Hijri day at about 3.1:1 on the holiday colour. DEC-027 | Accepted risk (user, 2026-11-18) | The browser test measures the real ratio. | None. |
