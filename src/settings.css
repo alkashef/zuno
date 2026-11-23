@@ -2,7 +2,7 @@
  * The settings page (SET-019, DEC-033): a fixed layer over the whole window with its own scroll, a
  * bar with the title and the Close button, the tab bar, the panel of the selected tab (two cards
  * side by side, stacked under 60rem) and the footer. A card holds the working hours, the display
- * switches and theme, the add form, the list of places with their editors, the holiday form and its
+ * switches and theme, the add form (its two modes), the list of places with their editors, the holiday form and its
  * rows, or the file buttons. It holds no colour or size value of its own (theme.css does) and does
  * not style the page behind it.
  */
@@ -302,6 +302,37 @@
 
 .settings-add > .settings-field {
   flex: 1 1 0;
+}
+
+.settings-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-control);
+}
+
+.settings-mode[aria-pressed="true"] {
+  border-color: var(--color-text);
+}
+
+.settings-add-mode {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.settings-add-mode[hidden] {
+  display: none;
+}
+
+.settings-custom {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.settings-custom > .settings-field {
+  align-self: stretch;
 }
 
 .settings-add-button {

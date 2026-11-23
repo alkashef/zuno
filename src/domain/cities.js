@@ -2,12 +2,12 @@
 /**
  * @module domain/cities
  * Looks up the city list (SET-002, SET-013, DEC-015): every city for the add list, one city by id,
- * the countries and territories of the list (HOL-006) and the English name of any known country or
+ * the countries and territories of the list (HOL-006), every known country (SET-018) and the English name of any known country or
  * territory (NFR-003, DEC-029). It reads only `data/cities.js`; which codes are known comes from
  * domain/zone-table.js. It does not make or check places (domain/places.js does).
  */
 import { cityTable } from "../../data/cities.js";
-import { isKnownCountry } from "./zone-table.js";
+import { isKnownCountry, listCountryCodes } from "./zone-table.js";
 
 /** @typedef {import("../../data/cities.js").City} City */
 
@@ -58,6 +58,16 @@ export function countryName(code) {
 export function listCountries() {
   const codes = [...new Set(cityTable.map((city) => city.countryCode))];
   return codes
+    .map((code) => ({ code, name: countryName(code) }))
+    .sort((a, b) => a.name.localeCompare(b.name, "en"));
+}
+
+/**
+ * @returns {CountryChoice[]} Every country and territory of the zone table once, sorted by its
+ *   English name: the choices of a custom place (SET-018).
+ */
+export function listAllCountries() {
+  return listCountryCodes()
     .map((code) => ({ code, name: countryName(code) }))
     .sort((a, b) => a.name.localeCompare(b.name, "en"));
 }

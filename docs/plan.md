@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                       | Description                                           | Model  | Effort | Status   |
 | ------------------------------- | ----------------------------------------------------- | ------ | ------ | -------- |
-| **M49** Add a place or person in the settings | The form of a custom place in "Add a place or person", and the holiday country list that follows the user's places | sonnet | high | open |
 | **M50** Vacations on the grid and in the picker | Saved vacations show in their own colour in the month grid, count as a day off in the picker and appear in the legend | sonnet | high | open |
 | **M51** Hover card, day menu and holiday form | The hover card replaces the click card; a right-click opens the day menu with Add public holiday, Hide and Remove | sonnet | high | open |
 | **M52** Add, edit and remove a vacation from the menu | The day menu and its forms add, change and remove a vacation, and refuse a reversed range | sonnet | high | open |
@@ -22,28 +21,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M49 — Add a place or person in the settings
-
-- **Refs:** SET-013, SET-018, HOL-006, EX-012, EX-027, DEC-029, DEC-033.
-- **Owner:** `src/views/settings-custom-place.js` (new; view layer; the form of a custom place),
-  `src/views/settings.js` (must not grow), `src/views/settings-holidays.js` (country list),
-  `src/main.js` (passes the zones, the countries and the offset lookup), `src/settings.css`.
-- **Tests first:** in `tests/e2e/ui/settings-places.test.js`:
-  `ui_set_013_add_a_place_or_person_lists_the_55_cities_and_offers_a_custom_place_ex_012`,
-  `ui_set_018_custom_place_form_adds_sara_to_the_grid_the_picker_and_the_map_ex_027`,
-  `ui_set_018_form_marks_an_empty_name_an_unknown_zone_or_no_country_invalid_and_adds_nothing`,
-  `ui_set_018_a_full_zone_name_typed_into_the_zone_field_is_accepted` (four browsers). In
-  `tests/e2e/ui/holidays.test.js`:
-  `ui_hol_006_country_list_of_the_holidays_section_has_the_country_of_a_custom_place`,
-  `ui_hol_006_holiday_added_for_a_custom_places_country_shows_in_its_row`.
-- **Build:** "Add a place or person" gets two toggle buttons, "A city from the list" and "A person or
-  another city"; the second shows the form: Name; Time zone (an `<input list>` with a `<datalist>`
-  of the zones, each with its offset); Country or territory (a `<select>` of every country by English
-  name, preset to the zone's own country); the Add place button. A bad field is marked `aria-invalid`
-  and nothing is sent; a good form dispatches `addCustomPlace`. The Holidays section's country list
-  comes from `holidayCountries` of the user's places.
-- **Gate:** the tests pass in the four browsers; the page shows no label that is not English (NFR-003).
 
 ### M50 — Vacations on the grid and in the picker
 

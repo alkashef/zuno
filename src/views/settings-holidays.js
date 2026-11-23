@@ -2,7 +2,7 @@
 /**
  * @module views/settings-holidays
  * Owns the Holidays section of the settings panel: the form that adds a holiday (a country or
- * territory of the city list, a date and a name), the list of added holidays with a Remove button
+ * territory of the city list or of a custom place, a date and a name), the list of added holidays with a Remove button
  * each, and the list of hidden holidays with a Show button each (HOL-006 to HOL-008), the Export
  * button and the Import file picker, and the message shown when an imported file was refused
  * (HOL-010 to HOL-012). An empty field is marked invalid and nothing is sent. It does not own the panel (views/settings.js does),
@@ -12,6 +12,7 @@
 import { formatDate } from "../domain/format.js";
 
 /** @typedef {import("../domain/cities.js").CountryChoice} CountryChoice */
+/** @typedef {import("../domain/places.js").Place} Place */
 /** @typedef {import("../domain/user-holidays.js").HolidayEntry} HolidayEntry */
 /** @typedef {import("../domain/user-holidays.js").UserHolidays} UserHolidays */
 /** @typedef {import("../controller.js").Action} Action */
@@ -20,12 +21,16 @@ import { formatDate } from "../domain/format.js";
  * @typedef {object} HolidaysView The part of the page view the section draws.
  * @property {UserHolidays} userHolidays
  * @property {"refused" | null} holidayImport `refused` while the last imported file was refused.
+ * @property {{ places: Place[] } | null} settings The saved settings, whose places decide the
+ *   countries of the add form.
  */
 
 /**
  * @typedef {object} Deps
  * @property {(action: Action) => Promise<void>} dispatch The controller's `dispatch`.
- * @property {CountryChoice[]} countries The countries and territories of the city list, by name.
+ * @property {(places: Place[]) => CountryChoice[]} countriesOf The countries and territories of the
+ *   city list and of these places, by name (HOL-006).
+ * @property {(code: string) => string} countryName The English name of a known country code.
  */
 
 /**
@@ -33,7 +38,8 @@ import { formatDate } from "../domain/format.js";
  * @property {HTMLElement} section The Holidays section inside the open panel.
  * @property {HTMLTemplateElement} template The row template.
  * @property {Deps} deps
- * @property {{ signature: string }} memo What the lists last drew.
+ * @property {{ signature: string, countries: string }} memo What the lists and the country list last
+ *   drew.
  */
 
 /** The two lists: their role, the action of their buttons, and the button's words. */
@@ -71,7 +77,7 @@ function dateText(date) {
  * @returns {string} The English name of the country or territory.
  */
 function countryText(ctx, code) {
-  return ctx.deps.countries.find((country) => country.code === code)?.name ?? code;
+  return ctx.deps.countryName(code);
 }
 
 /**
@@ -174,11 +180,27 @@ function wireFileButtons(ctx) {
 
 /**
  * @param {SectionContext} ctx
- * @returns {void} Lists the countries in the add form and wires the form and the buttons.
+ * @param {HolidaysView} view
+ * @returns {void} Lists the countries of the add form again when the user's places bring or lose
+ *   one, and keeps the chosen country.
+ */
+function drawCountries(ctx, view) {
+  const countries = ctx.deps.countriesOf(view.settings?.places ?? []);
+  const signature = countries.map((country) => country.code).join(",");
+  if (signature === ctx.memo.countries) return;
+  const select = formFields(ctx).country;
+  const chosen = select.value;
+  select.replaceChildren(new Option("Choose a country", ""));
+  countries.forEach(({ code, name }) => select.append(new Option(name, code)));
+  select.value = countries.some((country) => country.code === chosen) ? chosen : "";
+  ctx.memo.countries = signature;
+}
+
+/**
+ * @param {SectionContext} ctx
+ * @returns {void} Wires the form and the buttons.
  */
 function setUp(ctx) {
-  const country = formFields(ctx).country;
-  ctx.deps.countries.forEach(({ code, name }) => country.append(new Option(name, code)));
   part(ctx.section, "holiday-form").addEventListener("submit", (event) => {
     event.preventDefault();
     submitAdd(ctx);
@@ -190,7 +212,7 @@ function setUp(ctx) {
 /**
  * @param {Document} doc The page.
  * @param {HTMLElement} section The Holidays section, inside the open panel.
- * @param {Deps} deps The controller's `dispatch` and the countries of the city list.
+ * @param {Deps} deps The controller's `dispatch` and the country lookups from main.js.
  * @returns {{ render: (view: HolidaysView) => void }} The section; `render` redraws the lists only
  *   when the user's holidays changed, and shows the refusal message while an import is refused.
  * @throws {Error} When the page has no holiday-row template.
@@ -201,10 +223,11 @@ export function createHolidaysSection(doc, section, deps) {
     throw new Error("settings holidays: the page has no #settings-holiday-template");
   }
   /** @type {SectionContext} */
-  const ctx = { section, template, deps, memo: { signature: "" } };
+  const ctx = { section, template, deps, memo: { signature: "", countries: "" } };
   setUp(ctx);
   return {
     render(view) {
+      drawCountries(ctx, view);
       const signature = JSON.stringify(view.userHolidays);
       if (signature !== ctx.memo.signature) drawLists(ctx, view);
       ctx.memo.signature = signature;

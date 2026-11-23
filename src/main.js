@@ -9,13 +9,14 @@ import * as clock from "./clock.js";
 import { config } from "./config.js";
 import { createController } from "./controller.js";
 import { monthWeeks } from "./domain/calendar.js";
-import { countryName, listCities, listCountries } from "./domain/cities.js";
+import { countryName, listAllCountries, listCities } from "./domain/cities.js";
 import { isTableCountry, tableHolidays } from "./domain/holiday-table.js";
-import { placeFacts, placeName, placePin } from "./domain/places.js";
+import { holidayCountries, placeFacts, placeName, placePin } from "./domain/places.js";
 import { parseSettings } from "./domain/settings.js";
 import { isAddedHoliday, parseUserHolidays } from "./domain/user-holidays.js";
 import { countryWeekendDays, placeWeekendDays } from "./domain/weekends.js";
 import { localDateTime, zoneOffset } from "./domain/zones.js";
+import { listZones } from "./domain/zone-table.js";
 import { createFiles } from "./files.js";
 import { log } from "./log.js";
 import { createStorage } from "./storage.js";
@@ -33,6 +34,7 @@ import { createNotices } from "./views/notices.js";
 import { createPicker } from "./views/picker.js";
 import { createPickerHover } from "./views/picker-hover.js";
 import { createPickerResize } from "./views/picker-resize.js";
+import { createCustomPlaceForm } from "./views/settings-custom-place.js";
 import { createHolidaysSection } from "./views/settings-holidays.js";
 import { createPlaceList } from "./views/settings-places.js";
 import { setUpSettingsTabs } from "./views/settings-tabs.js";
@@ -129,7 +131,15 @@ const views = [
     makeHolidays: (section) =>
       createHolidaysSection(document, section, {
         dispatch: controller.dispatch,
-        countries: listCountries(),
+        countriesOf: holidayCountries,
+        countryName,
+      }),
+    makeCustomPlace: (card) =>
+      createCustomPlaceForm(card, {
+        dispatch: controller.dispatch,
+        zones: listZones(),
+        countries: listAllCountries(),
+        offsetAt: zoneOffset,
       }),
   }),
 ];

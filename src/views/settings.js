@@ -1,13 +1,12 @@
 // @ts-check
 /**
  * @module views/settings
- * Owns the settings page, a layer over the whole window: opens and closes it with `settingsOpen`,
- * the working-hours lists, the country-name and Hijri switches, the theme, the add form (the cities
- * of the list), the close button and Escape, and returns the focus to the button that opened it
- * (SET-001, SET-002, SET-004, SET-005, SET-010 to SET-013, SET-019), from a template in
- * index.html. It does not draw the list of places (views/settings-places.js, `deps.makeList`) or
- * the Holidays tab (views/settings-holidays.js, `deps.makeHolidays`), or the tabs
- * (views/settings-tabs.js, `deps.setUpTabs`), and saves nothing (the controller does).
+ * Owns the settings page, a layer over the whole window (a template in index.html): opens and closes
+ * it with `settingsOpen`, the working-hours lists, the display switches, the theme, the add form of
+ * the cities of the list, the close button, Escape and the focus return (SET-001, SET-002, SET-004,
+ * SET-005, SET-010 to SET-013, SET-019). It does not draw the list of places, the Holidays tab, the
+ * form of a custom place or the tabs (views/settings-*.js, which main.js passes in), and saves
+ * nothing (the controller does).
  */
 import { formatMinutes } from "../domain/format.js";
 
@@ -20,8 +19,7 @@ import { formatMinutes } from "../domain/format.js";
  * @typedef {object} Session The open panel, if any.
  * @property {HTMLElement | null} panel
  * @property {Element | null} opener The element focused when the panel opened.
- * @property {{ render: (view: PlaceListView) => void } | null} places
- * @property {{ render: (view: HolidaysView) => void } | null} holidays
+ * @property {{ render: (view: SettingsView) => void }[]} sections The parts that draw themselves.
  */
 
 /**
@@ -45,12 +43,13 @@ import { formatMinutes } from "../domain/format.js";
  * @property {number} hoursStepMinutes Minutes between two choices of the working-hours lists.
  * @property {(action: Action) => Promise<void>} dispatch The controller's `dispatch`.
  * @property {Lookup} lookup
- * @property {(layer: HTMLElement) => void} setUpTabs Starts the tabs of the layer
- *   (views/settings-tabs.js; main.js passes it in, because a view imports no other view).
+ * @property {(layer: HTMLElement) => void} setUpTabs Starts the tabs (views/settings-tabs.js).
  * @property {(list: HTMLElement) => { render: (view: PlaceListView) => void }} makeList Builds the
- *   list of places (views/settings-places.js; main.js passes it in, it needs the lookup).
+ *   list of places (views/settings-places.js).
  * @property {(section: HTMLElement) => { render: (view: HolidaysView) => void }} makeHolidays
- *   Builds the Holidays tab (views/settings-holidays.js; main.js passes it in).
+ *   Builds the Holidays tab (views/settings-holidays.js).
+ * @property {(card: HTMLElement) => { render: (view: PlaceListView) => void }} makeCustomPlace
+ *   Builds the form of a custom place (views/settings-custom-place.js).
  */
 
 /**
@@ -222,17 +221,18 @@ function wireButtons(ctx, panel) {
  * @returns {void} Builds the panel, wires it and puts it on the page.
  */
 function openPanel(ctx, view) {
-  const { doc, session } = ctx;
-  const panel = /** @type {HTMLElement} */ (
-    ctx.template.content.firstElementChild?.cloneNode(true)
-  );
+  const { doc, session, template } = ctx;
+  const panel = /** @type {HTMLElement} */ (template.content.firstElementChild?.cloneNode(true));
   session.opener = doc.activeElement;
   fillCities(ctx, panel);
   setUpDisplay(ctx, panel, view);
   wireButtons(ctx, panel);
   ctx.deps.setUpTabs(panel);
-  session.places = ctx.deps.makeList(part(panel, "places"));
-  session.holidays = ctx.deps.makeHolidays(part(panel, "holidays"));
+  session.sections = [
+    ctx.deps.makeList(part(panel, "places")),
+    ctx.deps.makeHolidays(part(panel, "holidays")),
+    ctx.deps.makeCustomPlace(part(panel, "add-place")),
+  ];
   session.panel = panel;
   doc.body.append(panel);
   part(panel, "close").focus();
@@ -248,7 +248,7 @@ function closePanel(ctx) {
   const kept = session.opener?.isConnected === true && session.opener !== doc.body;
   const opener = kept ? session.opener : doc.querySelector('[data-action="openSettings"]');
   if (opener instanceof HTMLElement) opener.focus();
-  Object.assign(session, { panel: null, places: null, holidays: null });
+  Object.assign(session, { panel: null, sections: [] });
 }
 
 /**
@@ -275,7 +275,7 @@ export function createSettingsPanel(doc, deps) {
   if (!(template instanceof HTMLTemplateElement)) {
     throw new Error("settings: the page has no #settings-panel-template");
   }
-  const session = { panel: null, opener: null, places: null, holidays: null };
+  const session = { panel: null, opener: null, sections: [] };
   /** @type {PanelContext} */
   const ctx = { doc, template, deps, session };
   closeOnEscape(ctx);
@@ -283,8 +283,7 @@ export function createSettingsPanel(doc, deps) {
     render(view) {
       if (view.settingsOpen && ctx.session.panel === null) openPanel(ctx, view);
       if (!view.settingsOpen && ctx.session.panel !== null) closePanel(ctx);
-      ctx.session.places?.render(view);
-      ctx.session.holidays?.render(view);
+      ctx.session.sections.forEach((section) => section.render(view));
     },
   };
 }

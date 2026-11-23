@@ -239,7 +239,7 @@ test("ui_dec_020_settings_sections_are_in_the_canvas_order_with_a_line_after_eac
   assert.deepEqual(headings, [
     "Working hours",
     "Display",
-    "Add a place",
+    "Add a place or person",
     "Places",
     "Holidays",
     "Holidays and vacations file",

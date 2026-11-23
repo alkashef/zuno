@@ -497,28 +497,88 @@
           <section
             class="settings-section settings-section-tight"
             aria-labelledby="settings-add-title"
+            data-role="add-place"
           >
-            <h3 id="settings-add-title" class="settings-heading">Add a place</h3>
-            <form class="settings-add" data-role="add-form">
-              <label class="settings-field">
-                <span class="settings-label">City</span>
-                <select class="settings-input" data-role="city">
-                  <option value="">Choose a city</option>
-                </select>
-              </label>
-              <button type="submit" class="button button-primary settings-add-button">
-                <svg
-                  class="icon settings-add-icon"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                  focusable="false"
-                >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                Add place
+            <h3 id="settings-add-title" class="settings-heading">Add a place or person</h3>
+            <div class="settings-modes" role="group" aria-label="What to add">
+              <button
+                type="button"
+                class="button settings-mode"
+                aria-pressed="true"
+                data-role="mode-city"
+              >
+                A city from the list
               </button>
-            </form>
-            <p class="settings-hint">The new place uses the time zone of the city.</p>
+              <button
+                type="button"
+                class="button settings-mode"
+                aria-pressed="false"
+                data-role="mode-custom"
+              >
+                A person or another city
+              </button>
+            </div>
+            <div class="settings-add-mode" data-role="city-mode">
+              <form class="settings-add" data-role="add-form">
+                <label class="settings-field">
+                  <span class="settings-label">City</span>
+                  <select class="settings-input" data-role="city">
+                    <option value="">Choose a city</option>
+                  </select>
+                </label>
+                <button type="submit" class="button button-primary settings-add-button">
+                  <svg
+                    class="icon settings-add-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  Add place
+                </button>
+              </form>
+              <p class="settings-hint">The new place uses the time zone of the city.</p>
+            </div>
+            <div class="settings-add-mode" data-role="custom-mode" hidden>
+              <form class="settings-custom" data-role="custom-form">
+                <label class="settings-field">
+                  <span class="settings-label">Name</span>
+                  <input type="text" class="settings-input" data-role="custom-name" />
+                </label>
+                <label class="settings-field">
+                  <span class="settings-label">Time zone</span>
+                  <input
+                    type="text"
+                    class="settings-input"
+                    list="settings-zone-list"
+                    autocomplete="off"
+                    data-role="custom-zone"
+                  />
+                  <datalist id="settings-zone-list" data-role="zone-list"></datalist>
+                </label>
+                <label class="settings-field">
+                  <span class="settings-label">Country or territory</span>
+                  <select class="settings-input" data-role="custom-country">
+                    <option value="">Choose a country</option>
+                  </select>
+                </label>
+                <button type="submit" class="button button-primary settings-add-button">
+                  <svg
+                    class="icon settings-add-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  Add place
+                </button>
+              </form>
+              <p class="settings-hint">
+                The name can be a person's. The country decides the weekend and the public holidays.
+              </p>
+            </div>
           </section>
           <section class="settings-section" aria-labelledby="settings-places-title">
             <h3 id="settings-places-title" class="settings-heading">Places</h3>

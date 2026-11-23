@@ -107,9 +107,10 @@ test("ui_set_002_new_place_shows_its_country_and_offset", async () => {
   assert.equal(await riyadh.locator('[data-role="facts"]').textContent(), "Saudi Arabia · UTC+3");
 });
 
-test("test_set_013_add_a_place_lists_the_55_cities_with_their_countries", async () => {
+test("ui_set_013_add_a_place_or_person_lists_the_55_cities_and_offers_a_custom_place_ex_012", async () => {
   const { page } = await openPage(browser, built.url, { saved: savedPlaces(["riyadh"]) });
   await openSettings(page);
+  await page.getByRole("heading", { name: "Add a place or person" }).waitFor();
   const options = page.getByRole("combobox", { name: "City", exact: true }).locator("option");
   const labels = await options.allTextContents();
   assert.equal(labels.length, 56);
@@ -118,12 +119,127 @@ test("test_set_013_add_a_place_lists_the_55_cities_with_their_countries", async 
   assert.ok(labels.includes("Mumbai, India"));
   assert.ok(labels.includes("São Paulo, Brazil"));
   assert.ok(!labels.some((label) => label.startsWith("Nairobi")));
+  const fromList = page.getByRole("button", { name: "A city from the list" });
+  const custom = page.getByRole("button", { name: "A person or another city" });
+  assert.equal(await fromList.getAttribute("aria-pressed"), "true");
+  assert.equal(await custom.getAttribute("aria-pressed"), "false");
+  assert.equal(await page.getByRole("combobox", { name: "Time zone" }).count(), 0);
+  await custom.click();
+  assert.equal(await custom.getAttribute("aria-pressed"), "true");
+  assert.equal(await page.getByRole("combobox", { name: "City", exact: true }).count(), 0);
+  await page.getByRole("textbox", { name: "Name" }).waitFor();
+  await page.getByRole("combobox", { name: "Time zone" }).waitFor();
+  const countries = page.getByRole("combobox", { name: "Country or territory" });
+  assert.ok(
+    (await countries.locator("option").allTextContents()).includes("Kenya"),
+    "every country is offered",
+  );
+  await fromList.click();
   await page.getByRole("button", { name: "Edit Riyadh" }).click();
   assert.equal(await page.getByRole("combobox", { name: "Time zone" }).count(), 0);
   await addCity(page, "Mumbai, India");
   assert.deepEqual(await listedNames(page), ["Riyadh", "Mumbai"]);
   const mumbai = page.locator(".settings-place", { hasText: "Mumbai" });
   assert.equal(await mumbai.locator('[data-role="facts"]').textContent(), "India · UTC+5:30");
+});
+
+/**
+ * @param {Page} page
+ * @returns {Promise<void>} Shows the form of a custom place.
+ */
+async function openCustomForm(page) {
+  await page.getByRole("button", { name: "A person or another city" }).click();
+}
+
+/**
+ * @param {Page} page
+ * @param {{ name: string, zone: string, country?: string }} entry
+ * @returns {Promise<void>} Fills the form of a custom place and presses "Add place". The country is
+ *   left to the preset when not given.
+ */
+async function addCustom(page, { name, zone, country }) {
+  await page.getByRole("textbox", { name: "Name" }).fill(name);
+  await page.getByRole("combobox", { name: "Time zone" }).fill(zone);
+  if (country !== undefined) {
+    await page
+      .getByRole("combobox", { name: "Country or territory" })
+      .selectOption({ label: country });
+  }
+  await page.getByRole("button", { name: "Add place" }).click();
+}
+
+test("ui_set_018_custom_place_form_adds_sara_to_the_grid_the_picker_and_the_map_ex_027", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["riyadh"]) });
+  await openSettings(page);
+  await openCustomForm(page);
+  await addCustom(page, { name: "Sara", zone: "Europe/Lisbon", country: "Portugal" });
+  assert.deepEqual(await listedNames(page), ["Riyadh", "Sara"]);
+  const sara = page.locator(".settings-place", { hasText: "Sara" });
+  assert.equal(await sara.locator('[data-role="facts"]').textContent(), "Portugal · UTC+0");
+  const record = JSON.parse(
+    await page.evaluate((key) => localStorage.getItem(key) ?? "", config.storageKey),
+  );
+  assert.deepEqual(record.places[1].custom, {
+    name: "Sara",
+    zone: "Europe/Lisbon",
+    countryCode: "PT",
+  });
+  assert.equal(await page.getByRole("textbox", { name: "Name" }).inputValue(), "");
+  await page.keyboard.press("Escape");
+  const names = (/** @type {string} */ role) => page.locator(`[data-role="${role}"]`);
+  assert.deepEqual(await names("grid-row").locator(".month-grid-place-name").allTextContents(), [
+    "Riyadh",
+    "Sara",
+  ]);
+  assert.deepEqual(await page.locator(".picker-name").allTextContents(), ["Riyadh", "Sara"]);
+  assert.deepEqual(await names("pin-name").allTextContents(), ["Riyadh", "Sara"]);
+});
+
+test("ui_set_018_form_marks_an_empty_name_an_unknown_zone_or_no_country_invalid_and_adds_nothing", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["riyadh"]) });
+  await openSettings(page);
+  await openCustomForm(page);
+  const name = page.getByRole("textbox", { name: "Name" });
+  const zone = page.getByRole("combobox", { name: "Time zone" });
+  const country = page.getByRole("combobox", { name: "Country or territory" });
+  const invalid = async () => [
+    await name.getAttribute("aria-invalid"),
+    await zone.getAttribute("aria-invalid"),
+    await country.getAttribute("aria-invalid"),
+  ];
+  await page.getByRole("button", { name: "Add place" }).click();
+  assert.deepEqual(await invalid(), ["true", "true", "true"]);
+  await name.fill("   ");
+  await zone.fill("Mars/Olympus");
+  await page.getByRole("button", { name: "Add place" }).click();
+  assert.deepEqual(await invalid(), ["true", "true", "true"]);
+  await name.fill("Sara");
+  await zone.fill("Europe/Lisbon");
+  await country.selectOption({ value: "" });
+  await page.getByRole("button", { name: "Add place" }).click();
+  assert.deepEqual(await invalid(), ["false", "false", "true"]);
+  assert.deepEqual(await listedNames(page), ["Riyadh"]);
+  const record = JSON.parse(
+    await page.evaluate((key) => localStorage.getItem(key) ?? "null", config.storageKey),
+  );
+  assert.equal(record.places.length, 1);
+});
+
+test("ui_set_018_a_full_zone_name_typed_into_the_zone_field_is_accepted", async () => {
+  for (const browserName of browserNames) {
+    const each = await launchBrowser(browserName);
+    const { page } = await openPage(each, built.url, { saved: savedPlaces(["riyadh"]) });
+    await openSettings(page);
+    await openCustomForm(page);
+    const zone = page.getByRole("combobox", { name: "Time zone" });
+    await zone.pressSequentially("Asia/Tokyo");
+    const country = page.getByRole("combobox", { name: "Country or territory" });
+    assert.equal(await country.inputValue(), "JP", browserName);
+    await page.getByRole("textbox", { name: "Name" }).fill("Aiko");
+    await page.getByRole("button", { name: "Add place" }).click();
+    assert.deepEqual(await listedNames(page), ["Riyadh", "Aiko"], browserName);
+    await each.close();
+  }
 });
 
 test("ui_set_004_places_survive_reload", async () => {

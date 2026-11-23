@@ -29,7 +29,10 @@ each of those two cards ends with a legend of its colours. The cards fill the wi
 edge. Drag the picker's left edge to show more hours, and drag the border between the map and the
 month grid (or focus it and press the up and down arrow keys) to give the map more or less room;
 the browser remembers both. Each place is a city from a fixed list
-of 55 cities, and you can choose its weekend days (the default is its country's weekend). The
+of 55 cities, or a custom place that you add in the Places tab with "A person or another city": a
+name (a person's, if you like), a time zone and a country or territory. You can choose the weekend
+days of any place (the default is its country's weekend), and the Holidays form offers the country of
+each custom place. The
 settings cover the whole page and have three tabs: General (the working hours, the display
 switches and the theme: Light, Dark, or Auto, which follows your system), Places (add a place and
 the list of places) and Holidays and vacations. The Close button or Escape closes them. You can add a public holiday the holiday service does not

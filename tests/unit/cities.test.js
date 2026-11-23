@@ -5,7 +5,14 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { cityTable } from "../../data/cities.js";
-import { cityOf, countryName, listCities, listCountries } from "../../src/domain/cities.js";
+import {
+  cityOf,
+  countryName,
+  listAllCountries,
+  listCities,
+  listCountries,
+} from "../../src/domain/cities.js";
+import { listCountryCodes } from "../../src/domain/zone-table.js";
 import { zoneOffset } from "../../src/domain/zones.js";
 
 /** The ISO 3166-1 code of each country or territory named in the spec's section 9. */
@@ -154,4 +161,17 @@ test("test_hol_006_an_added_holiday_accepts_any_known_country", () => {
     false,
   );
   assert.throws(() => countryName("ZZ"), RangeError);
+});
+
+test("test_set_018_every_known_country_is_listed_once_by_english_name", () => {
+  const all = listAllCountries();
+  assert.equal(all.length, listCountryCodes().length);
+  assert.equal(new Set(all.map((country) => country.code)).size, all.length);
+  const names = all.map((country) => country.name);
+  assert.deepEqual(
+    names,
+    [...names].sort((a, b) => a.localeCompare(b, "en")),
+  );
+  assert.ok(all.some((country) => country.code === "KE" && country.name === "Kenya"));
+  assert.ok(listCountries().every((city) => all.some((each) => each.code === city.code)));
 });

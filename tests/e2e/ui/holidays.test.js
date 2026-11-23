@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
 import { config } from "../../../src/config.js";
-import { createPlace } from "../../../src/domain/places.js";
+import { createCustomPlace, createPlace } from "../../../src/domain/places.js";
 import { defaultSettings } from "../../../src/domain/settings.js";
 import { buildToScratch, launchBrowser, openPage } from "./page-fixture.js";
 
@@ -155,4 +155,38 @@ test("ui_hol_013_riyadh_holiday_and_credit_line_ex_022", async () => {
   const section = await openHolidays(page);
   const credit = section.locator('[data-role="holiday-table-credit"]');
   assert.match(await credit.innerText(), /date-holidays.*CC BY-SA 3\.0/s);
+});
+
+/** @returns {import("../../../src/domain/settings.js").Settings} Settings with Sara of EX-027. */
+function savedSara() {
+  const sara = createCustomPlace("place-1", {
+    name: "Sara",
+    zone: "Europe/Lisbon",
+    countryCode: "PT",
+  });
+  return { ...defaultSettings(540, 1020), places: [createPlace("place-2", "mumbai"), sara] };
+}
+
+test("ui_hol_006_country_list_of_the_holidays_section_has_the_country_of_a_custom_place", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedSara() });
+  const section = await openHolidays(page);
+  const countries = section.getByRole("combobox", { name: "Country" });
+  const labels = await countries.locator("option").allTextContents();
+  assert.ok(labels.includes("Portugal"));
+  assert.ok(labels.includes("India"));
+  assert.ok(!labels.includes("Kenya"));
+  assert.deepEqual(
+    labels.slice(1),
+    [...labels.slice(1)].sort((a, b) => a.localeCompare(b, "en")),
+  );
+});
+
+test("ui_hol_006_holiday_added_for_a_custom_places_country_shows_in_its_row", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedSara() });
+  const section = await openHolidays(page);
+  await addHoliday(section, { country: "Portugal", date: "2026-11-20", name: "Sara Day" });
+  const rows = section.locator('[data-role="added"] li [data-role="holiday-text"]');
+  assert.deepEqual(await rows.allTextContents(), ["20-Nov-26 · Portugal · Sara Day"]);
+  const cells = page.getByRole("button", { name: "Sara Day, 20-Nov-26" });
+  assert.equal(await cells.count(), 1);
 });
