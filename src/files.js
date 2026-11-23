@@ -2,12 +2,14 @@
 /**
  * @module files
  * The only module that saves a file to the user's machine and reads a file the user picked
- * (HOL-010 to HOL-012, DEC-018). `saveJson` offers a value as a download; `readJson` reads a picked
- * file as JSON. It does not know what the value means (domain/user-holidays.js validates it) and
- * sends nothing over the network (NFR-001).
+ * (HOL-010 to HOL-012, DEC-018, DEC-032). `saveText` offers text as a download; `readText` reads a
+ * picked file as text; `readJson` reads one as JSON (it goes with the JSON import, which a later
+ * milestone replaces). It does not know what the text means (domain/holidays-file.js does) and sends
+ * nothing over the network (NFR-001).
  */
 
 /** @typedef {{ status: "read", value: unknown } | { status: "unreadable" }} FileRead */
+/** @typedef {{ status: "read", text: string } | { status: "unreadable" }} TextRead */
 
 /**
  * @typedef {object} FilesDeps
@@ -29,18 +31,31 @@ function parseJson(text) {
 }
 
 /**
+ * @param {Blob} file
+ * @returns {Promise<TextRead>} The file's text, or `unreadable` when the browser cannot read it.
+ */
+async function readTextOf(file) {
+  try {
+    return { status: "read", text: await file.text() };
+  } catch {
+    return { status: "unreadable" };
+  }
+}
+
+/**
  * @param {FilesDeps} deps
- * @returns {{ saveJson: (fileName: string, value: unknown) => void, readJson: (file: Blob) => Promise<FileRead> }}
+ * @returns {{ saveText: (fileName: string, text: string, mimeType: string) => void, readText: (file: Blob) => Promise<TextRead>, readJson: (file: Blob) => Promise<FileRead> }}
  */
 export function createFiles({ doc, urls }) {
   return {
     /**
-     * Offers the value as a JSON file download.
+     * Offers the text as a file download.
      * @param {string} fileName The name the browser proposes.
-     * @param {unknown} value Anything `JSON.stringify` writes.
+     * @param {string} text The content of the file.
+     * @param {string} mimeType The type of the file, such as `text/csv`.
      */
-    saveJson(fileName, value) {
-      const blob = new Blob([JSON.stringify(value, null, 2)], { type: "application/json" });
+    saveText(fileName, text, mimeType) {
+      const blob = new Blob([text], { type: mimeType });
       const url = urls.createObjectURL(blob);
       const link = doc.createElement("a");
       link.href = url;
@@ -50,6 +65,7 @@ export function createFiles({ doc, urls }) {
       link.remove();
       urls.revokeObjectURL(url);
     },
+    readText: readTextOf,
     /**
      * @param {Blob} file The file the user picked.
      * @returns {Promise<FileRead>} The parsed JSON, or `unreadable` when the text is not JSON.

@@ -10,6 +10,7 @@ import {
   noticesOf,
   regionsByCountry,
 } from "../../src/controller-holidays.js";
+import { toCsv } from "../../src/domain/holidays-file.js";
 import { createPlace } from "../../src/domain/places.js";
 import { defaultSettings } from "../../src/domain/settings.js";
 import { emptyUserHolidays } from "../../src/domain/user-holidays.js";
@@ -42,7 +43,7 @@ function stateOf(state = {}) {
 /**
  * @typedef {object} Fakes What the fake context recorded.
  * @property {UserHolidays[]} saves The records saved through `holidayStorage`.
- * @property {{ fileName: string, value: unknown }[]} files The files saved through `files.saveJson`.
+ * @property {{ fileName: string, text: string, mimeType: string }[]} files The files saved through `files.saveText`.
  * @property {HolidayChanges[]} updates The changes handed to `update`.
  * @property {HolidayData} state The current state; `update` merges into it.
  */
@@ -60,10 +61,10 @@ function fakeContext(state, readJson = async () => ({ status: "unreadable" })) {
     deps: {
       holidayStorage: { load: () => null, save: (record) => void fakes.saves.push(record) },
       files: {
-        saveJson: (fileName, value) => void fakes.files.push({ fileName, value }),
+        saveText: (fileName, text, mimeType) => void fakes.files.push({ fileName, text, mimeType }),
         readJson,
       },
-      holidaysFileName: "zuno-holidays.json",
+      holidaysFileName: "zuno-holidays-and-vacations.csv",
     },
     read: () => fakes.state,
     update(changes) {
@@ -176,11 +177,17 @@ test("test_hol_008_hide_and_show_save_the_record_each_time", async () => {
   assert.equal(fakes.saves.length, 2);
 });
 
-test("test_hol_010_export_saves_the_record_under_the_file_name", async () => {
+test("test_hol_010_export_saves_the_record_as_csv_under_the_file_name", async () => {
   const userHolidays = { version: /** @type {const} */ (1), added: [diwali], hidden: [] };
   const { ctx, fakes } = fakeContext({ userHolidays });
   await holidayHandlers().exportHolidays(ctx, { type: "exportHolidays" });
-  assert.deepEqual(fakes.files, [{ fileName: "zuno-holidays.json", value: userHolidays }]);
+  assert.deepEqual(fakes.files, [
+    {
+      fileName: "zuno-holidays-and-vacations.csv",
+      text: toCsv({ userHolidays, places: settings.places }),
+      mimeType: "text/csv",
+    },
+  ]);
   assert.deepEqual(fakes.updates, []);
 });
 

@@ -1,5 +1,5 @@
 // @ts-check
-/** @module files.test Unit tests for src/files.js with a fake document and a fake URL maker (HOL-010, HOL-012, DEC-018). */
+/** @module files.test Unit tests for src/files.js with a fake document and a fake URL maker (HOL-010, HOL-012, DEC-018, DEC-032). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -35,18 +35,34 @@ function fakeFiles() {
   return { files: createFiles({ doc, urls }), events, link, blobs };
 }
 
-test("test_hol_010_save_json_clicks_a_download_link_with_the_file_name_and_revokes_the_url", async () => {
+test("test_hol_010_save_text_makes_a_blob_link_and_revokes_the_url", async () => {
   const { files, events, blobs } = fakeFiles();
-  files.saveJson("zuno-holidays.json", { version: 1, added: [], hidden: [] });
+  files.saveText("zuno-holidays-and-vacations.csv", "a,b\r\n", "text/csv");
   assert.deepEqual(events, [
     "append",
-    "click zuno-holidays.json blob:fake-1",
+    "click zuno-holidays-and-vacations.csv blob:fake-1",
     "remove",
     "revoke blob:fake-1",
   ]);
   assert.equal(blobs.length, 1);
-  assert.equal(blobs[0].type, "application/json");
-  assert.deepEqual(JSON.parse(await blobs[0].text()), { version: 1, added: [], hidden: [] });
+  assert.equal(blobs[0].type, "text/csv");
+  assert.equal(await blobs[0].text(), "a,b\r\n");
+});
+
+test("test_hol_012_read_text_returns_the_text_of_a_file", async () => {
+  const { files } = fakeFiles();
+  assert.deepEqual(await files.readText(new File(["a,b\r\n"], "a.csv")), {
+    status: "read",
+    text: "a,b\r\n",
+  });
+});
+
+test("test_hol_012_read_text_reports_an_unreadable_file", async () => {
+  const { files } = fakeFiles();
+  const broken = /** @type {Blob} */ (
+    /** @type {unknown} */ ({ text: () => Promise.reject(new Error("cannot read")) })
+  );
+  assert.deepEqual(await files.readText(broken), { status: "unreadable" });
 });
 
 test("test_hol_011_read_json_returns_the_value_of_a_json_file", async () => {

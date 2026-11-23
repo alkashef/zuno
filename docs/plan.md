@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                       | Description                                           | Model  | Effort | Status   |
 | ------------------------------- | ----------------------------------------------------- | ------ | ------ | -------- |
-| **M53** Export to CSV with its description | Export writes one CSV file of holidays, hidden holidays and vacations; the page describes the format | sonnet | high | open |
 | **M54** Import from CSV with a confirmation | Import reads the CSV file, shows how many rows can be imported, and adds them or cancels | sonnet | high | open |
 | **M55** List and delete imported files | The settings list each imported file; deleting one first asks, then undoes what only that file added | sonnet | high | open |
 
@@ -18,36 +17,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M53 — Export to CSV with its description
-
-- **Refs:** HOL-010, HOL-012 (the CSV reader), HOL-016, EX-017 (export half), EX-031, DEC-032, NFR-001.
-- **Owner:** `src/domain/csv.js` (new; domain layer; reads and writes CSV text, knows nothing of
-  holidays), `src/domain/holidays-file.js` (new; domain layer; here `toCsv`),
-  `src/files.js` (`saveText`, `readText`), `src/controller-holidays.js` (`exportHolidays`),
-  `src/config.js` (`holidaysFileName`), `src/views/settings-file.js` (new; view layer; the file card),
-  `src/views/settings-holidays.js` (loses Export and Import), `src/index.html` (the description),
-  `src/main.js`.
-- **Tests first:**
-  - `tests/unit/csv.test.js`: `test_hol_010_format_quotes_only_the_fields_that_need_it_and_ends_lines_with_crlf`,
-    `test_hol_010_parse_reads_what_format_writes`,
-    `test_hol_012_parse_ignores_a_byte_order_mark_and_returns_null_for_an_open_quote`.
-  - `tests/unit/holidays-file.test.js`: `test_hol_010_to_csv_writes_one_row_per_entry_ex_031`,
-    `test_hol_010_a_hidden_holiday_row_keeps_its_name`,
-    `test_hol_010_dates_are_dd_mmm_yy_and_countries_are_english_names`,
-    `test_hol_016_the_example_on_the_page_equals_the_to_csv_output_of_ex_031`.
-  - `tests/unit/files.test.js`: `test_hol_010_save_text_makes_a_blob_link_and_revokes_the_url`,
-    `test_hol_012_read_text_reports_an_unreadable_file`.
-  - `tests/e2e/controller-holidays.test.js`: `test_hol_010_export_saves_one_csv_file_with_the_configured_name`.
-  - `tests/e2e/ui/holidays-file.test.js`: `ui_hol_010_export_downloads_the_three_rows_of_ex_031`,
-    `ui_hol_016_the_page_describes_the_columns_the_date_format_and_an_example_beside_the_buttons`.
-- **Build:** DEC-032: the byte-order mark, the header `Type,Country,Place,Start date,End date,Name`,
-  one row per entry with `\r\n` ends, added holidays by country then date, hidden holidays likewise,
-  then vacations by place order. The description is static markup in `index.html` beside the buttons.
-  `holidaysFileName` is `zuno-holidays-and-vacations.csv`. The Import button and its JSON reader stay
-  as they are until M54.
-- **Gate:** the existing export tests that expect JSON are changed, because HOL-010 changed; the report
-  says so; the tests pass in the four browsers; the file of EX-031 opens with its header and three rows.
 
 ### M54 — Import from CSV with a confirmation
 

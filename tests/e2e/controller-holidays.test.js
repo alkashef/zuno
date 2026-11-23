@@ -24,7 +24,7 @@ const christmas = Object.freeze({ countryCode: "US", date: "2026-12-25", name: "
 
 /**
  * @typedef {object} FakeFiles The fake `files`: what it saved, and what each picked file reads as.
- * @property {{ fileName: string, value: unknown }[]} saved
+ * @property {{ fileName: string, text: string, mimeType: string }[]} saved
  * @property {Map<Blob, import("../../src/controller.js").FileRead>} reads
  */
 
@@ -60,10 +60,11 @@ function setup(cityIds, stores) {
       save: (record) => void holidaySaves.push((shared.holidays = record)),
     },
     files: {
-      saveJson: (fileName, value) => void fakeFiles.saved.push({ fileName, value }),
+      saveText: (fileName, text, mimeType) =>
+        void fakeFiles.saved.push({ fileName, text, mimeType }),
       readJson: async (file) => fakeFiles.reads.get(file) ?? { status: "unreadable" },
     },
-    holidaysFileName: "zuno-holidays.json",
+    holidaysFileName: "zuno-holidays-and-vacations.csv",
     clock: { now: () => start },
     defaultHours: { start: 540, end: 1020 },
     pickerLimits: { defaultHours: 24, minHours: 24, maxHours: 48 },
@@ -204,30 +205,32 @@ function pickedFile(fakeFiles, value) {
   return file;
 }
 
-test("test_hol_010_export_saves_the_added_and_hidden_holidays_to_a_file", async () => {
+test("test_hol_010_export_saves_one_csv_file_with_the_configured_name", async () => {
   const { controller, fakeFiles } = setup(["mumbai", "new-york"]);
   await controller.dispatch({ type: "open" });
   await controller.dispatch({ type: "addHoliday", ...diwali });
   await controller.dispatch({ type: "hideHoliday", ...christmas });
   await controller.dispatch({ type: "exportHolidays" });
+  const bom = String.fromCharCode(0xfeff);
   assert.deepEqual(fakeFiles.saved, [
     {
-      fileName: "zuno-holidays.json",
-      value: { version: 1, added: [diwali], hidden: [christmas] },
+      fileName: "zuno-holidays-and-vacations.csv",
+      text: [
+        `${bom}Type,Country,Place,Start date,End date,Name`,
+        "holiday,India,,08-Nov-26,,Diwali",
+        "hidden holiday,United States,,25-Dec-26,,Christmas Day",
+        "",
+      ].join("\r\n"),
+      mimeType: "text/csv",
     },
   ]);
 });
 
 test("test_hol_011_import_adds_the_files_holidays_to_the_saved_ones", async () => {
-  const first = setup(["mumbai"]);
-  await first.controller.dispatch({ type: "open" });
-  await first.controller.dispatch({ type: "addHoliday", ...diwali });
-  await first.controller.dispatch({ type: "exportHolidays" });
-  const exported = first.fakeFiles.saved[0].value;
   const second = setup(["mumbai", "islamabad"]);
   await second.controller.dispatch({ type: "open" });
   await second.controller.dispatch({ type: "addHoliday", ...iqbalDay });
-  const file = pickedFile(second.fakeFiles, exported);
+  const file = pickedFile(second.fakeFiles, { version: 1, added: [diwali], hidden: [] });
   await second.controller.dispatch({ type: "importHolidays", file });
   const merged = { version: 1, added: [iqbalDay, diwali], hidden: [] };
   assert.deepEqual(second.controller.getState().userHolidays, merged);

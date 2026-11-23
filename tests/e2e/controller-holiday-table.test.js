@@ -28,7 +28,7 @@ function setup(cityIds, start) {
     holidayTable: { isTableCountry, tableHolidays },
     storage: { load: () => settings, save: () => {} },
     holidayStorage: { load: () => null, save: () => {} },
-    files: { saveJson: () => {}, readJson: async () => ({ status: "unreadable" }) },
+    files: { saveText: () => {}, readJson: async () => ({ status: "unreadable" }) },
     holidaysFileName: "zuno-holidays.json",
     clock: { now: () => start.getTime() },
     defaultHours: { start: 540, end: 1020 },

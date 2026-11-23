@@ -40,9 +40,11 @@ beside the place's name shows its name and dates. Right-click any day to open a 
 asks for a name and adds the holiday, with the date you clicked, for that place's country; on a holiday day the
 menu also has "Hide public holiday", or "Remove public holiday" for one you added. "Add vacation…" asks for a start date (the day you clicked), an end date and an optional label, and adds a vacation to that place; an end date before the start date is refused with a message. On a vacation day, "Edit vacation…" and "Remove vacation" change or delete the whole vacation. Vacations are saved in the browser with the places. The settings also
 add a public holiday the holiday service does not list (by country, date and name), remove it, and show a hidden holiday again. Your added and hidden holidays are saved in the browser. "Export" in the
-Holidays and vacations tab saves them to a file (`zuno-holidays.json`) that you can share, and "Import" adds the
-holidays of such a file to your own; a file that is not a Zuno holidays file is refused and nothing
-changes. Both use local files only. The settings panel ends with the version: the word "Version" and the
+Holidays and vacations tab saves your added holidays, hidden holidays and vacations to one CSV file
+(`zuno-holidays-and-vacations.csv`) that you can share and open in a spreadsheet; the tab describes the columns,
+the date format and gives an example. "Import" still reads the older JSON file and adds its holidays to your own (a file
+that is not a Zuno holidays file is refused and nothing changes); reading the CSV file comes next. Both use local
+files only. The settings panel ends with the version: the word "Version" and the
 date and time of the build in UTC (for example 2026.11.18.1432), so you can tell which build a copy
 is. Two builds of the same code have different versions.
 

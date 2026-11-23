@@ -12,6 +12,7 @@ import { formatMinutes } from "../domain/format.js";
 
 /** @typedef {import("./settings-places.js").Lookup} Lookup */
 /** @typedef {import("./settings-places.js").PlaceListView} PlaceListView */
+/** @typedef {import("./settings-file.js").FileView} FileView */
 /** @typedef {import("./settings-holidays.js").HolidaysView} HolidaysView */
 /** @typedef {import("../controller.js").Action} Action */
 
@@ -32,7 +33,7 @@ import { formatMinutes } from "../domain/format.js";
  */
 
 /**
- * @typedef {PlaceListView & HolidaysView & { settingsOpen: boolean, settings: (NonNullable<PlaceListView["settings"]> & PanelSettings) | null }} SettingsView
+ * @typedef {PlaceListView & HolidaysView & FileView & { settingsOpen: boolean, settings: (NonNullable<PlaceListView["settings"]> & PanelSettings) | null }} SettingsView
  *   The part of the page view the panel draws.
  */
 
@@ -48,6 +49,8 @@ import { formatMinutes } from "../domain/format.js";
  *   list of places (views/settings-places.js).
  * @property {(section: HTMLElement) => { render: (view: HolidaysView) => void }} makeHolidays
  *   Builds the Holidays tab (views/settings-holidays.js).
+ * @property {(card: HTMLElement) => { render: (view: FileView) => void }} makeFile Builds the
+ *   Holidays and vacations file card (views/settings-file.js).
  * @property {(card: HTMLElement) => { render: (view: PlaceListView) => void }} makeCustomPlace
  *   Builds the form of a custom place (views/settings-custom-place.js).
  */
@@ -231,6 +234,7 @@ function openPanel(ctx, view) {
   session.sections = [
     ctx.deps.makeList(part(panel, "places")),
     ctx.deps.makeHolidays(part(panel, "holidays")),
+    ctx.deps.makeFile(part(panel, "file")),
     ctx.deps.makeCustomPlace(part(panel, "add-place")),
   ];
   session.panel = panel;

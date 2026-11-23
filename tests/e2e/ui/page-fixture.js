@@ -66,6 +66,8 @@ export function launchBrowser(name = "chromium") {
  * @property {"light" | "dark"} [colorScheme] The operating-system colour scheme; light by default.
  * @property {Settings | null} [saved] The settings already saved in the browser, if any; written
  *   before the first load only, so a reload keeps what the page saved since.
+ * @property {import("../../../src/domain/user-holidays.js").UserHolidays | null} [savedHolidays]
+ *   The added and hidden holidays already saved in the browser, if any; written like `saved`.
  * @property {string[]} [failingCountries] Country codes whose holiday requests fail (no answer).
  * @property {string} [locale] The browser's language; `en-US` by default.
  */
@@ -88,11 +90,23 @@ export function launchBrowser(name = "chromium") {
 export async function openPage(
   browser,
   url,
-  { colorScheme = "light", saved = null, failingCountries = [], locale = "en-US" } = {},
+  {
+    colorScheme = "light",
+    saved = null,
+    savedHolidays = null,
+    failingCountries = [],
+    locale = "en-US",
+  } = {},
 ) {
   const context = await browser.newContext({ colorScheme, timezoneId: "UTC", locale });
   if (saved !== null) {
     const record = { key: config.storageKey, value: JSON.stringify(saved) };
+    await context.addInitScript(({ key, value }) => {
+      if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
+    }, record);
+  }
+  if (savedHolidays !== null) {
+    const record = { key: config.holidaysStorageKey, value: JSON.stringify(savedHolidays) };
     await context.addInitScript(({ key, value }) => {
       if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
     }, record);

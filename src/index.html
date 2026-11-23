@@ -693,7 +693,7 @@
             <ul class="settings-holidays" data-role="hidden" hidden></ul>
             <p class="settings-hint" data-role="hidden-empty">No holidays hidden.</p>
           </section>
-          <section class="settings-section" aria-labelledby="settings-file-title">
+          <section class="settings-section" aria-labelledby="settings-file-title" data-role="file">
             <h3 id="settings-file-title" class="settings-heading">Holidays and vacations file</h3>
             <div class="settings-file-actions">
               <button type="button" class="button" data-role="holiday-export">Export</button>
@@ -710,6 +710,35 @@
             <p class="settings-hint settings-error" role="alert" data-role="import-refused" hidden>
               The file was refused: it is not a Zuno holidays file. Nothing was changed.
             </p>
+            <div class="settings-file-format" data-role="file-format">
+              <p class="settings-hint">
+                Export saves one CSV file that opens in a spreadsheet. The first row names the
+                columns; every other row is one added holiday, one hidden holiday or one vacation.
+              </p>
+              <dl class="settings-file-columns">
+                <dt>Type</dt>
+                <dd>holiday, hidden holiday or vacation.</dd>
+                <dt>Country</dt>
+                <dd>The country's English name, for a holiday or a hidden holiday.</dd>
+                <dt>Place</dt>
+                <dd>The name of the place, for a vacation.</dd>
+                <dt>Start date</dt>
+                <dd>The date of the holiday, or the first day of the vacation.</dd>
+                <dt>End date</dt>
+                <dd>The last day of the vacation. Empty for a holiday.</dd>
+                <dt>Name</dt>
+                <dd>The name of the holiday, or the label of the vacation.</dd>
+              </dl>
+              <p class="settings-hint">
+                Dates are written as dd-mmm-yy, for example 08-Nov-26. An example of a file with an
+                added holiday, a hidden holiday and a vacation:
+              </p>
+              <pre class="settings-file-example" data-role="file-example">
+Type,Country,Place,Start date,End date,Name
+holiday,India,,08-Nov-26,,Diwali
+hidden holiday,United States,,25-Dec-26,,Christmas Day
+vacation,,Sara,21-Dec-26,31-Dec-26,Winter break</pre>
+            </div>
           </section>
         </div>
         <p class="settings-footer">

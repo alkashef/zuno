@@ -1,11 +1,11 @@
 // @ts-check
-/** @module holidays-file.test Headless-browser tests of the holidays file (export, import, refusal, no network request), in Chromium, Firefox, WebKit and Edge under the page's Content-Security-Policy (HOL-010 to HOL-012, NFR-001, EX-017, EX-018, DEC-018). */
+/** @module holidays-file.test Headless-browser tests of the holidays file (export, import, refusal, no network request), in Chromium, Firefox, WebKit and Edge under the page's Content-Security-Policy (HOL-010 to HOL-012, HOL-016, NFR-001, EX-017, EX-018, EX-031, DEC-018, DEC-032). */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { after, before, test } from "node:test";
 
 import { config } from "../../../src/config.js";
-import { createPlace } from "../../../src/domain/places.js";
+import { createCustomPlace, createPlace } from "../../../src/domain/places.js";
 import { defaultSettings } from "../../../src/domain/settings.js";
 import { browserNames, buildToScratch, launchBrowser, openPage } from "./page-fixture.js";
 
@@ -20,6 +20,7 @@ const browsers = new Map();
 
 const diwali = Object.freeze({ countryCode: "IN", date: "2026-11-08", name: "Diwali" });
 const iqbalDay = Object.freeze({ countryCode: "PK", date: "2026-11-09", name: "Iqbal Day" });
+const christmas = Object.freeze({ countryCode: "US", date: "2026-12-25", name: "Christmas Day" });
 const refusal = "The file was refused: it is not a Zuno holidays file. Nothing was changed.";
 
 before(async () => {
@@ -36,15 +37,16 @@ after(async () => {
 
 /**
  * @param {string} name One of `browserNames`.
+ * @param {import("./page-fixture.js").OpenOptions} [options] Extra saved data.
  * @returns {Promise<{ page: Page, requestUrls: string[], section: import("playwright").Locator }>}
  *   The page with the settings panel open on its Holidays section.
  */
-async function openHolidays(name) {
+async function openHolidays(name, options = {}) {
   const browser = browsers.get(name);
   if (browser === undefined) throw new Error(`Browser ${name} did not launch.`);
   const places = ["mumbai", "islamabad"].map((id, index) => createPlace(`place-${index + 1}`, id));
-  const saved = { ...defaultSettings(540, 1020), places };
-  const { page, requestUrls } = await openPage(browser, built.url, { saved });
+  const saved = options.saved ?? { ...defaultSettings(540, 1020), places };
+  const { page, requestUrls } = await openPage(browser, built.url, { ...options, saved });
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("tab", { name: "Holidays and vacations", exact: true }).click();
   const section = page.getByRole("tabpanel", { name: "Holidays and vacations", exact: true });
@@ -67,7 +69,7 @@ async function addHoliday(section, { country, date, name }) {
 /**
  * @param {Page} page
  * @param {import("playwright").Locator} section
- * @returns {Promise<unknown>} The JSON of the file that "Export" downloads, after checking its name.
+ * @returns {Promise<string>} The text of the file that "Export" downloads, after checking its name.
  */
 async function exportedFile(page, section) {
   const [download] = await Promise.all([
@@ -75,7 +77,7 @@ async function exportedFile(page, section) {
     section.getByRole("button", { name: "Export", exact: true }).click(),
   ]);
   assert.equal(download.suggestedFilename(), config.holidaysFileName);
-  return JSON.parse(await readFile(await download.path(), "utf8"));
+  return readFile(await download.path(), "utf8");
 }
 
 /**
@@ -103,12 +105,49 @@ async function addedList(section) {
   return Promise.all(Array.from({ length: count }, (_, index) => rows.nth(index).innerText()));
 }
 
-test("test_hol_010_export_saves_the_added_and_hidden_holidays_to_a_file", async () => {
+/** @returns {import("../../../src/domain/settings.js").Settings} Settings with Sara and her winter break (EX-031). */
+function savedWithSara() {
+  const sara = createCustomPlace("place-1", {
+    name: "Sara",
+    zone: "Europe/Lisbon",
+    countryCode: "PT",
+  });
+  const winter = { start: "2026-12-21", end: "2026-12-31", label: "Winter break" };
+  return { ...defaultSettings(540, 1020), places: [{ ...sara, vacations: [winter] }] };
+}
+
+test("ui_hol_010_export_downloads_the_three_rows_of_ex_031", async () => {
+  const savedHolidays = { version: /** @type {const} */ (1), added: [diwali], hidden: [christmas] };
   for (const name of browserNames) {
-    const { page, section } = await openHolidays(name);
-    await addHoliday(section, { country: "India", date: diwali.date, name: diwali.name });
-    const exported = await exportedFile(page, section);
-    assert.deepEqual(exported, { version: 1, added: [diwali], hidden: [] }, name);
+    const { page, section } = await openHolidays(name, { saved: savedWithSara(), savedHolidays });
+    const text = await exportedFile(page, section);
+    assert.equal(
+      text,
+      [
+        String.fromCharCode(0xfeff) + "Type,Country,Place,Start date,End date,Name",
+        "holiday,India,,08-Nov-26,,Diwali",
+        "hidden holiday,United States,,25-Dec-26,,Christmas Day",
+        "vacation,,Sara,21-Dec-26,31-Dec-26,Winter break",
+        "",
+      ].join("\r\n"),
+      name,
+    );
+  }
+});
+
+test("ui_hol_016_the_page_describes_the_columns_the_date_format_and_an_example_beside_the_buttons", async () => {
+  for (const name of browserNames) {
+    const { section } = await openHolidays(name);
+    const card = section.locator('[data-role="file"]');
+    await card.getByRole("button", { name: "Export", exact: true }).waitFor();
+    const description = await card.locator('[data-role="file-format"]').innerText();
+    for (const column of ["Type", "Country", "Place", "Start date", "End date", "Name"]) {
+      assert.match(description, new RegExp(column), `${name}: describes ${column}`);
+    }
+    assert.match(description, /dd-mmm-yy/, name);
+    const example = await card.locator('[data-role="file-example"]').innerText();
+    assert.match(example, /^Type,Country,Place,Start date,End date,Name\n/, name);
+    assert.match(example, /vacation,,Sara,21-Dec-26,31-Dec-26,Winter break/, name);
   }
 });
 

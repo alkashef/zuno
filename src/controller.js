@@ -74,7 +74,7 @@ import { localDateTime } from "./domain/zones.js";
  * @property {{ load: () => Settings | null, save: (settings: Settings) => void }} storage
  * @property {{ load: () => UserHolidays | null, save: (record: UserHolidays) => void }} holidayStorage
  *   The record of the holidays the user added and hid (HOL-009, DEC-017).
- * @property {{ saveJson: (fileName: string, value: unknown) => void, readJson: (file: Blob) => Promise<FileRead> }} files
+ * @property {{ saveText: (fileName: string, text: string, mimeType: string) => void, readJson: (file: Blob) => Promise<FileRead> }} files
  *   Saves the holidays file and reads a picked one (HOL-010 to HOL-012, DEC-018).
  * @property {string} holidaysFileName The name of the exported holidays file.
  * @property {{ now: () => number }} clock

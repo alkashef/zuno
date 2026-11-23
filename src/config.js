@@ -17,7 +17,7 @@ export const config = Object.freeze({
   mapHeightStepPx: 20,
   storageKey: "zuno.settings",
   holidaysStorageKey: "zuno.holidays",
-  holidaysFileName: "zuno-holidays.json",
+  holidaysFileName: "zuno-holidays-and-vacations.csv",
   defaultWorkStartMinutes: 540,
   defaultWorkEndMinutes: 1020,
   workingHoursStepMinutes: 60,

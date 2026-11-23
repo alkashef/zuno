@@ -17,6 +17,7 @@ import {
   toHolidays,
   unavailableCountries,
 } from "./domain/holidays.js";
+import { toCsv } from "./domain/holidays-file.js";
 import * as userHolidayList from "./domain/user-holidays.js";
 
 /** @typedef {import("./domain/holidays.js").Holiday} Holiday */
@@ -52,8 +53,8 @@ import * as userHolidayList from "./domain/user-holidays.js";
  * @typedef {object} HolidayDeps The outside world the holiday actions use.
  * @property {{ load: () => UserHolidays | null, save: (record: UserHolidays) => void }} holidayStorage
  *   The record of the holidays the user added and hid (HOL-009, DEC-017).
- * @property {{ saveJson: (fileName: string, value: unknown) => void, readJson: (file: Blob) => Promise<FileRead> }} files
- *   Saves the holidays file and reads a picked one (HOL-010 to HOL-012, DEC-018).
+ * @property {{ saveText: (fileName: string, text: string, mimeType: string) => void, readJson: (file: Blob) => Promise<FileRead> }} files
+ *   Saves the holidays file and reads a picked one (HOL-010 to HOL-012, DEC-018, DEC-032).
  * @property {string} holidaysFileName The name of the exported holidays file.
  */
 
@@ -223,12 +224,14 @@ function holidayChange(change) {
 }
 
 /**
- * Saves the user's added and hidden holidays as a file (HOL-010).
+ * Saves the user's added holidays, hidden holidays and vacations as one CSV file (HOL-010, DEC-032).
  * @param {HolidayContext} ctx
  * @returns {void}
  */
 function exportHolidays(ctx) {
-  ctx.deps.files.saveJson(ctx.deps.holidaysFileName, ctx.read().userHolidays);
+  const { settings, userHolidays } = ctx.read();
+  const text = toCsv({ userHolidays, places: settings?.places ?? [] });
+  ctx.deps.files.saveText(ctx.deps.holidaysFileName, text, "text/csv");
 }
 
 /**

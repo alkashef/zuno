@@ -39,6 +39,7 @@ import { createPicker } from "./views/picker.js";
 import { createPickerHover } from "./views/picker-hover.js";
 import { createPickerResize } from "./views/picker-resize.js";
 import { createCustomPlaceForm } from "./views/settings-custom-place.js";
+import { createFileSection } from "./views/settings-file.js";
 import { createHolidaysSection } from "./views/settings-holidays.js";
 import { createPlaceList } from "./views/settings-places.js";
 import { setUpSettingsTabs } from "./views/settings-tabs.js";
@@ -145,6 +146,7 @@ const views = [
         countriesOf: holidayCountries,
         countryName,
       }),
+    makeFile: (card) => createFileSection(card, { dispatch: controller.dispatch }),
     makeCustomPlace: (card) =>
       createCustomPlaceForm(card, {
         dispatch: controller.dispatch,
