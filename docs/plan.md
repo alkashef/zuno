@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                       | Description                                           | Model  | Effort | Status   |
 | ------------------------------- | ----------------------------------------------------- | ------ | ------ | -------- |
-| **M52** Add, edit and remove a vacation from the menu | The day menu and its forms add, change and remove a vacation, and refuse a reversed range | sonnet | high | open |
 | **M53** Export to CSV with its description | Export writes one CSV file of holidays, hidden holidays and vacations; the page describes the format | sonnet | high | open |
 | **M54** Import from CSV with a confirmation | Import reads the CSV file, shows how many rows can be imported, and adds them or cancels | sonnet | high | open |
 | **M55** List and delete imported files | The settings list each imported file; deleting one first asks, then undoes what only that file added | sonnet | high | open |
@@ -19,32 +18,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M52 — Add, edit and remove a vacation from the menu
-
-- **Refs:** VAC-001, VAC-002, VAC-003, VAC-005, VAC-006, EX-029, DEC-030, DEC-031.
-- **Owner:** `src/controller-places.js` (`addVacation`, `changeVacation`, `removeVacation`),
-  `src/controller.js`, `src/domain/calendar.js` (`dayMenuChoices` gains the vacation choices),
-  `src/views/day-menu.js`, `src/views/day-dialog.js` (the vacation forms), `src/main.js` (passes
-  `checkVacation`).
-- **Tests first:**
-  - `tests/unit/calendar.test.js`: `test_vac_001_day_menu_offers_add_public_holiday_and_add_vacation`,
-    `test_vac_005_day_menu_of_a_vacation_day_offers_edit_and_remove_vacation`.
-  - `tests/e2e/controller-settings.test.js`: `test_vac_002_add_vacation_saves_it_to_that_places_settings_ex_029`,
-    `test_vac_003_a_reversed_range_saves_nothing`,
-    `test_vac_005_change_and_remove_act_on_the_whole_vacation`,
-    `test_vac_006_vacation_changes_are_saved_and_restored`.
-  - `tests/e2e/ui/month-grid.test.js`: `ui_vac_001_right_click_offers_add_public_holiday_and_add_vacation`,
-    `ui_vac_002_add_vacation_presets_the_clicked_day_and_adds_winter_break_ex_029`,
-    `ui_vac_003_a_reversed_range_marks_the_fields_invalid_and_says_so`,
-    `ui_vac_005_edit_and_remove_a_vacation_from_any_of_its_days`,
-    `ui_vac_006_a_vacation_added_by_the_menu_survives_a_reload_ex_029`.
-- **Build:** Add vacation and Edit vacation open one dialog with the start date (preset to the
-  clicked day), the end date and an optional label; a refused range marks the fields `aria-invalid` and
-  fills a `role="alert"` line; Edit and Remove act on the whole vacation, from any of its days.
-  The place handlers save the settings after an accepted change and nothing after a refused one.
-- **Gate:** EX-029 passes end to end (right-click, add, reload, hover card, picker day off); the tests
-  pass in the four browsers.
 
 ### M53 — Export to CSV with its description
 

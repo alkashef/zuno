@@ -42,6 +42,15 @@ export function formatDate(local) {
 }
 
 /**
+ * @param {string} date `YYYY-MM-DD`, a real calendar date.
+ * @returns {string} The date as dd-mmm-yy, for example `21-Dec-26` (DSP-001).
+ */
+export function formatIsoDate(date) {
+  const [year, month, day] = date.split("-").map(Number);
+  return formatDate({ year, month, day });
+}
+
+/**
  * @param {CalendarDate} first
  * @param {CalendarDate} last On or after `first`.
  * @returns {string} One date when both are the same, for example `20-Nov-26`; the two day numbers

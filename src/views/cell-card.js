@@ -9,7 +9,7 @@
  * (domain/calendar.js does), changes no holiday or vacation (the day menu does) and picks no colour
  * (popovers.css does).
  */
-import { formatDate, formatHijri } from "../domain/format.js";
+import { formatHijri, formatIsoDate } from "../domain/format.js";
 
 /** @typedef {import("../domain/calendar.js").DayFacts} DayFacts */
 
@@ -57,15 +57,6 @@ function part(root, role) {
 }
 
 /**
- * @param {string} date `YYYY-MM-DD`.
- * @returns {string} The date as dd-mmm-yy (DSP-001).
- */
-function dateText(date) {
-  const [year, month, day] = date.split("-").map(Number);
-  return formatDate({ year, month, day, hour: 0, minute: 0 });
-}
-
-/**
  * @typedef {object} Entry One line group of the card.
  * @property {string} name
  * @property {string} dates
@@ -82,10 +73,10 @@ function entriesOf(day) {
   const entries = [];
   if (day.holidayName !== null) {
     const hijri = day.hijri === null ? "" : formatHijri(day.hijri);
-    entries.push({ name: day.holidayName, dates: dateText(day.date), hijri, kind: "holiday" });
+    entries.push({ name: day.holidayName, dates: formatIsoDate(day.date), hijri, kind: "holiday" });
   }
   for (const { start, end, label } of day.vacations) {
-    const dates = `${dateText(start)} to ${dateText(end)}`;
+    const dates = `${formatIsoDate(start)} to ${formatIsoDate(end)}`;
     entries.push({
       name: label === "" ? kindText.vacation : label,
       dates,

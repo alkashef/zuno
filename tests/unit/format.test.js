@@ -9,6 +9,7 @@ import {
   formatDateRange,
   formatDayNames,
   formatHijri,
+  formatIsoDate,
   formatMonth,
   formatOffset,
   formatTime,
@@ -107,4 +108,9 @@ test("test_pck_009_date_range_is_one_date_or_first_and_last_with_an_en_dash", ()
     formatDateRange({ year: 2025, month: 11, day: 30 }, { year: 2026, month: 11, day: 1 }),
     "30-Nov-25 – 01-Nov-26",
   );
+});
+
+test("test_dsp_001_format_iso_date_gives_dd_mmm_yy", () => {
+  assert.equal(formatIsoDate("2026-12-21"), "21-Dec-26");
+  assert.equal(formatIsoDate("2005-09-05"), "05-Sep-05");
 });

@@ -258,6 +258,28 @@
       </form>
     </template>
 
+    <template id="day-vacation-form-template">
+      <form class="day-dialog-form" data-role="vacation-form" novalidate>
+        <label class="day-dialog-field">
+          <span class="day-dialog-label">Start date</span>
+          <input type="date" class="day-dialog-input" data-role="dialog-start" autofocus />
+        </label>
+        <label class="day-dialog-field">
+          <span class="day-dialog-label">End date</span>
+          <input type="date" class="day-dialog-input" data-role="dialog-end" />
+        </label>
+        <label class="day-dialog-field">
+          <span class="day-dialog-label">Label (optional)</span>
+          <input type="text" class="day-dialog-input" data-role="dialog-label" />
+        </label>
+        <p class="day-dialog-error" role="alert" data-role="dialog-error"></p>
+        <div class="day-dialog-buttons">
+          <button type="button" class="button" data-role="dialog-cancel">Cancel</button>
+          <button type="submit" class="button button-primary" data-role="dialog-submit"></button>
+        </div>
+      </form>
+    </template>
+
     <template id="hijri-note-template">
       <span class="hijri-note" data-role="hijri-note">
         <button

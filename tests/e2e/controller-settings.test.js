@@ -489,3 +489,108 @@ test("test_set_004_custom_place_survives_a_reload", async () => {
   const place = second.controller.getState().settings?.places[0];
   assert.equal(place && placeName(place, false), "Sara");
 });
+
+const winter = { start: "2026-12-21", end: "2026-12-31", label: "Winter break" };
+
+/**
+ * @param {ReturnType<typeof setup>} world
+ * @returns {Promise<void>} Opens the page with the custom place Sara (`place-1`) and a London place.
+ */
+async function openWithSara(world) {
+  await world.controller.dispatch({ type: "open" });
+  await world.controller.dispatch({ type: "addCustomPlace", ...sara });
+  await world.controller.dispatch({ type: "addPlace", cityId: "london" });
+}
+
+/**
+ * @param {ReturnType<typeof createController>} controller
+ * @param {string} placeId
+ * @returns {import("../../src/domain/vacations.js").Vacation[]} The place's vacations.
+ */
+function vacationsOfPlace(controller, placeId) {
+  const place = controller.getState().settings?.places.find((each) => each.id === placeId);
+  return place?.vacations ?? [];
+}
+
+test("test_vac_002_add_vacation_saves_it_to_that_places_settings_ex_029", async () => {
+  const world = setup();
+  await openWithSara(world);
+  const before = world.saves.length;
+  await world.controller.dispatch({ type: "addVacation", placeId: "place-1", ...winter });
+  assert.equal(world.saves.length, before + 1);
+  assert.deepEqual(vacationsOfPlace(world.controller, "place-1"), [winter]);
+  assert.deepEqual(vacationsOfPlace(world.controller, "place-2"), []);
+  await world.controller.dispatch({ type: "showMonth", offset: 1 });
+  const row = world.controller.getState().grid[0];
+  assert.equal(row[20].fill.first, "vacation");
+  assert.equal(row[17].fill.first, null);
+  await world.controller.dispatch({ type: "addVacation", placeId: "place-1", ...winter });
+  assert.equal(world.saves.length, before + 1);
+  await world.controller.dispatch({ type: "addVacation", placeId: "place-9", ...winter });
+  assert.equal(world.saves.length, before + 1);
+});
+
+test("test_vac_003_a_reversed_range_saves_nothing", async () => {
+  const world = setup();
+  await openWithSara(world);
+  const before = world.saves.length;
+  const reversed = { ...winter, start: "2026-12-31", end: "2026-12-21" };
+  await world.controller.dispatch({ type: "addVacation", placeId: "place-1", ...reversed });
+  assert.equal(world.saves.length, before);
+  assert.deepEqual(vacationsOfPlace(world.controller, "place-1"), []);
+  await world.controller.dispatch({ type: "addVacation", placeId: "place-1", ...winter });
+  await world.controller.dispatch({
+    type: "changeVacation",
+    placeId: "place-1",
+    original: winter,
+    changes: reversed,
+  });
+  assert.equal(world.saves.length, before + 1);
+  assert.deepEqual(vacationsOfPlace(world.controller, "place-1"), [winter]);
+});
+
+test("test_vac_005_change_and_remove_act_on_the_whole_vacation", async () => {
+  const world = setup();
+  await openWithSara(world);
+  const trip = { start: "2026-12-22", end: "2026-12-23", label: "Trip" };
+  await world.controller.dispatch({ type: "addVacation", placeId: "place-1", ...winter });
+  await world.controller.dispatch({ type: "addVacation", placeId: "place-1", ...trip });
+  const changes = { start: "2026-12-20", end: "2026-12-30", label: "Longer break" };
+  await world.controller.dispatch({
+    type: "changeVacation",
+    placeId: "place-1",
+    original: winter,
+    changes,
+  });
+  assert.deepEqual(vacationsOfPlace(world.controller, "place-1"), [changes, trip]);
+  await world.controller.dispatch({ type: "showMonth", offset: 1 });
+  const row = world.controller.getState().grid[0];
+  assert.equal(row[19].fill.first, "vacation");
+  assert.equal(row[30].fill.first, null);
+  await world.controller.dispatch({
+    type: "removeVacation",
+    placeId: "place-1",
+    vacation: changes,
+  });
+  assert.deepEqual(vacationsOfPlace(world.controller, "place-1"), [trip]);
+  const saves = world.saves.length;
+  await world.controller.dispatch({
+    type: "removeVacation",
+    placeId: "place-1",
+    vacation: changes,
+  });
+  assert.equal(world.saves.length, saves);
+});
+
+test("test_vac_006_vacation_changes_are_saved_and_restored", async () => {
+  const first = setup();
+  await openWithSara(first);
+  await first.controller.dispatch({ type: "addVacation", placeId: "place-1", ...winter });
+  await first.controller.dispatch({ type: "addVacation", placeId: "place-2", ...winter });
+  await first.controller.dispatch({ type: "removeVacation", placeId: "place-2", vacation: winter });
+  const stored = JSON.parse(JSON.stringify(first.store.saved));
+  const second = setup({ store: { saved: parseSettings(stored, wholeDay) } });
+  await second.controller.dispatch({ type: "open" });
+  assert.deepEqual(vacationsOfPlace(second.controller, "place-1"), [winter]);
+  assert.deepEqual(vacationsOfPlace(second.controller, "place-2"), []);
+});

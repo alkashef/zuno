@@ -30,15 +30,21 @@ export const FillKind = Object.freeze({
 
 /** @typedef {typeof FillKind[keyof typeof FillKind]} FillKindName */
 
-/** The choices of the day menu (HOL-015, HOL-019, DEC-031). */
+/** The choices of the day menu (VAC-001, VAC-005, HOL-015, HOL-019, DEC-031). */
 export const DayChoiceKind = Object.freeze({
   addHoliday: "addHoliday",
+  addVacation: "addVacation",
   hideHoliday: "hideHoliday",
   removeHoliday: "removeHoliday",
+  editVacation: "editVacation",
+  removeVacation: "removeVacation",
 });
 
 /** @typedef {typeof DayChoiceKind[keyof typeof DayChoiceKind]} DayChoiceKindName */
-/** @typedef {{ kind: DayChoiceKindName }} DayMenuChoice One choice of the day menu. */
+/**
+ * @typedef {{ kind: DayChoiceKindName, vacation?: Vacation }} DayMenuChoice One choice of the day
+ *   menu; `vacation` is the vacation an Edit or Remove choice acts on.
+ */
 /** @typedef {import("./user-holidays.js").UserHolidays} UserHolidays */
 
 /**
@@ -185,17 +191,25 @@ export function markAddedHolidays(grid, settings, userHolidays) {
 }
 
 /**
- * The choices of the day menu of a cell (HOL-015, HOL-019, DEC-031).
+ * The choices of the day menu of a cell (VAC-001, VAC-005, HOL-015, HOL-019, DEC-031).
  * @param {DayFacts} day The cell's facts.
- * @returns {DayMenuChoice[]} Add public holiday for every day, then Hide public holiday for a
- *   holiday of the service or the table, or Remove public holiday for one the user added.
+ * @returns {DayMenuChoice[]} Add public holiday and Add vacation for every day, then Hide public
+ *   holiday for a holiday of the service or the table, or Remove public holiday for one the user
+ *   added, then an Edit vacation and a Remove vacation for each vacation that covers the day.
  */
 export function dayMenuChoices(day) {
   /** @type {DayMenuChoice[]} */
-  const choices = [{ kind: DayChoiceKind.addHoliday }];
-  if (day.holidayName === null) return choices;
-  const kind = day.holidayAdded ? DayChoiceKind.removeHoliday : DayChoiceKind.hideHoliday;
-  return [...choices, { kind }];
+  const choices = [{ kind: DayChoiceKind.addHoliday }, { kind: DayChoiceKind.addVacation }];
+  if (day.holidayName !== null) {
+    choices.push({
+      kind: day.holidayAdded ? DayChoiceKind.removeHoliday : DayChoiceKind.hideHoliday,
+    });
+  }
+  for (const vacation of day.vacations) {
+    choices.push({ kind: DayChoiceKind.editVacation, vacation });
+    choices.push({ kind: DayChoiceKind.removeVacation, vacation });
+  }
+  return choices;
 }
 
 /**

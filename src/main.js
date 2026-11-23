@@ -14,6 +14,7 @@ import { isTableCountry, tableHolidays } from "./domain/holiday-table.js";
 import { holidayCountries, placeFacts, placeName, placePin } from "./domain/places.js";
 import { parseSettings } from "./domain/settings.js";
 import { parseUserHolidays } from "./domain/user-holidays.js";
+import { checkVacation } from "./domain/vacations.js";
 import { countryWeekendDays, placeWeekendDays } from "./domain/weekends.js";
 import { localDateTime, zoneOffset } from "./domain/zones.js";
 import { listZones } from "./domain/zone-table.js";
@@ -108,7 +109,7 @@ const views = [
         ...lookup,
         choicesOf: dayMenuChoices,
         dispatch: controller.dispatch,
-        dialog: createDayDialog(doc, { dispatch: controller.dispatch }),
+        dialog: createDayDialog(doc, { dispatch: controller.dispatch, checkVacation }),
       }),
   }),
   createPicker(document, {

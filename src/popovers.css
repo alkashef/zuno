@@ -135,6 +135,15 @@
   border-color: var(--color-danger);
 }
 
+.day-dialog-error {
+  margin: 0;
+  color: var(--color-danger);
+}
+
+.day-dialog-error:empty {
+  display: none;
+}
+
 .day-dialog-buttons {
   display: flex;
   justify-content: flex-end;

@@ -1,11 +1,12 @@
 // @ts-check
-/** @module month-grid.test Headless-browser tests of the month-grid view in Chromium (CAL-001 to CAL-007, LAY-001, EX-007). */
+/** @module month-grid.test Headless-browser tests of the month-grid view in Chromium (CAL-001 to CAL-007, VAC-001 to VAC-006, LAY-001, EX-007, EX-029). */
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
-import { createPlace } from "../../../src/domain/places.js";
+import { config } from "../../../src/config.js";
+import { createCustomPlace, createPlace } from "../../../src/domain/places.js";
 import { defaultSettings } from "../../../src/domain/settings.js";
-import { buildToScratch, launchBrowser, openPage } from "./page-fixture.js";
+import { browserNames, buildToScratch, launchBrowser, openPage } from "./page-fixture.js";
 
 /** @typedef {import("./page-fixture.js").PageBuild} PageBuild */
 /** @typedef {import("./page-fixture.js").Browser} Browser */
@@ -316,4 +317,168 @@ test("ui_vac_006_a_saved_vacation_shows_after_a_reload", async () => {
   await showDecember(page);
   assert.equal((await cellLook(page, 0, 22)).fill, "vacation");
   assert.equal((await cellLook(page, 1, 22)).fill, "plain");
+});
+
+/**
+ * @param {Page} page
+ * @param {number} rowIndex
+ * @param {string} date `YYYY-MM-DD`.
+ * @returns {Promise<void>} Right-clicks that day of that place's row and waits for the day menu.
+ */
+async function openMenuOn(page, rowIndex, date) {
+  await cellsOf(page, rowIndex)
+    .and(page.locator(`[data-date="${date}"]`))
+    .click({ button: "right" });
+  await page.getByRole("menu").waitFor();
+}
+
+/**
+ * @returns {Promise<Page>} December 2026 with Sara of EX-027 first and a New York place, no vacation.
+ */
+async function openSaraAndNewYork() {
+  const sara = createCustomPlace("place-1", {
+    name: "Sara",
+    zone: "Europe/Lisbon",
+    countryCode: "PT",
+  });
+  const { page } = await openPage(browser, built.url, {
+    saved: { ...defaultSettings(540, 1020), places: [sara, createPlace("place-2", "new-york")] },
+  });
+  await page.locator('[data-role="grid-row"]').first().waitFor();
+  await showDecember(page);
+  return page;
+}
+
+/**
+ * @param {Page} page
+ * @returns {Promise<import("playwright").Locator>} The vacation dialog, opened from Sara's 21 December.
+ */
+async function openAddVacation(page) {
+  await openMenuOn(page, 0, "2026-12-21");
+  await page.getByRole("menuitem", { name: /Add vacation/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Add vacation" });
+  await dialog.waitFor();
+  return dialog;
+}
+
+/**
+ * @param {Page} page
+ * @param {number} rowIndex
+ * @returns {Promise<string[]>} The dates of the row's cells that are filled with the vacation colour
+ *   (alone or split).
+ */
+function vacationDates(page, rowIndex) {
+  return cellsOf(page, rowIndex).evaluateAll((nodes) =>
+    nodes
+      .filter((node) => (node.getAttribute("data-fill") ?? "").startsWith("vacation"))
+      .map((node) => node.getAttribute("data-date") ?? ""),
+  );
+}
+
+test("ui_vac_001_right_click_offers_add_public_holiday_and_add_vacation", async () => {
+  const page = await openVacation(false);
+  await openMenuOn(page, 0, "2026-12-01");
+  const menu = page.getByRole("menu");
+  assert.deepEqual(await menu.getByRole("menuitem").allTextContents(), [
+    "Add public holiday…",
+    "Add vacation…",
+  ]);
+  await page.keyboard.press("Escape");
+  await openMenuOn(page, 1, "2026-12-22");
+  assert.equal(await menu.getByRole("menuitem", { name: /Edit vacation/ }).count(), 0);
+});
+
+test("ui_vac_002_add_vacation_presets_the_clicked_day_and_adds_winter_break_ex_029", async () => {
+  const page = await openSaraAndNewYork();
+  const dialog = await openAddVacation(page);
+  assert.equal(await dialog.getByLabel("Start date").inputValue(), "2026-12-21");
+  await dialog.getByLabel("End date").fill("2026-12-31");
+  await dialog.getByLabel("Label").fill("Winter break");
+  await dialog.getByRole("button", { name: "Add vacation" }).click();
+  assert.equal(await dialog.isVisible(), false);
+  const days = Array.from({ length: 11 }, (_, index) => `2026-12-${21 + index}`);
+  assert.deepEqual(await vacationDates(page, 0), days);
+  assert.deepEqual(await vacationDates(page, 1), []);
+  const stored = await page.evaluate((key) => localStorage.getItem(key), config.storageKey);
+  const vacations = JSON.parse(stored ?? "{}").places[0].vacations;
+  assert.deepEqual(vacations, [{ start: "2026-12-21", end: "2026-12-31", label: "Winter break" }]);
+});
+
+test("ui_vac_003_a_reversed_range_marks_the_fields_invalid_and_says_so", async () => {
+  const page = await openSaraAndNewYork();
+  const dialog = await openAddVacation(page);
+  await dialog.getByLabel("End date").fill("2026-12-20");
+  await dialog.getByRole("button", { name: "Add vacation" }).click();
+  assert.equal(await dialog.isVisible(), true);
+  assert.equal(await dialog.getByLabel("End date").getAttribute("aria-invalid"), "true");
+  assert.match(await dialog.getByRole("alert").innerText(), /end date.*before.*start date/i);
+  assert.deepEqual(await vacationDates(page, 0), []);
+  const stored = await page.evaluate((key) => localStorage.getItem(key), config.storageKey);
+  assert.deepEqual(JSON.parse(stored ?? "{}").places[0].vacations, []);
+  await dialog.getByLabel("End date").fill("2026-12-22");
+  await dialog.getByRole("button", { name: "Add vacation" }).click();
+  assert.equal(await dialog.isVisible(), false);
+  assert.deepEqual(await vacationDates(page, 0), ["2026-12-21", "2026-12-22"]);
+});
+
+test("ui_vac_005_edit_and_remove_a_vacation_from_any_of_its_days", async () => {
+  const page = await openVacation(false);
+  await openMenuOn(page, 0, "2026-12-24");
+  await page.getByRole("menuitem", { name: /Edit vacation/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Edit vacation" });
+  assert.equal(await dialog.getByLabel("Start date").inputValue(), "2026-12-21");
+  assert.equal(await dialog.getByLabel("End date").inputValue(), "2026-12-31");
+  assert.equal(await dialog.getByLabel("Label").inputValue(), "Winter break");
+  await dialog.getByLabel("End date").fill("2026-12-28");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  assert.equal(await dialog.isVisible(), false);
+  assert.equal((await vacationDates(page, 0)).at(-1), "2026-12-28");
+  assert.equal((await vacationDates(page, 0)).length, 8);
+  await openMenuOn(page, 0, "2026-12-22");
+  await page.getByRole("menuitem", { name: /Remove vacation/ }).click();
+  assert.equal(await page.getByRole("menu").count(), 0);
+  assert.deepEqual(await vacationDates(page, 0), []);
+});
+
+test("ui_vac_006_a_vacation_added_by_the_menu_survives_a_reload_ex_029", async () => {
+  const page = await openSaraAndNewYork();
+  const dialog = await openAddVacation(page);
+  await dialog.getByLabel("End date").fill("2026-12-31");
+  await dialog.getByLabel("Label").fill("Winter break");
+  await dialog.getByRole("button", { name: "Add vacation" }).click();
+  await page.reload();
+  await page.locator('[data-role="grid-row"]').first().waitFor();
+  await showDecember(page);
+  assert.equal((await vacationDates(page, 0)).length, 11);
+  await cellsOf(page, 0).and(page.locator('[data-date="2026-12-22"]')).hover();
+  const text = await page.getByRole("tooltip").innerText();
+  assert.match(text, /Winter break/);
+  assert.match(text, /21-Dec-26/);
+  assert.match(text, /31-Dec-26/);
+});
+
+test("ui_vac_002_the_vacation_menu_and_dialog_work_in_the_four_browsers", async () => {
+  for (const name of browserNames) {
+    const other = await launchBrowser(name);
+    const places = [createPlace("place-1", "london")];
+    const { page } = await openPage(other, built.url, {
+      saved: { ...defaultSettings(540, 1020), places },
+    });
+    await page.locator('[data-role="grid-row"]').first().waitFor();
+    await showDecember(page);
+    await openMenuOn(page, 0, "2026-12-21");
+    await page.getByRole("menuitem", { name: /Add vacation/ }).click();
+    const dialog = page.getByRole("dialog", { name: "Add vacation" });
+    assert.equal(await dialog.getByLabel("Start date").inputValue(), "2026-12-21", name);
+    await dialog.getByLabel("End date").fill("2026-12-20");
+    await dialog.getByRole("button", { name: "Add vacation" }).click();
+    assert.equal(await dialog.getByLabel("End date").getAttribute("aria-invalid"), "true", name);
+    await dialog.getByLabel("End date").fill("2026-12-23");
+    await dialog.getByRole("button", { name: "Add vacation" }).click();
+    assert.equal((await vacationDates(page, 0)).length, 3, name);
+    await openMenuOn(page, 0, "2026-12-22");
+    await page.getByRole("menuitem", { name: /Remove vacation/ }).click();
+    assert.deepEqual(await vacationDates(page, 0), [], name);
+    await other.close();
+  }
 });
