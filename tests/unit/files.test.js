@@ -1,5 +1,5 @@
 // @ts-check
-/** @module files.test Unit tests for src/files.js with a fake document and a fake URL maker (HOL-010, HOL-012, DEC-018, DEC-032). */
+/** @module files.test Unit tests for src/files.js with a fake document and a fake URL maker (HOL-010, HOL-012, DEC-032). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -63,19 +63,4 @@ test("test_hol_012_read_text_reports_an_unreadable_file", async () => {
     /** @type {unknown} */ ({ text: () => Promise.reject(new Error("cannot read")) })
   );
   assert.deepEqual(await files.readText(broken), { status: "unreadable" });
-});
-
-test("test_hol_011_read_json_returns_the_value_of_a_json_file", async () => {
-  const { files } = fakeFiles();
-  const file = new File(['{"version":1,"added":[],"hidden":[]}'], "a.json");
-  assert.deepEqual(await files.readJson(file), {
-    status: "read",
-    value: { version: 1, added: [], hidden: [] },
-  });
-});
-
-test("test_hol_012_read_json_reports_text_that_is_not_json_as_unreadable", async () => {
-  const { files } = fakeFiles();
-  assert.deepEqual(await files.readJson(new File(["hello"], "a.json")), { status: "unreadable" });
-  assert.deepEqual(await files.readJson(new File([""], "empty.json")), { status: "unreadable" });
 });

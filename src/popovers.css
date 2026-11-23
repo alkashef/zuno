@@ -1,6 +1,6 @@
 /**
  * The popovers of the month grid's days: the hover card of a holiday or vacation cell, the day menu
- * at the pointer and the dialog with its form. It does not style the month grid or its cells
+ * at the pointer and the dialog with its form, which the import preview also uses. It does not style the month grid or its cells
  * (month-grid.css), and it holds no colour or size value of its own (theme.css does).
  */
 .cell-card {
@@ -133,6 +133,10 @@
 
 .day-dialog-input[aria-invalid="true"] {
   border-color: var(--color-danger);
+}
+
+.day-dialog-note {
+  margin: 0;
 }
 
 .day-dialog-error {

@@ -280,6 +280,21 @@
       </form>
     </template>
 
+    <template id="import-dialog-template">
+      <dialog class="day-dialog" data-role="import-dialog" aria-labelledby="import-dialog-title">
+        <h2 class="day-dialog-title" id="import-dialog-title">Import holidays and vacations</h2>
+        <div class="day-dialog-form">
+          <p class="day-dialog-note" data-role="import-summary"></p>
+          <p class="day-dialog-note" data-role="import-missing" hidden></p>
+          <p class="day-dialog-note" data-role="import-invalid" hidden></p>
+          <div class="day-dialog-buttons">
+            <button type="button" class="button" data-role="import-cancel">Cancel</button>
+            <button type="button" class="button button-primary" data-role="import-add"></button>
+          </div>
+        </div>
+      </dialog>
+    </template>
+
     <template id="hijri-note-template">
       <span class="hijri-note" data-role="hijri-note">
         <button
@@ -702,13 +717,14 @@
                 <input
                   type="file"
                   class="settings-file-input"
-                  accept=".json,application/json"
+                  accept=".csv,text/csv"
                   data-role="holiday-file-picker"
                 />
               </label>
             </div>
             <p class="settings-hint settings-error" role="alert" data-role="import-refused" hidden>
-              The file was refused: it is not a Zuno holidays file. Nothing was changed.
+              The file was refused: it is not a Zuno holidays and vacations file. Nothing was
+              changed.
             </p>
             <div class="settings-file-format" data-role="file-format">
               <p class="settings-hint">

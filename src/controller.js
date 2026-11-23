@@ -4,8 +4,8 @@
  * The page workflows: applies an action to the page state, asks the injected `holidayTable` or `api` for the holidays
  * the shown month and the marker's window need, and tells subscribers about every new state
  * (PCK-004, PCK-006, PCK-007, PCK-009, LAY-003, CAL-005, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-001, SET-002,
- * SET-004 to SET-014, SET-018, VAC-002, VAC-003, VAC-005, VAC-006, HIJ-002, HIJ-003, HOL-003, HOL-006 to HOL-013, DEC-007, DEC-016 to DEC-019, DEC-022,
- * DEC-029, DEC-030).
+ * SET-004 to SET-014, SET-018, VAC-002, VAC-003, VAC-005, VAC-006, HIJ-002, HIJ-003, HOL-003, HOL-006 to HOL-013, HOL-017, HOL-018, DEC-007, DEC-016 to DEC-019, DEC-022,
+ * DEC-029, DEC-030, DEC-032).
  * Pure apart from its injected `api`, `storage`, `holidayStorage`, `files` and `clock`. It touches no DOM (the
  * views do) and builds no picker, grid, notices or holiday-list logic itself (domain/* does). The
  * user's holiday actions, the holidays the page uses and the notices are in controller-holidays.js;
@@ -44,7 +44,8 @@ import { emptyUserHolidays } from "./domain/user-holidays.js";
 import { localDateTime } from "./domain/zones.js";
 
 /** @typedef {import("./controller-holidays.js").CountryYear} CountryYear */
-/** @typedef {import("./controller-holidays.js").FileRead} FileRead */
+/** @typedef {import("./controller-holidays.js").HolidayImport} HolidayImport */
+/** @typedef {import("./controller-holidays.js").TextRead} TextRead */
 /** @typedef {import("./controller-holidays.js").HolidayAction} HolidayAction */
 /** @typedef {import("./controller-holidays.js").HolidayTable} HolidayTable */
 /** @typedef {import("./controller-holidays.js").Notices} Notices */
@@ -74,8 +75,8 @@ import { localDateTime } from "./domain/zones.js";
  * @property {{ load: () => Settings | null, save: (settings: Settings) => void }} storage
  * @property {{ load: () => UserHolidays | null, save: (record: UserHolidays) => void }} holidayStorage
  *   The record of the holidays the user added and hid (HOL-009, DEC-017).
- * @property {{ saveText: (fileName: string, text: string, mimeType: string) => void, readJson: (file: Blob) => Promise<FileRead> }} files
- *   Saves the holidays file and reads a picked one (HOL-010 to HOL-012, DEC-018).
+ * @property {{ saveText: (fileName: string, text: string, mimeType: string) => void, readText: (file: Blob) => Promise<TextRead> }} files
+ *   Saves the holidays file and reads a picked one (HOL-010 to HOL-012, DEC-032).
  * @property {string} holidaysFileName The name of the exported holidays file.
  * @property {{ now: () => number }} clock
  * @property {{ start: number, end: number }} defaultHours Working hours (minutes after midnight)
@@ -98,7 +99,7 @@ import { localDateTime } from "./domain/zones.js";
  * @property {UserHolidays} userHolidays The holidays the user added and hid (HOL-006 to HOL-008).
  * @property {boolean} noticesOpen
  * @property {boolean} settingsOpen
- * @property {"refused" | null} holidayImport `refused` while the last imported file was refused (HOL-012).
+ * @property {HolidayImport} holidayImport The picked file while it is refused or shown in the import dialog (HOL-012, HOL-017).
  */
 
 /**
@@ -583,7 +584,7 @@ function handlers() {
     shiftMarkerDay,
     showMonth,
     ...settingsHandlers(),
-    ...holidayHandlers(),
+    ...holidayHandlers(changePlaces),
     ...placeHandlers(changePlaces),
     toggleNotices: (ctx) => ctx.update({ noticesOpen: !ctx.read().noticesOpen }),
     openSettings: (ctx) => ctx.update({ settingsOpen: true }),

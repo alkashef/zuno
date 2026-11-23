@@ -47,6 +47,11 @@ p {
   border-color: var(--color-line-input);
 }
 
+.button:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: not-allowed;
+}
+
 .button-primary {
   border-color: var(--color-text);
   background: var(--color-text);

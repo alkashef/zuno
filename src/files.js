@@ -2,13 +2,11 @@
 /**
  * @module files
  * The only module that saves a file to the user's machine and reads a file the user picked
- * (HOL-010 to HOL-012, DEC-018, DEC-032). `saveText` offers text as a download; `readText` reads a
- * picked file as text; `readJson` reads one as JSON (it goes with the JSON import, which a later
- * milestone replaces). It does not know what the text means (domain/holidays-file.js does) and sends
+ * (HOL-010 to HOL-012, DEC-032). `saveText` offers text as a download; `readText` reads a picked
+ * file as text. It does not know what the text means (domain/holidays-file.js does) and sends
  * nothing over the network (NFR-001).
  */
 
-/** @typedef {{ status: "read", value: unknown } | { status: "unreadable" }} FileRead */
 /** @typedef {{ status: "read", text: string } | { status: "unreadable" }} TextRead */
 
 /**
@@ -17,18 +15,6 @@
  * @property {Pick<typeof URL, "createObjectURL" | "revokeObjectURL">} urls Makes and revokes
  *   object URLs; tests pass a fake.
  */
-
-/**
- * @param {string} text
- * @returns {unknown} The parsed JSON, or `undefined` when the text is not JSON.
- */
-function parseJson(text) {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return undefined;
-  }
-}
 
 /**
  * @param {Blob} file
@@ -44,7 +30,7 @@ async function readTextOf(file) {
 
 /**
  * @param {FilesDeps} deps
- * @returns {{ saveText: (fileName: string, text: string, mimeType: string) => void, readText: (file: Blob) => Promise<TextRead>, readJson: (file: Blob) => Promise<FileRead> }}
+ * @returns {{ saveText: (fileName: string, text: string, mimeType: string) => void, readText: (file: Blob) => Promise<TextRead> }}
  */
 export function createFiles({ doc, urls }) {
   return {
@@ -66,13 +52,5 @@ export function createFiles({ doc, urls }) {
       urls.revokeObjectURL(url);
     },
     readText: readTextOf,
-    /**
-     * @param {Blob} file The file the user picked.
-     * @returns {Promise<FileRead>} The parsed JSON, or `unreadable` when the text is not JSON.
-     */
-    async readJson(file) {
-      const value = parseJson(await file.text());
-      return value === undefined ? { status: "unreadable" } : { status: "read", value };
-    },
   };
 }

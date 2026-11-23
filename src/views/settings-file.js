@@ -2,7 +2,7 @@
 /**
  * @module views/settings-file
  * Owns the "Holidays and vacations file" card of the settings page: the Export button, the Import
- * file picker and the message shown when an imported file was refused (HOL-010 to HOL-012). The
+ * file picker (CSV) and the message shown when an imported file was refused (HOL-010 to HOL-012). The
  * description of the file's format (HOL-016) is static markup of the card, in index.html. It reads
  * and saves no file and decides nothing about a file's content (the controller and
  * domain/holidays-file.js do).
@@ -12,7 +12,8 @@
 
 /**
  * @typedef {object} FileView The part of the page view the card draws.
- * @property {"refused" | null} holidayImport `refused` while the last imported file was refused.
+ * @property {import("../controller-holidays.js").HolidayImport} holidayImport `{ status: "refused" }`
+ *   while the last imported file was refused.
  */
 
 /**
@@ -59,7 +60,7 @@ export function createFileSection(card, { dispatch }) {
   const refused = part(card, "import-refused");
   return {
     render(view) {
-      refused.hidden = view.holidayImport !== "refused";
+      refused.hidden = view.holidayImport?.status !== "refused";
     },
   };
 }

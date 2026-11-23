@@ -2,10 +2,11 @@
 /**
  * @module controller-holidays
  * The holidays side of the page workflows: loads the user's holiday record, applies the add, remove,
- * hide, show, export and import actions to it and saves it, works out the holidays the page uses
- * (the service's holidays without those the user hid, plus those the user added) and lists the
- * notices about missing holiday data (HOL-003, HOL-004, HOL-006 to HOL-013, REF-002, SET-006,
- * DEC-017, DEC-018, DEC-022). Pure apart from the `holidayStorage`
+ * hide, show, export, import, confirm-import and cancel-import actions to it and saves it, works out
+ * the holidays the page uses (the service's holidays without those the user hid, plus those the user
+ * added) and lists the notices about missing holiday data (HOL-003, HOL-004, HOL-006 to HOL-013,
+ * HOL-017, HOL-018, REF-002, SET-006, DEC-017, DEC-022, DEC-032). The vacations of a confirmed import
+ * go to the places through the `changePlaces` it is given. Pure apart from the `holidayStorage`
  * and `files` it is given. It keeps no state (controller.js does, and passes it in), asks the holiday
  * service for nothing (controller.js does, through `api`) and builds no grid, picker or holiday list
  * logic itself (domain/* does). Only controller.js imports it.
@@ -17,18 +18,29 @@ import {
   toHolidays,
   unavailableCountries,
 } from "./domain/holidays.js";
-import { toCsv } from "./domain/holidays-file.js";
+import { planImport, toCsv } from "./domain/holidays-file.js";
 import * as userHolidayList from "./domain/user-holidays.js";
+import { addVacation } from "./domain/vacations.js";
 
 /** @typedef {import("./domain/holidays.js").Holiday} Holiday */
 /** @typedef {import("./domain/holidays.js").HolidayResult} HolidayResult */
+/** @typedef {import("./domain/holidays-file.js").ImportPlan} ImportPlan */
+/** @typedef {import("./domain/holidays-file.js").ImportRow} ImportRow */
 /** @typedef {import("./domain/places.js").Place} Place */
 /** @typedef {import("./domain/settings.js").Settings} Settings */
 /** @typedef {import("./domain/user-holidays.js").HolidayEntry} HolidayEntry */
 /** @typedef {import("./domain/user-holidays.js").UserHolidays} UserHolidays */
 /** @typedef {{ countryCode: string, year: number }} CountryYear */
 /** @typedef {Record<string, Record<string, HolidayResult>>} ResultsByCountryYear Keyed by country code, then year. */
-/** @typedef {{ status: "read", value: unknown } | { status: "unreadable" }} FileRead What a picked file holds (DEC-018). */
+/** @typedef {{ status: "read", text: string } | { status: "unreadable" }} TextRead What a picked file holds (DEC-032). */
+
+/**
+ * @typedef {Omit<ImportPlan, "status"> & { status: "preview", fileName: string, importable: number }} ImportPreview
+ *   What importing the picked file would do, kept until the user chooses Add or Cancel (HOL-017,
+ *   DEC-032). `importable` is the number of `rows`.
+ */
+
+/** @typedef {null | { status: "refused" } | ImportPreview} HolidayImport The state of an import (HOL-012, HOL-017). */
 
 /**
  * @typedef {object} Notices What the notices card lists (REF-002, HOL-004).
@@ -41,20 +53,21 @@ import * as userHolidayList from "./domain/user-holidays.js";
  * @property {Settings | null} settings
  * @property {ResultsByCountryYear} holidayResults Every answer of the holiday service.
  * @property {UserHolidays} userHolidays
+ * @property {HolidayImport} holidayImport
  */
 
 /**
  * @typedef {object} HolidayChanges The state fields the holiday actions change.
  * @property {UserHolidays} [userHolidays]
- * @property {"refused" | null} [holidayImport] `refused` while the last imported file was refused (HOL-012).
+ * @property {HolidayImport} [holidayImport]
  */
 
 /**
  * @typedef {object} HolidayDeps The outside world the holiday actions use.
  * @property {{ load: () => UserHolidays | null, save: (record: UserHolidays) => void }} holidayStorage
  *   The record of the holidays the user added and hid (HOL-009, DEC-017).
- * @property {{ saveText: (fileName: string, text: string, mimeType: string) => void, readJson: (file: Blob) => Promise<FileRead> }} files
- *   Saves the holidays file and reads a picked one (HOL-010 to HOL-012, DEC-018, DEC-032).
+ * @property {{ saveText: (fileName: string, text: string, mimeType: string) => void, readText: (file: Blob) => Promise<TextRead> }} files
+ *   Saves the holidays file and reads a picked one (HOL-010 to HOL-012, DEC-032).
  * @property {string} holidaysFileName The name of the exported holidays file.
  */
 
@@ -72,7 +85,8 @@ import * as userHolidayList from "./domain/user-holidays.js";
  */
 
 /**
- * @typedef {{ type: "exportHolidays" } | { type: "importHolidays", file: Blob }
+ * @typedef {{ type: "exportHolidays" } | { type: "importHolidays", file: File }
+ *   | { type: "confirmImport" } | { type: "cancelImport" }
  *   | ({ type: "addHoliday" | "removeHoliday" | "hideHoliday" | "showHoliday" } & HolidayEntry)} HolidayAction
  */
 
@@ -235,34 +249,112 @@ function exportHolidays(ctx) {
 }
 
 /**
- * Adds the holidays of a picked file to the saved ones (HOL-011). A file that is not JSON or not a
- * holidays record changes nothing and is reported (HOL-012).
+ * Reads a picked file and shows what importing it would do; nothing is saved yet (HOL-012, HOL-017).
+ * An unreadable file, a file that is not CSV and a file without the header row are refused.
  * @param {HolidayContext} ctx
  * @param {Extract<HolidayAction, { type: "importHolidays" }>} action
  * @returns {Promise<void>}
  */
 async function importHolidays(ctx, { file }) {
-  const read = await ctx.deps.files.readJson(file);
-  const imported = read.status === "read" ? userHolidayList.parseUserHolidays(read.value) : null;
-  if (imported === null) {
-    ctx.update({ holidayImport: "refused" });
+  const read = await ctx.deps.files.readText(file);
+  const places = ctx.read().settings?.places ?? [];
+  /** @type {{ status: "refused" } | ImportPlan} */
+  const plan = read.status === "read" ? planImport(read.text, { places }) : { status: "refused" };
+  if (plan.status !== "plan") {
+    ctx.update({ holidayImport: { status: "refused" } });
     return;
   }
-  ctx.update({ holidayImport: null });
-  commitUserHolidays(ctx, userHolidayList.mergeUserHolidays(ctx.read().userHolidays, imported));
+  const importable = plan.rows.length;
+  ctx.update({ holidayImport: { ...plan, status: "preview", fileName: file.name, importable } });
 }
 
 /**
- * @returns {Record<HolidayAction["type"], HolidayHandler>} The handler of each holiday action
- *   (HOL-006 to HOL-008, HOL-010 to HOL-012).
+ * @param {ImportRow[]} rows
+ * @returns {{ added: HolidayEntry[], hidden: HolidayEntry[] }} The holidays and the hidden holidays of the rows.
  */
-export function holidayHandlers() {
-  return /** @type {Record<HolidayAction["type"], HolidayHandler>} */ ({
+function holidaysOf(rows) {
+  /** @param {ImportRow["type"]} type */
+  const entriesOf = (type) =>
+    rows.flatMap((row) => (row.type === type && row.type !== "vacation" ? [row.entry] : []));
+  return { added: entriesOf("holiday"), hidden: entriesOf("hiddenHoliday") };
+}
+
+/**
+ * @param {Place[]} places
+ * @param {Extract<ImportRow, { type: "vacation" }>} row
+ * @returns {Place[]} The places with the row's vacation added to its place; the same place objects
+ *   when the vacation is already there (HOL-011).
+ */
+function withVacationAdded(places, { placeId, vacation }) {
+  return places.map((place) => {
+    const vacations = place.id === placeId ? addVacation(place.vacations, vacation) : null;
+    return vacations === null ? place : { ...place, vacations };
+  });
+}
+
+/**
+ * @param {Place[]} places
+ * @param {ImportRow[]} rows
+ * @returns {Place[] | null} The places with every new vacation of the rows added, or `null` when none
+ *   is new.
+ */
+function withImportedVacations(places, rows) {
+  const next = rows.reduce(
+    (current, row) => (row.type === "vacation" ? withVacationAdded(current, row) : current),
+    places,
+  );
+  return next.some((place, at) => place !== places[at]) ? next : null;
+}
+
+/**
+ * @template {HolidayContext} Ctx
+ * @param {import("./controller-places.js").ChangePlaces<Ctx>} changePlaces
+ * @returns {(ctx: Ctx) => Promise<void>} The handler that adds the rows of the shown preview to the
+ *   saved holidays and vacations, adds no place, saves what changed and closes the preview
+ *   (HOL-011). Without a preview it does nothing.
+ */
+function confirmImport(changePlaces) {
+  return (ctx) => {
+    const { holidayImport, userHolidays } = ctx.read();
+    if (holidayImport?.status !== "preview") return Promise.resolve();
+    const { rows } = holidayImport;
+    const imported = holidaysOf(rows);
+    if (imported.added.length + imported.hidden.length === 0) {
+      ctx.update({ holidayImport: null });
+    } else {
+      const merged = userHolidayList.mergeUserHolidays(userHolidays, imported);
+      ctx.deps.holidayStorage.save(merged);
+      ctx.update({ userHolidays: merged, holidayImport: null });
+    }
+    return changePlaces(ctx, (places) => withImportedVacations(places, rows));
+  };
+}
+
+/**
+ * Closes the import preview and changes nothing (HOL-018).
+ * @param {HolidayContext} ctx
+ * @returns {void}
+ */
+function cancelImport(ctx) {
+  ctx.update({ holidayImport: null });
+}
+
+/**
+ * @template {HolidayContext} Ctx
+ * @param {import("./controller-places.js").ChangePlaces<Ctx>} changePlaces controller.js's commit of
+ *   a changed place list, which the vacations of an import go through.
+ * @returns {Record<HolidayAction["type"], (ctx: Ctx, action: HolidayAction) => void | Promise<void>>}
+ *   The handler of each holiday action (HOL-006 to HOL-008, HOL-010 to HOL-012, HOL-017, HOL-018).
+ */
+export function holidayHandlers(changePlaces) {
+  return /** @type {Record<HolidayAction["type"], (ctx: Ctx, action: HolidayAction) => void | Promise<void>>} */ ({
     addHoliday: holidayChange(userHolidayList.addHoliday),
     removeHoliday: holidayChange(userHolidayList.removeHoliday),
     hideHoliday: holidayChange(userHolidayList.hideHoliday),
     showHoliday: holidayChange(userHolidayList.showHoliday),
     exportHolidays,
     importHolidays,
+    confirmImport: confirmImport(changePlaces),
+    cancelImport,
   });
 }

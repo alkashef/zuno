@@ -42,8 +42,10 @@ menu also has "Hide public holiday", or "Remove public holiday" for one you adde
 add a public holiday the holiday service does not list (by country, date and name), remove it, and show a hidden holiday again. Your added and hidden holidays are saved in the browser. "Export" in the
 Holidays and vacations tab saves your added holidays, hidden holidays and vacations to one CSV file
 (`zuno-holidays-and-vacations.csv`) that you can share and open in a spreadsheet; the tab describes the columns,
-the date format and gives an example. "Import" still reads the older JSON file and adds its holidays to your own (a file
-that is not a Zuno holidays file is refused and nothing changes); reading the CSV file comes next. Both use local
+the date format and gives an example. "Import" reads such a CSV file and first shows a dialog that says how many of its rows can be
+imported out of the total and which places are missing; "Add" then adds those rows to your own holidays and vacations
+(no place is added, and a vacation you already have is skipped), and "Cancel" changes nothing. A file that is not a
+Zuno holidays and vacations file, such as an older JSON file, is refused and nothing changes. Both use local
 files only. The settings panel ends with the version: the word "Version" and the
 date and time of the build in UTC (for example 2026.11.18.1432), so you can tell which build a copy
 is. Two builds of the same code have different versions.

@@ -40,6 +40,7 @@ import { createPickerHover } from "./views/picker-hover.js";
 import { createPickerResize } from "./views/picker-resize.js";
 import { createCustomPlaceForm } from "./views/settings-custom-place.js";
 import { createFileSection } from "./views/settings-file.js";
+import { createImportDialog } from "./views/import-dialog.js";
 import { createHolidaysSection } from "./views/settings-holidays.js";
 import { createPlaceList } from "./views/settings-places.js";
 import { setUpSettingsTabs } from "./views/settings-tabs.js";
@@ -133,6 +134,7 @@ const views = [
       createPickerHover(rows, { localAt: localDateTime, stepMinutes: config.pickerStepMinutes }),
   }),
   createLegend(document),
+  createImportDialog(document, { dispatch: controller.dispatch }),
   createSettingsPanel(document, {
     defaultHours: { start: config.defaultWorkStartMinutes, end: config.defaultWorkEndMinutes },
     hoursStepMinutes: config.workingHoursStepMinutes,

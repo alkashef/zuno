@@ -2,8 +2,8 @@
 /**
  * @module domain/cities
  * Looks up the city list (SET-002, SET-013, DEC-015): every city for the add list, one city by id,
- * the countries and territories of the list (HOL-006), every known country (SET-018) and the English name of any known country or
- * territory (NFR-003, DEC-029). It reads only `data/cities.js`; which codes are known comes from
+ * the countries and territories of the list (HOL-006), every known country (SET-018), the English name of any known country or
+ * territory (NFR-003, DEC-029) and the code of a country read from a name (HOL-017, DEC-032). It reads only `data/cities.js`; which codes are known comes from
  * domain/zone-table.js. It does not make or check places (domain/places.js does).
  */
 import { cityTable } from "../../data/cities.js";
@@ -49,6 +49,49 @@ export function cityOf(id) {
 export function countryName(code) {
   if (!isKnownCountry(code)) throw new RangeError(`Unknown country code: ${code}`);
   return territoryNames[code] ?? regionNames.of(code) ?? code;
+}
+
+/**
+ * Every English spelling that Chromium, Firefox, WebKit and Edge give a country's name with
+ * `Intl.DisplayNames` where they differ (read on 2026-11-23, headless, on the development machine).
+ * The page writes the name its own browser gives, so a holidays file written in one browser must be
+ * read with the spellings of the others (HOL-017, DEC-032).
+ */
+const otherCountryNames = Object.freeze(
+  /** @type {Record<string, string[]>} */ ({
+    BQ: ["Caribbean Netherlands", "Bonaire, Sint Eustatius and Saba"],
+    CD: ["Congo - Kinshasa", "Congo (DRC)"],
+    CG: ["Congo - Brazzaville", "Congo"],
+    CV: ["Cape Verde", "Cabo Verde"],
+    EH: ["Western Sahara"],
+    FK: ["Falkland Islands", "Falkland Islands (Islas Malvinas)"],
+    HK: ["Hong Kong", "Hong Kong SAR China", "Hong Kong SAR"],
+    KR: ["South Korea", "Korea"],
+    MM: ["Myanmar (Burma)", "Myanmar"],
+    MO: ["Macao", "Macao SAR China", "Macao SAR"],
+    PS: ["Palestine", "Palestinian Territories", "Palestinian Authority"],
+    SH: ["St. Helena", "St Helena, Ascension, Tristan da Cunha"],
+  }),
+);
+
+/**
+ * @param {string} code A known country code.
+ * @returns {string[]} The code, the page's name of the country and its other spellings, in lower case.
+ */
+function namesOf(code) {
+  return [code, countryName(code), ...(otherCountryNames[code] ?? [])].map((name) =>
+    name.toLowerCase(),
+  );
+}
+
+/**
+ * @param {string} text A country as a file writes it.
+ * @returns {string | null} The code of the country whose two-letter code, English name (the page's
+ *   or another browser's) is the text, ignoring case and outer spaces; `null` when none is (HOL-017).
+ */
+export function countryCodeOf(text) {
+  const wanted = text.trim().toLowerCase();
+  return listCountryCodes().find((code) => namesOf(code).includes(wanted)) ?? null;
 }
 
 /**

@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                       | Description                                           | Model  | Effort | Status   |
 | ------------------------------- | ----------------------------------------------------- | ------ | ------ | -------- |
-| **M54** Import from CSV with a confirmation | Import reads the CSV file, shows how many rows can be imported, and adds them or cancels | sonnet | high | open |
 | **M55** List and delete imported files | The settings list each imported file; deleting one first asks, then undoes what only that file added | sonnet | high | open |
 
 ## Milestones
@@ -17,38 +16,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M54 — Import from CSV with a confirmation
-
-- **Refs:** HOL-011, HOL-012, HOL-017, HOL-018, EX-017, EX-018, EX-032, DEC-032.
-- **Owner:** `src/domain/holidays-file.js` (`planImport`), `src/domain/user-holidays.js`
-  (`mergeUserHolidays`; the JSON file functions go), `src/controller-holidays.js` (`importHolidays`,
-  `confirmImport`, `cancelImport`), `src/controller.js` (`holidayImport`), `src/views/import-dialog.js`
-  (new; view layer; the import preview), `src/views/settings-file.js` (the refused message),
-  `src/files.js` (the JSON read and save go), `src/main.js`.
-- **Tests first:**
-  - `tests/unit/holidays-file.test.js`: `test_hol_012_the_text_hello_is_refused_ex_018`,
-    `test_hol_012_a_file_without_the_header_row_is_refused`, `test_hol_012_an_old_json_file_is_refused`,
-    `test_hol_017_the_plan_counts_importable_rows_out_of_the_total_and_names_the_missing_place_ex_032`,
-    `test_hol_017_an_invalid_row_counts_apart`, `test_hol_017_dates_are_read_as_d_mmm_yy_and_d_mmm_yyyy`,
-    `test_hol_017_a_country_is_read_by_name_or_by_two_letter_code`.
-  - `tests/e2e/controller-holidays.test.js`: `test_hol_017_import_shows_a_preview_and_changes_nothing_yet`,
-    `test_hol_011_confirm_adds_the_holidays_and_vacations_and_no_place_ex_032`,
-    `test_hol_011_an_identical_vacation_is_skipped`,
-    `test_hol_018_cancel_changes_nothing_ex_032`,
-    `test_hol_012_a_refused_file_changes_nothing_ex_018`,
-    `test_hol_011_a_file_exported_by_browser_a_imports_in_browser_b_ex_017`.
-  - `tests/e2e/ui/holidays-file.test.js`:
-    `ui_hol_017_the_dialog_says_n_of_m_rows_can_be_imported_and_names_the_missing_place_ex_032`,
-    `ui_hol_011_add_adds_the_rows`, `ui_hol_018_cancel_changes_nothing`,
-    `ui_hol_012_a_refused_file_shows_the_message_ex_018`,
-    `ui_hol_017_country_names_as_chromium_writes_them_import_in_every_browser`.
-- **Build:** DEC-032: `planImport` refuses a file that is not CSV or has not the six header names; it
-  counts the importable rows, the missing places and the invalid rows; the controller keeps the plan
-  in `holidayImport` (`null`, `refused` or `preview`) until Add or Cancel; the dialog is a native
-  `<dialog>` with Cancel and "Add N rows" (disabled while N is 0). Remove the JSON import.
-- **Gate:** the existing import tests that use JSON are changed, because HOL-010 to HOL-012 changed;
-  the report says so; the tests pass in the four browsers.
 
 ### M55 — List and delete imported files
 

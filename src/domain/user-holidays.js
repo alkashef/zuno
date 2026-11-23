@@ -2,8 +2,8 @@
 /**
  * @module domain/user-holidays
  * The holidays a user adds and hides (HOL-003, HOL-006 to HOL-012, DEC-017): adds, removes, hides
- * and shows an entry, validates a stored or imported record (`parseUserHolidays`), merges an
- * imported record into the saved one (`mergeUserHolidays`), and applies the record to a country's
+ * and shows an entry, validates a stored record (`parseUserHolidays`), merges imported entries
+ * into the saved record (`mergeUserHolidays`), and applies the record to a country's
  * service holidays (`effectiveHolidays`). Pure: it saves nothing (the controller does, through the
  * injected holiday storage), reads no file (files.js does) and reads no service data (api.js and
  * domain/holidays.js do). A refused change returns `null`, so the caller knows to save nothing.
@@ -183,9 +183,10 @@ export function parseUserHolidays(value) {
 }
 
 /**
- * Merges an imported record into the saved one (HOL-011).
+ * Merges imported holidays into the saved record (HOL-011).
  * @param {UserHolidays} saved
- * @param {UserHolidays} imported A record that passed `parseUserHolidays`.
+ * @param {Pick<UserHolidays, "added" | "hidden">} imported Valid entries, such as those of an
+ *   import plan.
  * @returns {UserHolidays} The saved entries, then the imported ones the saved record lacks; nothing
  *   is removed and no entry appears twice.
  */

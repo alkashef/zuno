@@ -1,5 +1,5 @@
 // @ts-check
-/** @module cities.test Unit tests for src/domain/cities.js and data/cities.js (SET-013, NFR-003, DEC-015). */
+/** @module cities.test Unit tests for src/domain/cities.js and data/cities.js (SET-013, NFR-003, HOL-017, DEC-015, DEC-032). */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
@@ -7,6 +7,7 @@ import { test } from "node:test";
 import { cityTable } from "../../data/cities.js";
 import {
   cityOf,
+  countryCodeOf,
   countryName,
   listAllCountries,
   listCities,
@@ -174,4 +175,25 @@ test("test_set_018_every_known_country_is_listed_once_by_english_name", () => {
   );
   assert.ok(all.some((country) => country.code === "KE" && country.name === "Kenya"));
   assert.ok(listCountries().every((city) => all.some((each) => each.code === city.code)));
+});
+
+test("test_hol_017_country_code_of_reads_a_code_a_name_or_another_browsers_spelling", () => {
+  assert.equal(countryCodeOf("IN"), "IN");
+  assert.equal(countryCodeOf(" in "), "IN");
+  assert.equal(countryCodeOf("india"), "IN");
+  assert.equal(countryCodeOf("United States"), "US");
+  assert.equal(countryCodeOf("Hong Kong SAR China"), "HK");
+  assert.equal(countryCodeOf("Hong Kong"), "HK");
+  assert.equal(countryCodeOf("Macao"), "MO");
+  assert.equal(countryCodeOf("Palestine"), "PS");
+  assert.equal(countryCodeOf("Palestinian Territories"), "PS");
+  assert.equal(countryCodeOf("Cabo Verde"), "CV");
+  assert.equal(countryCodeOf("Atlantis"), null);
+  assert.equal(countryCodeOf(""), null);
+});
+
+test("test_hol_017_every_name_the_page_writes_is_read_back_as_the_same_country", () => {
+  for (const { code, name } of listAllCountries()) {
+    assert.equal(countryCodeOf(name), code, name);
+  }
 });
