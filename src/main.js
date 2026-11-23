@@ -10,6 +10,7 @@ import { config } from "./config.js";
 import { createController } from "./controller.js";
 import { dayMenuChoices, monthWeeks } from "./domain/calendar.js";
 import { countryName, listAllCountries, listCities } from "./domain/cities.js";
+import { importCounts, importRemovalPlan } from "./domain/holidays-file.js";
 import { isTableCountry, tableHolidays } from "./domain/holiday-table.js";
 import { holidayCountries, placeFacts, placeName, placePin } from "./domain/places.js";
 import { parseSettings } from "./domain/settings.js";
@@ -91,6 +92,10 @@ const lookup = {
   placeWeekendDays,
   countryWeekendDays,
 };
+const importDialog = createImportDialog(document, {
+  dispatch: controller.dispatch,
+  removalPlanOf: importRemovalPlan,
+});
 const views = [
   createTheme(document),
   createHeader(document),
@@ -134,7 +139,7 @@ const views = [
       createPickerHover(rows, { localAt: localDateTime, stepMinutes: config.pickerStepMinutes }),
   }),
   createLegend(document),
-  createImportDialog(document, { dispatch: controller.dispatch }),
+  importDialog,
   createSettingsPanel(document, {
     defaultHours: { start: config.defaultWorkStartMinutes, end: config.defaultWorkEndMinutes },
     hoursStepMinutes: config.workingHoursStepMinutes,
@@ -148,7 +153,12 @@ const views = [
         countriesOf: holidayCountries,
         countryName,
       }),
-    makeFile: (card) => createFileSection(card, { dispatch: controller.dispatch }),
+    makeFile: (card) =>
+      createFileSection(document, card, {
+        dispatch: controller.dispatch,
+        askRemove: importDialog.askRemove,
+        countsOf: importCounts,
+      }),
     makeCustomPlace: (card) =>
       createCustomPlaceForm(card, {
         dispatch: controller.dispatch,

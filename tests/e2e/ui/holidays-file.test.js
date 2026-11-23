@@ -1,5 +1,5 @@
 // @ts-check
-/** @module holidays-file.test Headless-browser tests of the holidays file (export, import, refusal, no network request), in Chromium, Firefox, WebKit and Edge under the page's Content-Security-Policy (HOL-010 to HOL-012, HOL-016 to HOL-018, NFR-001, EX-017, EX-018, EX-031, EX-032, DEC-032). */
+/** @module holidays-file.test Headless-browser tests of the holidays file (export, import, refusal, no network request), in Chromium, Firefox, WebKit and Edge under the page's Content-Security-Policy (HOL-010 to HOL-012, HOL-016 to HOL-018, HOL-020 to HOL-023, NFR-001, EX-017, EX-018, EX-031, EX-032, EX-034, DEC-032, DEC-035). */
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { after, before, test } from "node:test";
@@ -93,11 +93,12 @@ function csvOf(...lines) {
 /**
  * @param {import("playwright").Locator} section
  * @param {string} text The text of the file to pick.
+ * @param {string} [fileName]
  * @returns {Promise<void>} Picks a CSV file with that text in the Import control.
  */
-async function importFile(section, text) {
+async function importFile(section, text, fileName = "holidays.csv") {
   await section.getByLabel("Import", { exact: true }).setInputFiles({
-    name: "holidays.csv",
+    name: fileName,
     mimeType: "text/csv",
     buffer: Buffer.from(text),
   });
@@ -336,5 +337,165 @@ test("test_nfr_001_export_and_import_make_no_network_request", async () => {
     const holidayPrefix = `${config.holidayServiceBaseUrl}/Holidays/`;
     const others = requestUrls.filter((url) => !url.startsWith(holidayPrefix) && url !== built.url);
     assert.deepEqual(others, [], `${name}: requests other than the holiday service`);
+  }
+});
+
+const testDay = Object.freeze({ country: "India", date: "2026-11-10", name: "Test day" });
+const diwaliRow = "holiday,India,,08-Nov-26,,Diwali";
+const foundersRow = "holiday,India,,12-Nov-26,,Founders Day";
+const vacationRow = (/** @type {string} */ label, /** @type {string} */ day) =>
+  `vacation,,Sara,${day}-Dec-26,${day}-Dec-26,${label}`;
+const fileA = csvOf(diwaliRow, foundersRow, vacationRow("V1", "01"), vacationRow("V2", "02"));
+const fileB = csvOf(diwaliRow, vacationRow("V3", "03"));
+
+/**
+ * @param {Page} page
+ * @param {import("playwright").Locator} section
+ * @param {string} fileName
+ * @param {string} text The text of the file.
+ * @returns {Promise<void>} Picks the file and presses Add in the preview.
+ */
+async function importAndAdd(page, section, fileName, text) {
+  await importFile(section, text, fileName);
+  await importDialog(page)
+    .getByRole("button", { name: /^Add \d+ rows?$/ })
+    .click();
+  await importDialog(page).waitFor({ state: "hidden" });
+}
+
+/**
+ * Reads the rows one by one: `allInnerTexts` crashes the page in headless Firefox.
+ * @param {import("playwright").Locator} section
+ * @returns {Promise<string[][]>} The lines of each imported file in the list: the name, the time and
+ *   date, then the counts.
+ */
+async function importedList(section) {
+  const rows = section.locator('[data-role="import-list"] [data-role="import-text"]');
+  const count = await rows.count();
+  const texts = await Promise.all(
+    Array.from({ length: count }, (_, index) => rows.nth(index).innerText()),
+  );
+  return texts.map((text) =>
+    text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean),
+  );
+}
+
+/**
+ * @param {string} name One of `browserNames`.
+ * @returns {Promise<{ page: Page, section: import("playwright").Locator }>} The page of EX-034 after
+ *   the hand-typed holiday Y and the files A then B, with the settings open on the Holidays tab.
+ */
+async function openAfterFilesAAndB(name) {
+  const { page, section } = await openHolidays(name, { saved: savedWithSaraAndLondon() });
+  await addHoliday(section, testDay);
+  await importAndAdd(page, section, "a.csv", fileA);
+  await importAndAdd(page, section, "b.csv", fileB);
+  return { page, section };
+}
+
+/** @returns {import("playwright").Locator} The delete dialog of a page. */
+function deleteDialog(/** @type {Page} */ page) {
+  return page.getByRole("dialog", { name: "Delete imported file" });
+}
+
+const countsOfA = "2 holidays, 0 hidden holidays, 2 vacations";
+const countsOfB = "1 holiday, 0 hidden holidays, 1 vacation";
+
+test("ui_hol_020_the_list_shows_each_file_with_its_time_and_counts_ex_034", async () => {
+  for (const name of browserNames) {
+    const { section } = await openHolidays(name, { saved: savedWithSaraAndLondon() });
+    await section.getByText("No files imported.").waitFor();
+    const page = section.page();
+    await addHoliday(section, testDay);
+    await importAndAdd(page, section, "a.csv", fileA);
+    await importAndAdd(page, section, "b.csv", fileB);
+    assert.deepEqual(
+      await importedList(section),
+      [
+        ["a.csv", "9:25 AM · 16-Nov-26", countsOfA],
+        ["b.csv", "9:25 AM · 16-Nov-26", countsOfB],
+      ],
+      name,
+    );
+    assert.equal(await section.getByText("No files imported.").isVisible(), false, name);
+  }
+});
+
+test("ui_hol_021_the_delete_dialog_says_how_many_entries_go_and_stay_and_cancel_changes_nothing", async () => {
+  for (const name of browserNames) {
+    const { page, section } = await openAfterFilesAAndB(name);
+    const before = await savedRecords(page);
+    const dialog = deleteDialog(page);
+    assert.equal(await dialog.isVisible(), false, `${name}: no dialog before Delete`);
+    await section.getByRole("button", { name: "Delete a.csv", exact: true }).click();
+    await dialog.waitFor();
+    const text = await dialog.innerText();
+    assert.match(text, /3 entries go\./, name);
+    assert.match(text, /1 entry stays because another file also lists it\./, name);
+    await dialog.getByRole("button", { name: "Delete 3 entries", exact: true }).waitFor();
+    await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+    await dialog.waitFor({ state: "hidden" });
+    assert.deepEqual(await savedRecords(page), before, name);
+    await section.getByRole("button", { name: "Delete a.csv", exact: true }).click();
+    await dialog.waitFor();
+    await page.keyboard.press("Escape");
+    await dialog.waitFor({ state: "hidden" });
+    assert.deepEqual(await savedRecords(page), before, `${name}: Escape cancels too`);
+    assert.equal((await importedList(section)).length, 2, name);
+  }
+});
+
+test("ui_hol_022_deleting_a_removes_z_v1_and_v2_and_keeps_x_ex_034", async () => {
+  for (const name of browserNames) {
+    const { page, section } = await openAfterFilesAAndB(name);
+    await section.getByRole("button", { name: "Delete a.csv", exact: true }).click();
+    await deleteDialog(page).getByRole("button", { name: "Delete 3 entries", exact: true }).click();
+    await deleteDialog(page).waitFor({ state: "hidden" });
+    assert.deepEqual(
+      await importedList(section),
+      [["b.csv", "9:25 AM · 16-Nov-26", countsOfB]],
+      name,
+    );
+    assert.deepEqual(
+      await addedList(section),
+      ["10-Nov-26 · India · Test day", "08-Nov-26 · India · Diwali"],
+      name,
+    );
+    const afterA = await exportedFile(page, section);
+    assert.match(afterA, /vacation,,Sara,03-Dec-26,03-Dec-26,V3/, name);
+    assert.doesNotMatch(afterA, /V1|V2|Founders/, name);
+    await section.getByRole("button", { name: "Delete b.csv", exact: true }).click();
+    await deleteDialog(page).getByRole("button", { name: "Delete 2 entries", exact: true }).click();
+    await deleteDialog(page).waitFor({ state: "hidden" });
+    assert.deepEqual(await importedList(section), [], name);
+    assert.deepEqual(await addedList(section), ["10-Nov-26 · India · Test day"], name);
+    assert.doesNotMatch(await exportedFile(page, section), /vacation/, name);
+    await section.getByText("No files imported.").waitFor();
+  }
+});
+
+test("ui_hol_023_the_list_is_the_same_after_a_reload_ex_034", async () => {
+  for (const name of browserNames) {
+    const { page, section } = await openAfterFilesAAndB(name);
+    await section.getByRole("button", { name: "Delete a.csv", exact: true }).click();
+    await deleteDialog(page).getByRole("button", { name: "Delete 3 entries", exact: true }).click();
+    await deleteDialog(page).waitFor({ state: "hidden" });
+    await page.reload();
+    await page.getByRole("button", { name: "Settings", exact: true }).click();
+    await page.getByRole("tab", { name: "Holidays and vacations", exact: true }).click();
+    const reopened = page.getByRole("tabpanel", { name: "Holidays and vacations", exact: true });
+    assert.deepEqual(
+      await importedList(reopened),
+      [["b.csv", "9:25 AM · 16-Nov-26", countsOfB]],
+      name,
+    );
+    assert.deepEqual(
+      await addedList(reopened),
+      ["10-Nov-26 · India · Test day", "08-Nov-26 · India · Diwali"],
+      name,
+    );
   }
 });

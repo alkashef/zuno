@@ -1,12 +1,17 @@
 // @ts-check
-/** @module holidays-file.test Unit tests for src/domain/holidays-file.js (HOL-010, HOL-012, HOL-016, HOL-017, EX-018, EX-031, EX-032, DEC-032). */
+/** @module holidays-file.test Unit tests for src/domain/holidays-file.js (HOL-010, HOL-012, HOL-020, HOL-022, EX-034, HOL-016, HOL-017, EX-018, EX-031, EX-032, DEC-032). */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { createCustomPlace, createPlace } from "../../src/domain/places.js";
 import { parse } from "../../src/domain/csv.js";
-import { planImport, toCsv } from "../../src/domain/holidays-file.js";
+import {
+  importCounts,
+  importRemovalPlan,
+  planImport,
+  toCsv,
+} from "../../src/domain/holidays-file.js";
 
 /** The text of the page's example, found in the markup the build reads. */
 const pageSource = readFileSync(new URL("../../src/index.html", import.meta.url), "utf8");
@@ -249,4 +254,82 @@ test("test_hol_017_the_plan_reads_what_to_csv_wrote", () => {
     plan.status === "plan" && [plan.total, plan.rows.length, plan.invalid],
     [3, 3, 0],
   );
+});
+
+const importA = Object.freeze({ id: "import-1", fileName: "a.csv", importedAt: 1_000 });
+const importB = Object.freeze({ id: "import-2", fileName: "b.csv", importedAt: 2_000 });
+
+/**
+ * @returns {{ userHolidays: import("../../src/domain/user-holidays.js").UserHolidays, places: import("../../src/domain/places.js").Place[] }}
+ *   The saved data of EX-034 after files A and B: Y typed by hand; X listed by A and B; Z by A;
+ *   Sara's V1 and V2 by A and her V3 by B.
+ */
+function afterFilesAAndB() {
+  const entry = (/** @type {string} */ name, /** @type {string} */ date) => ({
+    countryCode: "IN",
+    date,
+    name,
+  });
+  const userHolidays = {
+    version: /** @type {const} */ (1),
+    imports: [importA, importB],
+    added: [
+      entry("Test day", "2026-11-10"),
+      { ...entry("Diwali", "2026-11-08"), sources: ["import-1", "import-2"] },
+      { ...entry("Founders Day", "2026-11-12"), sources: ["import-1"] },
+    ],
+    hidden: [],
+  };
+  const vacation = (/** @type {string} */ label, /** @type {string} */ source) => ({
+    start: "2026-12-21",
+    end: "2026-12-31",
+    label,
+    sources: [source],
+  });
+  const place = {
+    ...sara(),
+    vacations: [vacation("V1", "import-1"), vacation("V2", "import-1"), vacation("V3", "import-2")],
+  };
+  return { userHolidays, places: [place] };
+}
+
+/**
+ * @param {import("../../src/domain/holidays-file.js").ImportRow[]} rows
+ * @returns {string[]} The name or label of each row, in order.
+ */
+function namesOf(rows) {
+  return rows.map((row) => (row.type === "vacation" ? row.vacation.label : row.entry.name));
+}
+
+test("test_hol_022_the_removal_plan_lists_the_entries_that_go_and_those_that_stay_ex_034", () => {
+  const plan = importRemovalPlan(afterFilesAAndB(), "import-1");
+  assert.deepEqual(namesOf(plan.go), ["Founders Day", "V1", "V2"]);
+  assert.deepEqual(namesOf(plan.stay), ["Diwali"]);
+  assert.deepEqual(
+    plan.go.map((row) => row.type),
+    ["holiday", "vacation", "vacation"],
+  );
+  assert.deepEqual(namesOf(importRemovalPlan(afterFilesAAndB(), "import-2").go), ["V3"]);
+});
+
+test("test_hol_022_an_entry_that_another_file_also_lists_stays", () => {
+  const plan = importRemovalPlan(afterFilesAAndB(), "import-2");
+  assert.deepEqual(namesOf(plan.stay), ["Diwali"]);
+  assert.equal(namesOf(plan.go).includes("Diwali"), false);
+});
+
+test("test_hol_022_an_entry_the_user_typed_is_never_removed", () => {
+  for (const id of ["import-1", "import-2"]) {
+    const plan = importRemovalPlan(afterFilesAAndB(), id);
+    assert.equal(namesOf([...plan.go, ...plan.stay]).includes("Test day"), false, id);
+  }
+  assert.deepEqual(importRemovalPlan(afterFilesAAndB(), "import-9"), { go: [], stay: [] });
+});
+
+test("test_hol_020_the_counts_of_an_import_follow_the_entries_that_remain_in_the_plan_data", () => {
+  const saved = afterFilesAAndB();
+  assert.deepEqual(importCounts(saved, "import-1"), { holidays: 2, hidden: 0, vacations: 2 });
+  assert.deepEqual(importCounts(saved, "import-2"), { holidays: 1, hidden: 0, vacations: 1 });
+  const withoutSara = { ...saved, places: [] };
+  assert.deepEqual(importCounts(withoutSara, "import-1"), { holidays: 2, hidden: 0, vacations: 0 });
 });

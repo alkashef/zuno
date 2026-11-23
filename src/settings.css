@@ -446,3 +446,8 @@
   flex: 1 1 0;
   font-size: var(--font-size-small);
 }
+
+.settings-import-line {
+  display: block;
+  overflow-wrap: anywhere;
+}

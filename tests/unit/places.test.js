@@ -17,6 +17,7 @@ import {
   removePlace,
   isUnusablePlace,
   restorePlace,
+  withoutImport,
 } from "../../src/domain/places.js";
 import { listCountries } from "../../src/domain/cities.js";
 import { placeWeekendDays } from "../../src/domain/weekends.js";
@@ -283,4 +284,23 @@ test("test_vac_006_an_invalid_vacation_is_dropped_and_its_place_stays", () => {
   const [edited] = editPlace([createPlace("a", "london")], "a", { vacations: [reversed] });
   assert.deepEqual(edited.vacations, []);
   assert.equal(isPlace({ ...createPlace("a", "london"), vacations: [reversed] }), false);
+});
+
+test("test_hol_022_without_import_drops_the_vacations_only_that_import_listed", () => {
+  const day = { start: "2026-12-01", end: "2026-12-02" };
+  const own = { ...day, label: "Own" };
+  const onlyOne = { ...day, label: "One", sources: ["import-1"] };
+  const shared = { ...day, label: "Shared", sources: ["import-1", "import-2"] };
+  const sara = createCustomPlace("place-1", {
+    name: "Sara",
+    zone: "Europe/Lisbon",
+    countryCode: "PT",
+  });
+  const london = createPlace("place-2", "london");
+  const places = [{ ...sara, vacations: [own, onlyOne, shared] }, london];
+  const after = withoutImport(places, "import-1");
+  assert.deepEqual(after[0].vacations, [own, { ...shared, sources: ["import-2"] }]);
+  assert.equal(after[1], london);
+  assert.equal(withoutImport(after, "import-1")[0], after[0]);
+  assert.deepEqual(places[0].vacations, [own, onlyOne, shared]);
 });

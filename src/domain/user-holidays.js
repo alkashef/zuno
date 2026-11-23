@@ -3,7 +3,8 @@
  * @module domain/user-holidays
  * The holidays a user adds and hides (HOL-003, HOL-006 to HOL-012, DEC-017): adds, removes, hides
  * and shows an entry, validates a stored record (`parseUserHolidays`), merges imported entries
- * into the saved record (`mergeUserHolidays`), and applies the record to a country's
+ * into the saved record (`mergeUserHolidays`), keeps the list of imported files and the `sources`
+ * of each entry (HOL-020, HOL-022, HOL-023, DEC-035), and applies the record to a country's
  * service holidays (`effectiveHolidays`). Pure: it saves nothing (the controller does, through the
  * injected holiday storage), reads no file (files.js does) and reads no service data (api.js and
  * domain/holidays.js do). A refused change returns `null`, so the caller knows to save nothing.
@@ -17,6 +18,15 @@ import { isKnownCountry } from "./zone-table.js";
  * @property {string} countryCode ISO 3166-1 alpha-2 code of a known country or territory (DEC-029).
  * @property {string} date `YYYY-MM-DD`; a real calendar date.
  * @property {string} name Not empty after trimming.
+ * @property {string[]} [sources] The ids of the imported files that list the entry; absent for an
+ *   entry the user typed (DEC-035).
+ */
+
+/**
+ * @typedef {object} ImportRecord One imported file (HOL-020, DEC-035).
+ * @property {string} id `import-N`, unique in the record.
+ * @property {string} fileName The name of the picked file.
+ * @property {number} importedAt UTC milliseconds.
  */
 
 /**
@@ -25,6 +35,8 @@ import { isKnownCountry } from "./zone-table.js";
  * @property {1} version
  * @property {HolidayEntry[]} added Holidays the user added, as national holidays (HOL-006).
  * @property {HolidayEntry[]} hidden Service holidays the user hid (HOL-008).
+ * @property {ImportRecord[]} [imports] The imported files; absent in a record saved before M55 and
+ *   in one with no import yet (HOL-023).
  */
 
 /** @typedef {"added" | "hidden"} ListName */
@@ -48,6 +60,16 @@ export function isCalendarDate(value) {
 }
 
 /**
+ * @param {unknown} value A stored `sources`.
+ * @returns {string[] | null} The list when it holds at least one id and only text ids, else `null`:
+ *   an entry with no valid sources is the user's own (DEC-035).
+ */
+export function validSources(value) {
+  const isList = Array.isArray(value) && value.length > 0;
+  return isList && value.every((id) => typeof id === "string" && id !== "") ? [...value] : null;
+}
+
+/**
  * @param {unknown} value Anything, such as one entry of a stored record or an action's fields.
  * @returns {HolidayEntry | null} The entry with its name trimmed, or `null` when the date is not a
  *   real calendar date, the name is empty after trimming or the country is not known (DEC-029).
@@ -57,7 +79,8 @@ function toEntry(value) {
   const { countryCode, date, name } = /** @type {Record<string, unknown>} */ (value);
   if (typeof name !== "string" || name.trim() === "") return null;
   if (!isCalendarDate(date) || !isKnownCountry(countryCode)) return null;
-  return { countryCode, date, name: name.trim() };
+  const sources = validSources(/** @type {Record<string, unknown>} */ (value).sources);
+  return { countryCode, date, name: name.trim(), ...(sources === null ? {} : { sources }) };
 }
 
 /**
@@ -169,36 +192,195 @@ function parseList(value) {
 }
 
 /**
- * Validates a stored record (HOL-009, DEC-017).
+ * @param {unknown} each One stored import record.
+ * @returns {boolean} Whether it has a text id that is not empty, a text file name and a finite time.
+ */
+function isImportRecord(each) {
+  if (typeof each !== "object" || each === null) return false;
+  const { id, fileName, importedAt } = /** @type {Record<string, unknown>} */ (each);
+  return (
+    typeof id === "string" &&
+    id !== "" &&
+    typeof fileName === "string" &&
+    Number.isFinite(importedAt)
+  );
+}
+
+/**
+ * @param {unknown} value A stored `imports`.
+ * @returns {ImportRecord[] | null | undefined} The records, `undefined` when there is no list (a
+ *   record saved before M55), or `null` when it is not a list of valid records with distinct ids.
+ */
+function parseImports(value) {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || !value.every(isImportRecord)) return null;
+  const records = value.map(({ id, fileName, importedAt }) => ({ id, fileName, importedAt }));
+  return new Set(records.map((each) => each.id)).size === records.length ? records : null;
+}
+
+/**
+ * @param {HolidayEntry[]} entries
+ * @param {ImportRecord[]} imports
+ * @returns {HolidayEntry[]} The entries with only the sources that name a listed import; an entry
+ *   with none left is the user's own.
+ */
+function withKnownSources(entries, imports) {
+  const known = new Set(imports.map((each) => each.id));
+  return entries.map(({ sources, ...entry }) => {
+    const kept = validSources((sources ?? []).filter((id) => known.has(id)));
+    return kept === null ? entry : { ...entry, sources: kept };
+  });
+}
+
+/**
+ * @param {Record<string, unknown>} record A stored record of version 1.
+ * @returns {{ imports: ImportRecord[], added: HolidayEntry[], hidden: HolidayEntry[] } | null} The
+ *   valid lists (`imports` empty when the record has none), or `null` when one list is not valid.
+ */
+function parseParts(record) {
+  const imports = parseImports(record.imports);
+  const added = parseList(record.added);
+  const hidden = parseList(record.hidden);
+  if (imports === null || added === null || hidden === null) return null;
+  return { imports: imports ?? [], added, hidden };
+}
+
+/**
+ * Validates a stored record (HOL-009, HOL-023, DEC-017, DEC-035).
  * @param {unknown} value The parsed JSON of the record.
  * @returns {UserHolidays | null} The record, or `null` when it is not a valid version 1 record.
+ *   A record with no `imports` has none; a source that names no listed import is dropped.
  */
 export function parseUserHolidays(value) {
   if (typeof value !== "object" || value === null) return null;
   const record = /** @type {Record<string, unknown>} */ (value);
-  if (record.version !== 1) return null;
-  const added = parseList(record.added);
-  const hidden = parseList(record.hidden);
-  return added === null || hidden === null ? null : { version: 1, added, hidden };
+  const parts = record.version === 1 ? parseParts(record) : null;
+  if (parts === null) return null;
+  const { imports, added, hidden } = parts;
+  return {
+    version: 1,
+    ...(record.imports === undefined ? {} : { imports }),
+    added: withKnownSources(added, imports),
+    hidden: withKnownSources(hidden, imports),
+  };
 }
 
 /**
- * Merges imported holidays into the saved record (HOL-011).
+ * @template {{ sources?: string[] }} Item
+ * @param {Item[]} items A list of entries, each the user's own or from imported files.
+ * @param {Item} item A valid entry without `sources`.
+ * @param {string} importId
+ * @param {(first: Item, second: Item) => boolean} same Whether two items are the same entry.
+ * @returns {Item[]} The list with the item from that import: a new item is added with that source;
+ *   an identical item from an earlier import gets the source too; an identical item the user typed
+ *   (no sources) stays as it is (DEC-035).
+ */
+export function taggedWith(items, item, importId, same) {
+  const at = items.findIndex((each) => same(each, item));
+  if (at < 0) return [...items, { ...item, sources: [importId] }];
+  const { sources } = items[at];
+  if (sources === undefined || sources.includes(importId)) return items;
+  return items.map((each, index) =>
+    index === at ? { ...each, sources: [...sources, importId] } : each,
+  );
+}
+
+/**
+ * @template {{ sources?: string[] }} Item
+ * @param {Item[]} items
+ * @param {string} importId
+ * @returns {Item[]} The items without that source; an item that had sources and has none left is
+ *   dropped, an item the user typed stays (HOL-022). The same list when nothing changes.
+ */
+export function withoutSource(items, importId) {
+  if (!items.some((each) => each.sources?.includes(importId))) return items;
+  return items.flatMap((each) => {
+    const rest = (each.sources ?? []).filter((id) => id !== importId);
+    if (each.sources === undefined || rest.length === each.sources.length) return [each];
+    return rest.length === 0 ? [] : [{ ...each, sources: rest }];
+  });
+}
+
+/**
+ * @param {{ sources?: string[] }[]} items
+ * @param {string} importId
+ * @returns {number} How many items came from that import, those that other imports also list
+ *   included (HOL-020).
+ */
+export function countFrom(items, importId) {
+  return items.filter((each) => each.sources?.includes(importId)).length;
+}
+
+/**
+ * @param {UserHolidays} record
+ * @returns {ImportRecord[]} The imported files, oldest first; none for a record saved before M55.
+ */
+export function importsOf(record) {
+  return record.imports ?? [];
+}
+
+/**
+ * @param {UserHolidays} record
+ * @returns {string} An id such as `import-3` that no imported file has.
+ */
+export function nextImportId(record) {
+  const taken = new Set(importsOf(record).map((each) => each.id));
+  let number = taken.size + 1;
+  while (taken.has(`import-${number}`)) number += 1;
+  return `import-${number}`;
+}
+
+/**
+ * @param {HolidayEntry[]} entries
+ * @param {HolidayEntry} entry
+ * @returns {HolidayEntry[]} The entries, with the entry at the end unless they hold it.
+ */
+function addedOnce(entries, entry) {
+  return entries.some((each) => sameEntry(each, entry)) ? entries : [...entries, entry];
+}
+
+/**
+ * Merges imported holidays into the saved record (HOL-011, HOL-020).
  * @param {UserHolidays} saved
  * @param {Pick<UserHolidays, "added" | "hidden">} imported Valid entries, such as those of an
  *   import plan.
+ * @param {ImportRecord} [importRecord] The imported file: its record is listed and every entry it
+ *   contributes gets its id as a source (`taggedWith`). Without it nothing is tagged.
  * @returns {UserHolidays} The saved entries, then the imported ones the saved record lacks; nothing
  *   is removed and no entry appears twice.
  */
-export function mergeUserHolidays(saved, imported) {
+export function mergeUserHolidays(saved, imported, importRecord) {
   /** @param {ListName} list */
   const merged = (list) =>
     imported[list].reduce(
       (entries, entry) =>
-        entries.some((each) => sameEntry(each, entry)) ? entries : [...entries, entry],
+        importRecord === undefined
+          ? addedOnce(entries, entry)
+          : taggedWith(entries, entry, importRecord.id, sameEntry),
       saved[list],
     );
-  return { version: 1, added: merged("added"), hidden: merged("hidden") };
+  const base = { ...saved, added: merged("added"), hidden: merged("hidden") };
+  return importRecord === undefined
+    ? base
+    : { ...base, imports: [...importsOf(saved), importRecord] };
+}
+
+/**
+ * Takes an imported file out of the record (HOL-022).
+ * @param {UserHolidays} record
+ * @param {string} importId
+ * @returns {UserHolidays} The record without that import and without the entries that only it
+ *   listed; entries another import also lists keep their other sources; entries the user typed stay.
+ *   The same record when no import has that id.
+ */
+export function withoutImport(record, importId) {
+  if (!importsOf(record).some((each) => each.id === importId)) return record;
+  return {
+    ...record,
+    imports: importsOf(record).filter((each) => each.id !== importId),
+    added: withoutSource(record.added, importId),
+    hidden: withoutSource(record.hidden, importId),
+  };
 }
 
 /**

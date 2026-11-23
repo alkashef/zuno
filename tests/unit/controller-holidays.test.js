@@ -69,6 +69,7 @@ function fakeContext(state, readText = async () => ({ status: "unreadable" })) {
         readText,
       },
       holidaysFileName: "zuno-holidays-and-vacations.csv",
+      clock: { now: () => 0 },
     },
     read: () => fakes.state,
     update(changes) {
@@ -264,10 +265,18 @@ test("test_hol_011_confirm_saves_the_holidays_and_hands_the_vacations_to_the_pla
     const places = change(settings.places);
     if (places !== null) changed.push(places);
   }).confirmImport(ctx, { type: "confirmImport" });
-  assert.deepEqual(fakes.saves, [{ version: 1, added: [diwali], hidden: [christmas] }]);
+  const fromImport = { sources: ["import-1"] };
+  assert.deepEqual(fakes.saves, [
+    {
+      version: 1,
+      imports: [{ id: "import-1", fileName: "a.csv", importedAt: 0 }],
+      added: [{ ...diwali, ...fromImport }],
+      hidden: [{ ...christmas, ...fromImport }],
+    },
+  ]);
   assert.deepEqual(fakes.state.holidayImport, null);
   assert.equal(changed.length, 1);
-  assert.deepEqual(changed[0][1].vacations, [winter]);
+  assert.deepEqual(changed[0][1].vacations, [{ ...winter, ...fromImport }]);
   assert.deepEqual(changed[0][0], losAngeles);
 });
 
@@ -284,7 +293,14 @@ test("test_hol_011_confirm_changes_no_places_when_no_vacation_is_new", async () 
     async (_ctx, change) => void answers.push(change(placesWithIt)),
   ).confirmImport(ctx, { type: "confirmImport" });
   assert.deepEqual(answers, [null]);
-  assert.deepEqual(fakes.saves, []);
+  assert.deepEqual(fakes.saves, [
+    {
+      version: 1,
+      imports: [{ id: "import-1", fileName: "a.csv", importedAt: 0 }],
+      added: [],
+      hidden: [],
+    },
+  ]);
   assert.equal(fakes.state.holidayImport, null);
 });
 

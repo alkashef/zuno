@@ -1,9 +1,10 @@
 // @ts-check
-/** @module controller-holidays.test Holiday workflows through src/controller.js with fake api, storages, files and clock (HOL-003, HOL-006 to HOL-012, EX-015 to EX-018, DEC-017, DEC-018). */
+/** @module controller-holidays.test Holiday workflows through src/controller.js with fake api, storages, files and clock (HOL-003, HOL-006 to HOL-012, HOL-020, HOL-022, HOL-023, EX-015 to EX-018, EX-034, DEC-017, DEC-018, DEC-035). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { createController } from "../../src/controller.js";
+import { importCounts } from "../../src/domain/holidays-file.js";
 import { createPlace } from "../../src/domain/places.js";
 import { defaultSettings } from "../../src/domain/settings.js";
 import { emptyHolidayTable, serviceRecord } from "../unit/holiday-fixtures.js";
@@ -300,11 +301,12 @@ test("test_hol_011_confirm_adds_the_holidays_and_vacations_and_no_place_ex_032",
   const placesBefore = controller.getState().settings?.places.map((place) => place.id);
   await controller.dispatch({ type: "importHolidays", file: pickedFile(fakeFiles, ex032File) });
   await controller.dispatch({ type: "confirmImport" });
-  assert.deepEqual(controller.getState().userHolidays.added, [diwali]);
-  assert.deepEqual(stores.holidays?.added, [diwali]);
+  const fromImport = { sources: ["import-1"] };
+  assert.deepEqual(controller.getState().userHolidays.added, [{ ...diwali, ...fromImport }]);
+  assert.deepEqual(stores.holidays?.added, [{ ...diwali, ...fromImport }]);
   assert.deepEqual(vacationsOf(controller, "place-2"), [
-    winter,
-    { start: "2026-08-01", end: "2026-08-15", label: "Summer" },
+    { ...winter, ...fromImport },
+    { start: "2026-08-01", end: "2026-08-15", label: "Summer", ...fromImport },
   ]);
   assert.deepEqual(stores.settings?.places[1].vacations, vacationsOf(controller, "place-2"));
   assert.deepEqual(
@@ -324,7 +326,13 @@ test("test_hol_011_confirm_keeps_every_saved_entry_and_adds_hidden_holidays", as
   );
   await controller.dispatch({ type: "importHolidays", file: pickedFile(fakeFiles, text) });
   await controller.dispatch({ type: "confirmImport" });
-  assert.deepEqual(stores.holidays, { version: 1, added: [diwali], hidden: [christmas] });
+  const [record] = stores.holidays?.imports ?? [];
+  assert.deepEqual(stores.holidays, {
+    version: 1,
+    imports: [record],
+    added: [diwali],
+    hidden: [{ ...christmas, sources: ["import-1"] }],
+  });
 });
 
 test("test_hol_011_an_identical_vacation_is_skipped", async () => {
@@ -392,7 +400,172 @@ test("test_hol_011_a_file_exported_by_browser_a_imports_in_browser_b_ex_017", as
     [1, 1],
   );
   await second.controller.dispatch({ type: "confirmImport" });
-  const merged = { version: 1, added: [iqbalDay, diwali], hidden: [] };
+  const [record] = second.stores.holidays?.imports ?? [];
+  const merged = {
+    version: 1,
+    imports: [record],
+    added: [iqbalDay, { ...diwali, sources: ["import-1"] }],
+    hidden: [],
+  };
   assert.deepEqual(second.stores.holidays, merged);
   assert.deepEqual(holidaysInRow(second.controller, 0), ["2026-11-08 Diwali"]);
+});
+
+const testDay = Object.freeze({ countryCode: "IN", date: "2026-11-10", name: "Test day" });
+const foundersDay = Object.freeze({ countryCode: "IN", date: "2026-11-12", name: "Founders Day" });
+const v1 = "vacation,,Sara,01-Dec-26,05-Dec-26,V1";
+const v2 = "vacation,,Sara,06-Dec-26,10-Dec-26,V2";
+const v3 = "vacation,,Sara,11-Dec-26,15-Dec-26,V3";
+
+/**
+ * @param {ReturnType<typeof setup>} app A controller with the city London.
+ * @param {string} fileName
+ * @param {...string} lines The data rows of the file.
+ * @returns {Promise<void>} Picks the file and confirms its import.
+ */
+async function importFileOf(app, fileName, ...lines) {
+  const file = pickedFile(app.fakeFiles, fileOf(...lines), fileName);
+  await app.controller.dispatch({ type: "importHolidays", file });
+  await app.controller.dispatch({ type: "confirmImport" });
+}
+
+/**
+ * @param {ReturnType<typeof createController>} controller
+ * @returns {{ holidays: number, hidden: number, vacations: number }[]} The counts of each import.
+ */
+function countsOf(controller) {
+  const { userHolidays, settings } = controller.getState();
+  const saved = { userHolidays, places: settings?.places ?? [] };
+  return (userHolidays.imports ?? []).map((each) => importCounts(saved, each.id));
+}
+
+/**
+ * @param {ReturnType<typeof setup>} app A controller with the city London.
+ * @returns {Promise<void>} The state of EX-034 after file A and file B.
+ */
+async function afterFilesAAndB(app) {
+  await openWithSara(app);
+  await app.controller.dispatch({ type: "addHoliday", ...testDay });
+  const diwaliRow = "holiday,India,,08-Nov-26,,Diwali";
+  const foundersRow = "holiday,India,,12-Nov-26,,Founders Day";
+  await importFileOf(app, "a.csv", diwaliRow, foundersRow, v1, v2);
+  await importFileOf(app, "b.csv", diwaliRow, v3);
+}
+
+test("test_hol_020_confirm_import_records_the_file_and_tags_its_entries", async () => {
+  const app = setup(["london"]);
+  await openWithSara(app);
+  await importFileOf(app, "team.csv", "holiday,India,,08-Nov-26,,Diwali", v1);
+  const { userHolidays } = app.controller.getState();
+  assert.deepEqual(userHolidays.imports, [
+    { id: "import-1", fileName: "team.csv", importedAt: start },
+  ]);
+  assert.deepEqual(userHolidays.added, [{ ...diwali, sources: ["import-1"] }]);
+  assert.deepEqual(
+    vacationsOf(app.controller, "place-2").map((each) => each.sources),
+    [["import-1"]],
+  );
+  assert.deepEqual(countsOf(app.controller), [{ holidays: 1, hidden: 0, vacations: 1 }]);
+  await importFileOf(app, "team.csv", "holiday,India,,08-Nov-26,,Diwali");
+  const again = app.controller.getState().userHolidays;
+  assert.equal(again.imports?.length, 2, "the same file imported twice makes two records");
+  assert.equal(again.imports?.[1].id, "import-2");
+  assert.deepEqual(again.added[0].sources, ["import-1", "import-2"]);
+});
+
+test("test_hol_020_a_file_with_no_importable_row_makes_no_record", async () => {
+  const app = setup(["london"]);
+  await openWithSara(app);
+  await importFileOf(app, "empty.csv");
+  await importFileOf(app, "none.csv", "vacation,,Omar,01-Jan-27,05-Jan-27,Trip");
+  assert.equal(app.controller.getState().userHolidays.imports, undefined);
+  assert.deepEqual(app.holidaySaves, []);
+});
+
+test("test_hol_020_an_entry_the_user_typed_gets_no_source_when_a_file_lists_it_too", async () => {
+  const app = setup(["london"]);
+  await openWithSara(app);
+  await app.controller.dispatch({ type: "addHoliday", ...diwali });
+  await app.controller.dispatch({ type: "addVacation", placeId: "place-2", ...winter });
+  await importFileOf(
+    app,
+    "a.csv",
+    "holiday,India,,08-Nov-26,,Diwali",
+    "vacation,,Sara,21-Dec-26,31-Dec-26,Winter break",
+  );
+  const { userHolidays } = app.controller.getState();
+  assert.deepEqual(userHolidays.added, [diwali]);
+  assert.deepEqual(vacationsOf(app.controller, "place-2"), [winter]);
+  assert.deepEqual(countsOf(app.controller), [{ holidays: 0, hidden: 0, vacations: 0 }]);
+});
+
+test("test_hol_022_remove_import_a_then_b_ex_034", async () => {
+  const app = setup(["london"]);
+  await afterFilesAAndB(app);
+  const { controller, stores } = app;
+  assert.deepEqual(countsOf(controller), [
+    { holidays: 2, hidden: 0, vacations: 2 },
+    { holidays: 1, hidden: 0, vacations: 1 },
+  ]);
+  await controller.dispatch({ type: "removeImport", importId: "import-1" });
+  const afterA = controller.getState();
+  assert.deepEqual(
+    afterA.userHolidays.imports?.map((each) => each.fileName),
+    ["b.csv"],
+  );
+  assert.deepEqual(afterA.userHolidays.added, [testDay, { ...diwali, sources: ["import-2"] }]);
+  assert.deepEqual(
+    vacationsOf(controller, "place-2").map((each) => each.label),
+    ["V3"],
+  );
+  assert.deepEqual(stores.holidays, afterA.userHolidays);
+  assert.deepEqual(stores.settings?.places[1].vacations, vacationsOf(controller, "place-2"));
+  await controller.dispatch({ type: "removeImport", importId: "import-2" });
+  const afterB = controller.getState();
+  assert.deepEqual(afterB.userHolidays.imports, []);
+  assert.deepEqual(afterB.userHolidays.added, [testDay]);
+  assert.deepEqual(vacationsOf(controller, "place-2"), []);
+  assert.deepEqual(stores.holidays, afterB.userHolidays);
+  assert.equal(foundersDay.name, "Founders Day");
+});
+
+test("test_hol_022_removing_an_unknown_import_saves_nothing", async () => {
+  const app = setup(["london"]);
+  await afterFilesAAndB(app);
+  const holidaySaves = app.holidaySaves.length;
+  const settingsSaves = app.settingsSaves.length;
+  await app.controller.dispatch({ type: "removeImport", importId: "import-9" });
+  assert.equal(app.holidaySaves.length, holidaySaves);
+  assert.equal(app.settingsSaves.length, settingsSaves);
+});
+
+test("test_hol_022_removing_a_place_lowers_the_counts_of_the_imports", async () => {
+  const app = setup(["london"]);
+  await afterFilesAAndB(app);
+  await app.controller.dispatch({ type: "removePlace", placeId: "place-2" });
+  assert.deepEqual(countsOf(app.controller), [
+    { holidays: 2, hidden: 0, vacations: 0 },
+    { holidays: 1, hidden: 0, vacations: 0 },
+  ]);
+  await app.controller.dispatch({ type: "removeHoliday", ...foundersDay });
+  assert.deepEqual(countsOf(app.controller)[0], { holidays: 1, hidden: 0, vacations: 0 });
+});
+
+test("test_hol_023_the_list_of_imports_survives_a_reload", async () => {
+  const first = setup(["london"]);
+  await afterFilesAAndB(first);
+  await first.controller.dispatch({ type: "removeImport", importId: "import-1" });
+  const second = setup([], first.stores);
+  await second.controller.dispatch({ type: "open" });
+  assert.deepEqual(
+    second.controller.getState().userHolidays,
+    first.controller.getState().userHolidays,
+  );
+  assert.deepEqual(
+    second.controller.getState().userHolidays.imports?.map((each) => each.fileName),
+    ["b.csv"],
+  );
+  assert.deepEqual(countsOf(second.controller), [{ holidays: 1, hidden: 0, vacations: 1 }]);
+  await second.controller.dispatch({ type: "removeImport", importId: "import-2" });
+  assert.deepEqual(second.controller.getState().userHolidays.added, [testDay]);
 });

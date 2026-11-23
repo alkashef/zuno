@@ -2,11 +2,12 @@
 /**
  * @module controller-holidays
  * The holidays side of the page workflows: loads the user's holiday record, applies the add, remove,
- * hide, show, export, import, confirm-import and cancel-import actions to it and saves it, works out
+ * hide, show, export, import, confirm-import, cancel-import and remove-import actions to it and saves it, works out
  * the holidays the page uses (the service's holidays without those the user hid, plus those the user
  * added) and lists the notices about missing holiday data (HOL-003, HOL-004, HOL-006 to HOL-013,
- * HOL-017, HOL-018, REF-002, SET-006, DEC-017, DEC-022, DEC-032). The vacations of a confirmed import
- * go to the places through the `changePlaces` it is given. Pure apart from the `holidayStorage`
+ * HOL-017, HOL-018, HOL-020, HOL-022, HOL-023, REF-002, SET-006, DEC-017, DEC-022, DEC-032, DEC-035). The
+ * vacations of a confirmed import, and those a removed import took with it, go to the places through
+ * the `changePlaces` it is given. Pure apart from the `holidayStorage`
  * and `files` it is given. It keeps no state (controller.js does, and passes it in), asks the holiday
  * service for nothing (controller.js does, through `api`) and builds no grid, picker or holiday list
  * logic itself (domain/* does). Only controller.js imports it.
@@ -19,8 +20,9 @@ import {
   unavailableCountries,
 } from "./domain/holidays.js";
 import { planImport, toCsv } from "./domain/holidays-file.js";
+import { withoutImport } from "./domain/places.js";
 import * as userHolidayList from "./domain/user-holidays.js";
-import { addVacation } from "./domain/vacations.js";
+import { importVacation } from "./domain/vacations.js";
 
 /** @typedef {import("./domain/holidays.js").Holiday} Holiday */
 /** @typedef {import("./domain/holidays.js").HolidayResult} HolidayResult */
@@ -69,6 +71,7 @@ import { addVacation } from "./domain/vacations.js";
  * @property {{ saveText: (fileName: string, text: string, mimeType: string) => void, readText: (file: Blob) => Promise<TextRead> }} files
  *   Saves the holidays file and reads a picked one (HOL-010 to HOL-012, DEC-032).
  * @property {string} holidaysFileName The name of the exported holidays file.
+ * @property {{ now: () => number }} clock The time of an import (HOL-020).
  */
 
 /**
@@ -86,7 +89,7 @@ import { addVacation } from "./domain/vacations.js";
 
 /**
  * @typedef {{ type: "exportHolidays" } | { type: "importHolidays", file: File }
- *   | { type: "confirmImport" } | { type: "cancelImport" }
+ *   | { type: "confirmImport" } | { type: "cancelImport" } | { type: "removeImport", importId: string }
  *   | ({ type: "addHoliday" | "removeHoliday" | "hideHoliday" | "showHoliday" } & HolidayEntry)} HolidayAction
  */
 
@@ -282,51 +285,87 @@ function holidaysOf(rows) {
 /**
  * @param {Place[]} places
  * @param {Extract<ImportRow, { type: "vacation" }>} row
- * @returns {Place[]} The places with the row's vacation added to its place; the same place objects
- *   when the vacation is already there (HOL-011).
+ * @param {string} importId
+ * @returns {Place[]} The places with the row's vacation added to its place, from that import; the
+ *   same place objects when the vacation is the user's own already (HOL-011, HOL-020).
  */
-function withVacationAdded(places, { placeId, vacation }) {
+function withVacationAdded(places, { placeId, vacation }, importId) {
   return places.map((place) => {
-    const vacations = place.id === placeId ? addVacation(place.vacations, vacation) : null;
+    const vacations =
+      place.id === placeId ? importVacation(place.vacations, vacation, importId) : null;
     return vacations === null ? place : { ...place, vacations };
   });
 }
 
 /**
  * @param {Place[]} places
- * @param {ImportRow[]} rows
- * @returns {Place[] | null} The places with every new vacation of the rows added, or `null` when none
- *   is new.
+ * @param {Place[]} next
+ * @returns {Place[] | null} The new list, or `null` when no place changed.
  */
-function withImportedVacations(places, rows) {
+function ifChanged(places, next) {
+  return next.some((place, at) => place !== places[at]) ? next : null;
+}
+
+/**
+ * @param {Place[]} places
+ * @param {ImportRow[]} rows
+ * @param {string} importId
+ * @returns {Place[] | null} The places with every new vacation of the rows added, and every one an
+ *   earlier import lists tagged, or `null` when none changes.
+ */
+function withImportedVacations(places, rows, importId) {
   const next = rows.reduce(
-    (current, row) => (row.type === "vacation" ? withVacationAdded(current, row) : current),
+    (current, row) =>
+      row.type === "vacation" ? withVacationAdded(current, row, importId) : current,
     places,
   );
-  return next.some((place, at) => place !== places[at]) ? next : null;
+  return ifChanged(places, next);
 }
 
 /**
  * @template {HolidayContext} Ctx
  * @param {import("./controller-places.js").ChangePlaces<Ctx>} changePlaces
- * @returns {(ctx: Ctx) => Promise<void>} The handler that adds the rows of the shown preview to the
- *   saved holidays and vacations, adds no place, saves what changed and closes the preview
- *   (HOL-011). Without a preview it does nothing.
+ * @returns {(ctx: Ctx) => Promise<void>} The handler that records the file of the shown preview,
+ *   adds its rows to the saved holidays and vacations tagged with the record's id, adds no place,
+ *   saves what changed and closes the preview (HOL-011, HOL-020, HOL-023). A file with no importable
+ *   row makes no record. Without a preview it does nothing.
  */
 function confirmImport(changePlaces) {
   return (ctx) => {
     const { holidayImport, userHolidays } = ctx.read();
     if (holidayImport?.status !== "preview") return Promise.resolve();
-    const { rows } = holidayImport;
-    const imported = holidaysOf(rows);
-    if (imported.added.length + imported.hidden.length === 0) {
+    const { rows, fileName } = holidayImport;
+    if (rows.length === 0) {
       ctx.update({ holidayImport: null });
-    } else {
-      const merged = userHolidayList.mergeUserHolidays(userHolidays, imported);
-      ctx.deps.holidayStorage.save(merged);
-      ctx.update({ userHolidays: merged, holidayImport: null });
+      return Promise.resolve();
     }
-    return changePlaces(ctx, (places) => withImportedVacations(places, rows));
+    const id = userHolidayList.nextImportId(userHolidays);
+    const record = { id, fileName, importedAt: ctx.deps.clock.now() };
+    const merged = userHolidayList.mergeUserHolidays(userHolidays, holidaysOf(rows), record);
+    ctx.deps.holidayStorage.save(merged);
+    ctx.update({ userHolidays: merged, holidayImport: null });
+    return changePlaces(ctx, (places) => withImportedVacations(places, rows, id));
+  };
+}
+
+/**
+ * @template {HolidayContext} Ctx
+ * @param {import("./controller-places.js").ChangePlaces<Ctx>} changePlaces
+ * @returns {(ctx: Ctx, action: Extract<HolidayAction, { type: "removeImport" }>) => Promise<void>}
+ *   The handler that removes an imported file from the list and takes its id out of every entry's
+ *   `sources`; the entries it alone listed go, in the holidays record and in the places' vacations,
+ *   and both records are saved (HOL-022, HOL-023). An id that no file has changes nothing.
+ */
+function removeImport(changePlaces) {
+  return (ctx, { importId }) => {
+    const { userHolidays } = ctx.read();
+    if (!userHolidayList.importsOf(userHolidays).some((each) => each.id === importId)) {
+      return Promise.resolve();
+    }
+    const next = userHolidayList.withoutImport(userHolidays, importId);
+    ctx.deps.holidayStorage.save(next);
+    ctx.update({ userHolidays: next });
+    return changePlaces(ctx, (places) => ifChanged(places, withoutImport(places, importId)));
   };
 }
 
@@ -344,7 +383,7 @@ function cancelImport(ctx) {
  * @param {import("./controller-places.js").ChangePlaces<Ctx>} changePlaces controller.js's commit of
  *   a changed place list, which the vacations of an import go through.
  * @returns {Record<HolidayAction["type"], (ctx: Ctx, action: HolidayAction) => void | Promise<void>>}
- *   The handler of each holiday action (HOL-006 to HOL-008, HOL-010 to HOL-012, HOL-017, HOL-018).
+ *   The handler of each holiday action (HOL-006 to HOL-008, HOL-010 to HOL-012, HOL-017, HOL-018, HOL-022).
  */
 export function holidayHandlers(changePlaces) {
   return /** @type {Record<HolidayAction["type"], (ctx: Ctx, action: HolidayAction) => void | Promise<void>>} */ ({
@@ -356,5 +395,6 @@ export function holidayHandlers(changePlaces) {
     importHolidays,
     confirmImport: confirmImport(changePlaces),
     cancelImport,
+    removeImport: removeImport(changePlaces),
   });
 }

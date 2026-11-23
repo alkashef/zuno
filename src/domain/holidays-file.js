@@ -4,14 +4,16 @@
  * The holidays and vacations file (HOL-010, HOL-011, HOL-012, HOL-016, HOL-017, DEC-032): the six
  * header names, the row types, `toCsv`, which turns the user's added holidays, hidden holidays and
  * vacations into the CSV text of the file, and `planImport`, which reads the text of a picked file
- * into an import plan. It writes and reads no file (files.js does), holds no CSV rules (domain/csv.js
+ * into an import plan, `importCounts`, which counts what came from an imported file, and
+ * `importRemovalPlan`, which lists what deleting one removes and keeps (HOL-020 to HOL-022, DEC-035).
+ * It writes and reads no file (files.js does), holds no CSV rules (domain/csv.js
  * does) and changes no saved record (the controller does, from the plan).
  */
 import { countryCodeOf, countryName } from "./cities.js";
 import { format, parse } from "./csv.js";
 import { formatIsoDate } from "./format.js";
 import { placeName } from "./places.js";
-import { isCalendarDate } from "./user-holidays.js";
+import { countFrom, isCalendarDate } from "./user-holidays.js";
 import { checkVacation } from "./vacations.js";
 
 /** @typedef {import("./places.js").Place} Place */
@@ -131,6 +133,79 @@ export function toCsv({ userHolidays, places }) {
     ...vacationRows(places),
   ];
   return String.fromCharCode(0xfeff) + format(rows);
+}
+
+/**
+ * @typedef {object} ImportRemovalPlan What deleting an imported file would do (HOL-021, DEC-035).
+ * @property {ImportRow[]} go The saved entries only that file lists: they are removed.
+ * @property {ImportRow[]} stay The saved entries that another file also lists: they stay.
+ */
+
+/**
+ * @param {{ userHolidays: UserHolidays, places: Place[] }} saved
+ * @param {string} importId
+ * @returns {ImportRow[]} Every saved entry that came from that file, whether or not another file
+ *   lists it: the added holidays, the hidden holidays, then the vacations by place order.
+ */
+function entriesFrom({ userHolidays, places }, importId) {
+  /** @param {"holiday" | "hiddenHoliday"} type @param {HolidayEntry[]} entries */
+  const holidays = (type, entries) =>
+    entries.filter((entry) => entry.sources?.includes(importId)).map((entry) => ({ type, entry }));
+  const vacations = places.flatMap((place) =>
+    place.vacations
+      .filter((vacation) => vacation.sources?.includes(importId))
+      .map((vacation) => ({
+        type: /** @type {const} */ ("vacation"),
+        placeId: place.id,
+        vacation,
+      })),
+  );
+  return [
+    ...holidays("holiday", userHolidays.added),
+    ...holidays("hiddenHoliday", userHolidays.hidden),
+    ...vacations,
+  ];
+}
+
+/**
+ * @param {ImportRow} row
+ * @returns {number} How many imported files list the entry of the row.
+ */
+function sourceCount(row) {
+  return (row.type === "vacation" ? row.vacation.sources : row.entry.sources)?.length ?? 0;
+}
+
+/**
+ * What deleting an imported file would remove and what would stay (HOL-021, HOL-022, EX-034).
+ * @param {{ userHolidays: UserHolidays, places: Place[] }} saved The saved holidays and the places.
+ * @param {string} importId The imported file.
+ * @returns {ImportRemovalPlan} The entries only that file lists (`go`) and those another file also
+ *   lists (`stay`). An entry the user typed is in neither.
+ */
+export function importRemovalPlan(saved, importId) {
+  const rows = entriesFrom(saved, importId);
+  return {
+    go: rows.filter((row) => sourceCount(row) === 1),
+    stay: rows.filter((row) => sourceCount(row) > 1),
+  };
+}
+
+/**
+ * @param {{ userHolidays: UserHolidays, places: Place[] }} saved
+ * @param {string} importId
+ * @returns {{ holidays: number, hidden: number, vacations: number }} How many added holidays, hidden
+ *   holidays and vacations came from that file, those that another file also lists included
+ *   (HOL-020). Worked out from the saved entries, so one removed by hand lowers the count.
+ */
+export function importCounts({ userHolidays, places }, importId) {
+  return {
+    holidays: countFrom(userHolidays.added, importId),
+    hidden: countFrom(userHolidays.hidden, importId),
+    vacations: countFrom(
+      places.flatMap((place) => place.vacations),
+      importId,
+    ),
+  };
 }
 
 /**

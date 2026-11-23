@@ -1,19 +1,23 @@
 // @ts-check
-/** @module user-holidays.test Unit tests for src/domain/user-holidays.js (HOL-003, HOL-006 to HOL-009, DEC-017). */
+/** @module user-holidays.test Unit tests for src/domain/user-holidays.js (HOL-003, HOL-006 to HOL-009, HOL-020, HOL-022, HOL-023, DEC-017, DEC-035). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { toHolidays } from "../../src/domain/holidays.js";
 import {
   addHoliday,
+  countFrom,
   effectiveHolidays,
   emptyUserHolidays,
   hideHoliday,
+  importsOf,
   isAddedHoliday,
   mergeUserHolidays,
+  nextImportId,
   parseUserHolidays,
   removeHoliday,
   showHoliday,
+  withoutImport,
 } from "../../src/domain/user-holidays.js";
 import { usRecords2026 } from "./holiday-fixtures.js";
 
@@ -128,4 +132,95 @@ test("test_hol_006_an_added_holiday_accepts_any_known_country", () => {
   assert.deepEqual(added.added, [jamhuri]);
   assert.deepEqual(parseUserHolidays(added), added);
   assert.ok(hideHoliday(emptyUserHolidays(), { ...jamhuri, countryCode: "PT" }));
+});
+
+const importOne = Object.freeze({ id: "import-1", fileName: "a.csv", importedAt: 1_000 });
+const importTwo = Object.freeze({ id: "import-2", fileName: "b.csv", importedAt: 2_000 });
+const teamDay = Object.freeze({ countryCode: "US", date: "2026-11-27", name: "Team Day" });
+
+test("test_hol_023_a_record_saved_before_has_no_imports_and_no_sources", () => {
+  const saved = { version: 1, added: [diwali], hidden: [christmas] };
+  const parsed = parseUserHolidays(saved);
+  assert.deepEqual(parsed, saved);
+  assert.deepEqual(importsOf(/** @type {UserHolidays} */ (parsed)), []);
+  assert.equal("sources" in /** @type {UserHolidays} */ (parsed).added[0], false);
+  assert.deepEqual(importsOf(emptyUserHolidays()), []);
+});
+
+test("test_hol_023_parse_keeps_imports_and_sources_and_drops_a_source_without_its_import", () => {
+  const record = {
+    version: 1,
+    imports: [importOne],
+    added: [
+      { ...diwali, sources: ["import-1"] },
+      { ...teamDay, sources: ["import-7"] },
+    ],
+    hidden: [{ ...christmas, sources: [] }],
+  };
+  assert.deepEqual(parseUserHolidays(record), {
+    version: 1,
+    imports: [importOne],
+    added: [{ ...diwali, sources: ["import-1"] }, teamDay],
+    hidden: [christmas],
+  });
+  const bad = [
+    { ...record, imports: "x" },
+    { ...record, imports: [{ id: "", fileName: "a.csv", importedAt: 1 }] },
+    { ...record, imports: [{ id: "import-1", fileName: 3, importedAt: 1 }] },
+    { ...record, imports: [{ id: "import-1", fileName: "a.csv", importedAt: "now" }] },
+    { ...record, imports: [importOne, importOne] },
+  ];
+  for (const value of bad) {
+    assert.equal(parseUserHolidays(value), null, JSON.stringify(value));
+  }
+});
+
+test("test_hol_020_merge_tags_new_entries_shares_imported_ones_and_leaves_typed_ones", () => {
+  const typed = accepted(addHoliday(emptyUserHolidays(), diwali));
+  const first = mergeUserHolidays(typed, { added: [diwali, teamDay], hidden: [] }, importOne);
+  assert.deepEqual(first, {
+    version: 1,
+    imports: [importOne],
+    added: [diwali, { ...teamDay, sources: ["import-1"] }],
+    hidden: [],
+  });
+  const second = mergeUserHolidays(first, { added: [teamDay], hidden: [christmas] }, importTwo);
+  assert.deepEqual(second.added[1].sources, ["import-1", "import-2"]);
+  assert.deepEqual(second.hidden, [{ ...christmas, sources: ["import-2"] }]);
+  assert.deepEqual(importsOf(second), [importOne, importTwo]);
+  assert.deepEqual(second.added[0], diwali);
+});
+
+test("test_hol_020_the_counts_of_an_import_follow_the_entries_that_remain", () => {
+  const merged = mergeUserHolidays(
+    emptyUserHolidays(),
+    { added: [diwali, teamDay], hidden: [] },
+    importOne,
+  );
+  assert.equal(countFrom(merged.added, "import-1"), 2);
+  const fewer = accepted(removeHoliday(merged, teamDay));
+  assert.equal(countFrom(fewer.added, "import-1"), 1);
+  assert.equal(countFrom(fewer.added, "import-2"), 0);
+});
+
+test("test_hol_022_without_import_removes_its_record_and_the_entries_only_it_listed", () => {
+  const typed = accepted(addHoliday(emptyUserHolidays(), christmas));
+  const one = mergeUserHolidays(typed, { added: [diwali, teamDay], hidden: [] }, importOne);
+  const both = mergeUserHolidays(one, { added: [diwali], hidden: [] }, importTwo);
+  const afterOne = withoutImport(both, "import-1");
+  assert.deepEqual(afterOne, {
+    version: 1,
+    imports: [importTwo],
+    added: [christmas, { ...diwali, sources: ["import-2"] }],
+    hidden: [],
+  });
+  const afterBoth = withoutImport(afterOne, "import-2");
+  assert.deepEqual(afterBoth, { version: 1, imports: [], added: [christmas], hidden: [] });
+  assert.deepEqual(withoutImport(afterBoth, "import-9"), afterBoth);
+});
+
+test("test_hol_022_next_import_id_is_free_after_a_deletion", () => {
+  assert.equal(nextImportId(emptyUserHolidays()), "import-1");
+  const record = { ...emptyUserHolidays(), imports: [importTwo] };
+  assert.equal(nextImportId(record), "import-3");
 });

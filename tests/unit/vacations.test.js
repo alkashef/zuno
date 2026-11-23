@@ -1,5 +1,5 @@
 // @ts-check
-/** @module vacations.test Unit tests for src/domain/vacations.js (VAC-002, VAC-003, VAC-004, VAC-006, EX-029, DEC-030). */
+/** @module vacations.test Unit tests for src/domain/vacations.js (VAC-002, VAC-003, VAC-004, VAC-006, HOL-020, HOL-023, EX-029, DEC-030, DEC-035). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -7,6 +7,8 @@ import {
   addVacation,
   changeVacation,
   checkVacation,
+  importVacation,
+  isVacationList,
   parseVacations,
   removeVacation,
   vacationsOn,
@@ -80,4 +82,22 @@ test("test_vac_006_parse_vacations_keeps_valid_entries_and_drops_the_rest", () =
     null,
   ]);
   assert.deepEqual(parsed, [winter, trip]);
+});
+
+test("test_hol_020_an_imported_vacation_is_tagged_shared_or_left_as_the_users_own", () => {
+  const tagged = importVacation([], winter, "import-1");
+  assert.deepEqual(tagged, [{ ...winter, sources: ["import-1"] }]);
+  const shared = importVacation(tagged ?? [], winter, "import-2");
+  assert.deepEqual(shared, [{ ...winter, sources: ["import-1", "import-2"] }]);
+  assert.equal(importVacation(tagged ?? [], winter, "import-1"), null);
+  assert.equal(importVacation([winter], winter, "import-1"), null);
+});
+
+test("test_hol_023_a_stored_vacation_keeps_its_sources_and_loses_empty_ones", () => {
+  const stored = [
+    { ...winter, sources: ["import-1"] },
+    { ...trip, sources: [] },
+  ];
+  assert.deepEqual(parseVacations(stored), [{ ...winter, sources: ["import-1"] }, trip]);
+  assert.equal(isVacationList([{ ...winter, sources: ["import-1"] }]), true);
 });

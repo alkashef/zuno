@@ -295,6 +295,20 @@
       </dialog>
     </template>
 
+    <template id="import-delete-template">
+      <dialog class="day-dialog" data-role="delete-dialog" aria-labelledby="import-delete-title">
+        <h2 class="day-dialog-title" id="import-delete-title">Delete imported file</h2>
+        <div class="day-dialog-form">
+          <p class="day-dialog-note" data-role="delete-summary"></p>
+          <p class="day-dialog-note" data-role="delete-stay" hidden></p>
+          <div class="day-dialog-buttons">
+            <button type="button" class="button" data-role="delete-cancel">Cancel</button>
+            <button type="button" class="button button-primary" data-role="delete-confirm"></button>
+          </div>
+        </div>
+      </dialog>
+    </template>
+
     <template id="hijri-note-template">
       <span class="hijri-note" data-role="hijri-note">
         <button
@@ -726,6 +740,9 @@
               The file was refused: it is not a Zuno holidays and vacations file. Nothing was
               changed.
             </p>
+            <h4 class="settings-label settings-holidays-heading">Imported files</h4>
+            <ul class="settings-holidays" data-role="import-list" hidden></ul>
+            <p class="settings-hint" data-role="import-list-empty">No files imported.</p>
             <div class="settings-file-format" data-role="file-format">
               <p class="settings-hint">
                 Export saves one CSV file that opens in a spreadsheet. The first row names the
@@ -908,6 +925,17 @@ vacation,,Sara,21-Dec-26,31-Dec-26,Winter break</pre>
       <li class="settings-holiday">
         <span class="settings-holiday-text" data-role="holiday-text"></span>
         <button type="button" class="button" data-role="holiday-action"></button>
+      </li>
+    </template>
+
+    <template id="settings-import-template">
+      <li class="settings-holiday">
+        <span class="settings-holiday-text" data-role="import-text">
+          <span class="settings-import-line" data-role="import-name"></span>
+          <span class="settings-import-line settings-hint" data-role="import-time"></span>
+          <span class="settings-import-line settings-hint" data-role="import-counts"></span>
+        </span>
+        <button type="button" class="button" data-role="import-delete">Delete</button>
       </li>
     </template>
 

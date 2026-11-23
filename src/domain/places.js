@@ -4,7 +4,8 @@
  * The list of places: makes a place from a city or a custom place from a name, a time zone and a
  * country, restores a saved one, validates, adds, removes, moves, edits and names them, puts each on
  * the map and lists the countries of the Holidays section (SET-001, SET-002, SET-006, SET-008,
- * SET-009, SET-010, SET-013, SET-015, SET-016, SET-018, MAP-001, MAP-002, HOL-006, VAC-006, DEC-029, DEC-030). Every
+ * SET-009, SET-010, SET-013, SET-015, SET-016, SET-018, MAP-001, MAP-002, HOL-006, HOL-022, VAC-006, DEC-029,
+ * DEC-030, DEC-035). Every
  * function returns a new list and leaves its input unchanged. The list order is the display order
  * (PCK-006). It does not hold the city list (domain/cities.js does) or the zone table
  * (domain/zone-table.js does).
@@ -12,6 +13,7 @@
 import { cityOf, countryName, listCountries } from "./cities.js";
 import { formatDate, formatTime } from "./format.js";
 import { HijriVariant, isHijriAdjust, isHijriVariant } from "./hijri.js";
+import { withoutSource } from "./user-holidays.js";
 import { isVacationList, parseVacations } from "./vacations.js";
 import { countryWeekendDays, isWeekendChoice } from "./weekends.js";
 import { isKnownCountry, isKnownZone, zoneRow } from "./zone-table.js";
@@ -223,6 +225,21 @@ export function addPlace(places, place) {
  */
 export function removePlace(places, id) {
   return places.filter((place) => place.id !== id);
+}
+
+/**
+ * Takes an imported file out of the places' vacations (HOL-022, DEC-035).
+ * @param {Place[]} places
+ * @param {string} importId
+ * @returns {Place[]} The places without the vacations only that import listed; a vacation another
+ *   import also lists keeps its other sources, one the user typed stays. A place that no vacation
+ *   leaves is the same object.
+ */
+export function withoutImport(places, importId) {
+  return places.map((place) => {
+    const vacations = withoutSource(place.vacations, importId);
+    return vacations === place.vacations ? place : { ...place, vacations };
+  });
 }
 
 /**

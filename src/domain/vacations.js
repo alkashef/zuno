@@ -1,13 +1,13 @@
 // @ts-check
 /**
  * @module domain/vacations
- * The vacations of one place (VAC-002, VAC-003, VAC-004, VAC-006, DEC-030): adds, changes and
- * removes one, finds those that cover a date, checks the fields of a form and validates a stored
- * list. Pure: it saves nothing (the controller does), makes no colour (domain/calendar.js and the
+ * The vacations of one place (VAC-002, VAC-003, VAC-004, VAC-006, HOL-020, DEC-030, DEC-035): adds,
+ * changes and removes one, adds one from an imported file with its source, finds those that cover a
+ * date, checks the fields of a form and validates a stored list. Pure: it saves nothing (the controller does), makes no colour (domain/calendar.js and the
  * views do) and does not hold the place (domain/places.js does). A refused change returns `null`,
  * so the caller knows to save nothing.
  */
-import { isCalendarDate } from "./user-holidays.js";
+import { isCalendarDate, taggedWith, validSources } from "./user-holidays.js";
 
 /**
  * @typedef {object} Vacation A span of days off that a place takes once (DEC-030). The three fields
@@ -15,6 +15,8 @@ import { isCalendarDate } from "./user-holidays.js";
  * @property {string} start `YYYY-MM-DD`, a real calendar date.
  * @property {string} end `YYYY-MM-DD`, a real calendar date, not before the start.
  * @property {string} label Trimmed; may be empty.
+ * @property {string[]} [sources] The ids of the imported files that list the vacation; absent for
+ *   one the user typed (DEC-035).
  */
 
 /** @typedef {"ok" | "start-missing" | "end-missing" | "end-before-start"} VacationCheck */
@@ -48,10 +50,12 @@ function toVacation(value) {
   if (typeof value !== "object" || value === null) return null;
   const { start, end, label } = /** @type {Record<string, unknown>} */ (value);
   if (typeof label !== "string" || checkVacation({ start, end }) !== "ok") return null;
+  const sources = validSources(/** @type {Record<string, unknown>} */ (value).sources);
   return {
     start: /** @type {string} */ (start),
     end: /** @type {string} */ (end),
     label: label.trim(),
+    ...(sources === null ? {} : { sources }),
   };
 }
 
@@ -76,6 +80,20 @@ export function addVacation(vacations, entry) {
   const vacation = toVacation({ ...entry, label: textOf(entry.label) });
   if (vacation === null || vacations.some((each) => sameVacation(each, vacation))) return null;
   return [...vacations, vacation];
+}
+
+/**
+ * Adds a vacation of an imported file (HOL-020, DEC-035).
+ * @param {Vacation[]} vacations A place's vacations.
+ * @param {Vacation} vacation A valid vacation of an import plan.
+ * @param {string} importId
+ * @returns {Vacation[] | null} The list with the vacation from that import: a new one is added with
+ *   that source, an identical one of an earlier import gets the source too, and an identical one
+ *   the user typed stays as it is; `null` when the list would not change.
+ */
+export function importVacation(vacations, vacation, importId) {
+  const tagged = taggedWith(vacations, vacation, importId, sameVacation);
+  return tagged === vacations ? null : tagged;
 }
 
 /**

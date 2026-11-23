@@ -44,7 +44,7 @@ Holidays and vacations tab saves your added holidays, hidden holidays and vacati
 (`zuno-holidays-and-vacations.csv`) that you can share and open in a spreadsheet; the tab describes the columns,
 the date format and gives an example. "Import" reads such a CSV file and first shows a dialog that says how many of its rows can be
 imported out of the total and which places are missing; "Add" then adds those rows to your own holidays and vacations
-(no place is added, and a vacation you already have is skipped), and "Cancel" changes nothing. A file that is not a
+(no place is added, and a vacation you already have is skipped), and "Cancel" changes nothing. The tab lists each imported file with its name, the time and date of its import and how many holidays, hidden holidays and vacations came from it. "Delete" on a file asks first, then removes the file and what only that file added; what you added yourself, or what another imported file also lists, stays. The list is saved in the browser. A file that is not a
 Zuno holidays and vacations file, such as an older JSON file, is refused and nothing changes. Both use local
 files only. The settings panel ends with the version: the word "Version" and the
 date and time of the build in UTC (for example 2026.11.18.1432), so you can tell which build a copy
