@@ -1,13 +1,13 @@
 // @ts-check
 /**
  * @module views/settings
- * Owns the settings panel: opens and closes it with `settingsOpen`, the working-hours lists, the
- * country-name and Hijri switches, the theme choice, the add form (the cities of the list, each with
- * its country), the close button, and Escape, and returns the keyboard focus to the button that
- * opened it (SET-001, SET-002, SET-004, SET-005, SET-010 to SET-013). It clones its markup from templates in index.html. It
- * does not draw the list of places (views/settings-places.js does, built by `deps.makeList`) or
- * the Holidays section (views/settings-holidays.js does, built by `deps.makeHolidays`), and it
- * saves nothing (the controller does).
+ * Owns the settings page, a layer over the whole window: opens and closes it with `settingsOpen`,
+ * the working-hours lists, the country-name and Hijri switches, the theme, the add form (the cities
+ * of the list), the close button and Escape, and returns the focus to the button that opened it
+ * (SET-001, SET-002, SET-004, SET-005, SET-010 to SET-013, SET-019), from a template in
+ * index.html. It does not draw the list of places (views/settings-places.js, `deps.makeList`) or
+ * the Holidays tab (views/settings-holidays.js, `deps.makeHolidays`), or the tabs
+ * (views/settings-tabs.js, `deps.setUpTabs`), and saves nothing (the controller does).
  */
 import { formatMinutes } from "../domain/format.js";
 
@@ -19,7 +19,7 @@ import { formatMinutes } from "../domain/format.js";
 /**
  * @typedef {object} Session The open panel, if any.
  * @property {HTMLElement | null} panel
- * @property {Element | null} opener The element that had focus when the panel opened.
+ * @property {Element | null} opener The element focused when the panel opened.
  * @property {{ render: (view: PlaceListView) => void } | null} places
  * @property {{ render: (view: HolidaysView) => void } | null} holidays
  */
@@ -45,11 +45,12 @@ import { formatMinutes } from "../domain/format.js";
  * @property {number} hoursStepMinutes Minutes between two choices of the working-hours lists.
  * @property {(action: Action) => Promise<void>} dispatch The controller's `dispatch`.
  * @property {Lookup} lookup
+ * @property {(layer: HTMLElement) => void} setUpTabs Starts the tabs of the layer
+ *   (views/settings-tabs.js; main.js passes it in, because a view imports no other view).
  * @property {(list: HTMLElement) => { render: (view: PlaceListView) => void }} makeList Builds the
- *   list of places inside the panel (views/settings-places.js; main.js passes it in, because a
- *   view imports no other view).
+ *   list of places (views/settings-places.js; main.js passes it in, it needs the lookup).
  * @property {(section: HTMLElement) => { render: (view: HolidaysView) => void }} makeHolidays
- *   Builds the Holidays section inside the panel (views/settings-holidays.js; main.js passes it in).
+ *   Builds the Holidays tab (views/settings-holidays.js; main.js passes it in).
  */
 
 /**
@@ -229,6 +230,7 @@ function openPanel(ctx, view) {
   fillCities(ctx, panel);
   setUpDisplay(ctx, panel, view);
   wireButtons(ctx, panel);
+  ctx.deps.setUpTabs(panel);
   session.places = ctx.deps.makeList(part(panel, "places"));
   session.holidays = ctx.deps.makeHolidays(part(panel, "holidays"));
   session.panel = panel;
@@ -246,14 +248,12 @@ function closePanel(ctx) {
   const kept = session.opener?.isConnected === true && session.opener !== doc.body;
   const opener = kept ? session.opener : doc.querySelector('[data-action="openSettings"]');
   if (opener instanceof HTMLElement) opener.focus();
-  session.panel = null;
-  session.places = null;
-  session.holidays = null;
+  Object.assign(session, { panel: null, places: null, holidays: null });
 }
 
 /**
  * @param {PanelContext} ctx
- * @returns {void} Closes the open panel when Escape is pressed anywhere on the page.
+ * @returns {void} Closes the open panel on Escape, anywhere on the page.
  */
 function closeOnEscape(ctx) {
   ctx.doc.addEventListener("keydown", (event) => {

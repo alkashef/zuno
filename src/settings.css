@@ -1,23 +1,21 @@
 /**
- * The settings panel: a fixed side panel with the working hours, the display switches and theme,
- * the add form, the list of places with their editors, the Holidays section (its add form and the
- * rows of added and hidden holidays) and the footer, each section ending with a line. It holds no colour or size
- * value of its own (theme.css does) and does not style the page behind it.
+ * The settings page (SET-019, DEC-033): a fixed layer over the whole window with its own scroll, a
+ * bar with the title and the Close button, the tab bar, the panel of the selected tab (two cards
+ * side by side, stacked under 60rem) and the footer. A card holds the working hours, the display
+ * switches and theme, the add form, the list of places with their editors, the holiday form and its
+ * rows, or the file buttons. It holds no colour or size value of its own (theme.css does) and does
+ * not style the page behind it.
  */
 .settings {
   position: fixed;
   z-index: 10;
-  top: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   display: flex;
-  width: min(var(--settings-width), 100vw);
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-panel) var(--space-panel) var(--space-4);
+  padding: var(--space-panel) var(--space-page) var(--space-4);
   overflow-y: auto;
-  border-left: var(--line-width) solid var(--color-line-card);
-  background: var(--color-card);
+  background: var(--color-page);
 }
 
 .settings-header {
@@ -30,12 +28,53 @@
   font-size: var(--font-size-panel-title);
 }
 
+.settings-tabs {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: var(--line-width) solid var(--color-line-card);
+}
+
+.settings-tab {
+  padding: var(--space-row) var(--space-card);
+  border: 0;
+  border-bottom: var(--band-line-width) solid var(--color-page);
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--font-weight-strong);
+}
+
+.settings-tab[aria-selected="true"] {
+  border-bottom-color: var(--color-text);
+  color: var(--color-text);
+}
+
+.settings-cards {
+  display: grid;
+  align-items: start;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.settings-cards[hidden] {
+  display: none;
+}
+
+@media (width <= 60rem) {
+  .settings-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .settings-section {
   display: flex;
   flex-direction: column;
   gap: var(--space-row);
-  padding-bottom: var(--space-4);
-  border-bottom: var(--line-width) solid var(--color-line-card);
+  padding: var(--space-4);
+  border: var(--line-width) solid var(--color-line-card);
+  border-radius: var(--radius-card);
+  background: var(--color-card);
 }
 
 .settings-section-tight {

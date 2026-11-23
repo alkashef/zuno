@@ -52,7 +52,8 @@ async function storedRecord(page, key) {
  */
 async function openHolidays(page) {
   await page.getByRole("button", { name: "Settings", exact: true }).click();
-  const section = page.getByRole("region", { name: "Holidays" });
+  await page.getByRole("tab", { name: "Holidays and vacations", exact: true }).click();
+  const section = page.getByRole("tabpanel", { name: "Holidays and vacations", exact: true });
   await section.waitFor();
   return section;
 }

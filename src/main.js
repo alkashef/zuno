@@ -35,6 +35,7 @@ import { createPickerHover } from "./views/picker-hover.js";
 import { createPickerResize } from "./views/picker-resize.js";
 import { createHolidaysSection } from "./views/settings-holidays.js";
 import { createPlaceList } from "./views/settings-places.js";
+import { setUpSettingsTabs } from "./views/settings-tabs.js";
 import { createSettingsPanel } from "./views/settings.js";
 import { createTheme } from "./views/theme.js";
 
@@ -123,6 +124,7 @@ const views = [
     hoursStepMinutes: config.workingHoursStepMinutes,
     dispatch: controller.dispatch,
     lookup,
+    setUpTabs: setUpSettingsTabs,
     makeList: (list) => createPlaceList(document, list, { dispatch: controller.dispatch, lookup }),
     makeHolidays: (section) =>
       createHolidaysSection(document, section, {

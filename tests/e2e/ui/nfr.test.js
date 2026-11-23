@@ -116,6 +116,7 @@ test("ui_nfr_002_core_workflows_in_chromium_firefox_webkit_edge", async () => {
       `${name}: Friday-Saturday weekend holiday cell in December`,
     );
     await openSettings(page);
+    await page.getByRole("tab", { name: "Places", exact: true }).click();
     await page
       .getByRole("combobox", { name: "City", exact: true })
       .selectOption({ label: "Tokyo, Japan" });
@@ -345,7 +346,8 @@ async function nextDayAndAddHoliday(page, name) {
   await page.getByRole("button", { name: "Next day" }).click();
   assert.notEqual(await date.textContent(), first, `${name}: the day did not change`);
   await openSettings(page);
-  const section = page.getByRole("region", { name: "Holidays" });
+  await page.getByRole("tab", { name: "Holidays and vacations", exact: true }).click();
+  const section = page.getByRole("tabpanel", { name: "Holidays and vacations", exact: true });
   await section.getByRole("combobox", { name: "Country" }).selectOption({ label: "Egypt" });
   await section.getByLabel("Date").fill("2026-11-08");
   await section.getByRole("textbox", { name: "Name" }).fill("Team Day");

@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                       | Description                                           | Model  | Effort | Status   |
 | ------------------------------- | ----------------------------------------------------- | ------ | ------ | -------- |
-| **M47** Settings as a full page with tabs | The settings cover the whole page, with the tabs General, Places and Holidays and vacations | sonnet | high | open |
 | **M48** Custom places: model, zone table, map pin | A place can be a name, a time zone and a country; the zone table, the place model, the controller action and the map pin | opus | high | open |
 | **M49** Add a place or person in the settings | The form of a custom place in "Add a place or person", and the holiday country list that follows the user's places | sonnet | high | open |
 | **M50** Vacations on the grid and in the picker | Saved vacations show in their own colour in the month grid, count as a day off in the picker and appear in the legend | sonnet | high | open |
@@ -24,26 +23,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M47 — Settings as a full page with tabs
-
-- **Refs:** SET-019, DEC-033.
-- **Owner:** `src/views/settings-tabs.js` (new; view layer; the tab bar and which panel shows),
-  `src/views/settings.js` (must not grow, DEC-033), `src/settings.css`, `src/index.html`.
-- **Tests first:** in `tests/e2e/ui/settings-display.test.js`:
-  `ui_set_019_settings_layer_has_the_boxes_of_the_window_and_close_returns_the_focus`,
-  `ui_set_019_three_tabs_show_one_panel_at_a_time_and_move_with_the_arrow_keys`,
-  `ui_set_019_settings_open_on_the_general_tab`,
-  `ui_set_019_cards_sit_side_by_side_and_stack_under_60rem`. The existing settings browser tests
-  (`settings-display`, `settings-places`, `holidays`, `holidays-file`) first select the tab that holds
-  what they test; the report says so, because SET-019 changed the layout.
-- **Build:** `.settings` becomes a fixed layer with its own scroll, a bar with the title and the Close
-  button, a tab bar and two cards side by side across the window (DEC-033). General holds Working hours
-  and Display; Places holds Add a place and Places; Holidays and vacations holds Holidays and the
-  file card. The selected tab is view state and returns to General when the settings open. Drop
-  `--settings-width`.
-- **Gate:** the layer's box is the window's box; Close and Escape close it and return the focus to the
-  Settings button; the settings tests pass in the four browsers; `settings.js` is not longer than before.
 
 ### M48 — Custom places: model, zone table, map pin
 

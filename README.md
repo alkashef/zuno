@@ -17,8 +17,8 @@ Meeting times, weekends and public holidays across time zones, in one page.
 
 Your places, settings and holidays stay in your browser; nothing is sent anywhere except the
 country and year asked of the public-holiday service. The online page, an installed app and a
-downloaded file each keep their own settings. Use Export and Import in the settings panel's
-Holidays section to carry your holidays between them.
+downloaded file each keep their own settings. Use Export and Import in the settings'
+Holidays and vacations tab to carry your holidays between them.
 
 ## What it does
 
@@ -30,12 +30,12 @@ edge. Drag the picker's left edge to show more hours, and drag the border betwee
 month grid (or focus it and press the up and down arrow keys) to give the map more or less room;
 the browser remembers both. Each place is a city from a fixed list
 of 55 cities, and you can choose its weekend days (the default is its country's weekend). The
-settings panel holds the places,
-the working hours, the display switches and the theme (Light, Dark, or Auto, which follows your
-system). You can add a public holiday the holiday service does not list (by country, date and
-name), remove it, and hide a listed holiday from its card in the month grid and show it again from
+settings cover the whole page and have three tabs: General (the working hours, the display
+switches and the theme: Light, Dark, or Auto, which follows your system), Places (add a place and
+the list of places) and Holidays and vacations. The Close button or Escape closes them. You can add a public holiday the holiday service does not
+list (by country, date and name), remove it, and hide a listed holiday from its card in the month grid and show it again from
 the settings panel. Your added and hidden holidays are saved in the browser. "Export" in the
-Holidays section saves them to a file (`zuno-holidays.json`) that you can share, and "Import" adds the
+Holidays and vacations tab saves them to a file (`zuno-holidays.json`) that you can share, and "Import" adds the
 holidays of such a file to your own; a file that is not a Zuno holidays file is refused and nothing
 changes. Both use local files only. The settings panel ends with the version: the word "Version" and the
 date and time of the build in UTC (for example 2026.11.18.1432), so you can tell which build a copy
@@ -93,7 +93,7 @@ The holiday service has no data for India, Israel, Malaysia, Pakistan, Saudi Ara
 the United Arab Emirates, so their public holidays come from `data/holiday-table.js`, which is built into the page: the page asks
 the holiday service nothing for these countries. The table covers the years 2026 to 2028; for a later
 year these countries appear in the "Some holiday data is missing" notice until you add holidays or make the table
-again. The settings panel's Holidays section carries the credit for the data. The file is
+again. The settings' Holidays and vacations tab carries the credit for the data. The file is
 generated; never edit it by hand. To make it again (for example before 2029, when it runs out):
 
 ```bash

@@ -397,161 +397,211 @@
             </svg>
           </button>
         </div>
-        <section class="settings-section" aria-labelledby="settings-hours-title">
-          <h3 id="settings-hours-title" class="settings-heading">Working hours</h3>
-          <div class="settings-pair">
-            <label class="settings-field">
-              <span class="settings-label">Start</span>
-              <select class="settings-input" data-role="work-start"></select>
-            </label>
-            <label class="settings-field">
-              <span class="settings-label">End</span>
-              <select class="settings-input" data-role="work-end"></select>
-            </label>
-          </div>
-          <p class="settings-hint settings-hint-large">
-            One setting for all places. It colours the working hours in the meeting-time picker.
-          </p>
-        </section>
-        <section
-          class="settings-section settings-section-tight"
-          aria-labelledby="settings-display-title"
+        <div class="settings-tabs" role="tablist" aria-label="Settings" data-role="tabs">
+          <button
+            type="button"
+            class="settings-tab"
+            role="tab"
+            id="settings-tab-general"
+            aria-controls="settings-panel-general"
+          >
+            General
+          </button>
+          <button
+            type="button"
+            class="settings-tab"
+            role="tab"
+            id="settings-tab-places"
+            aria-controls="settings-panel-places"
+          >
+            Places
+          </button>
+          <button
+            type="button"
+            class="settings-tab"
+            role="tab"
+            id="settings-tab-holidays"
+            aria-controls="settings-panel-holidays"
+          >
+            Holidays and vacations
+          </button>
+        </div>
+        <div
+          class="settings-cards"
+          role="tabpanel"
+          id="settings-panel-general"
+          aria-labelledby="settings-tab-general"
         >
-          <h3 id="settings-display-title" class="settings-heading">Display</h3>
-          <label class="settings-check">
-            <input type="checkbox" data-role="show-country" />
-            Show country names
-          </label>
-          <p class="settings-hint settings-hint-close">
-            Off by default. When on, the country appears next to each place.
-          </p>
-          <label class="settings-check">
-            <input type="checkbox" data-role="show-hijri" />
-            <span class="settings-hijri">Show Hijri calendar</span>
-          </label>
-          <p class="settings-hint settings-hint-close">
-            Off by default. When off, no Hijri dates are shown and the Hijri options for each place
-            are not used.
-          </p>
-          <fieldset class="settings-choice" data-role="theme">
-            <legend class="settings-label settings-legend">Theme</legend>
-            <div class="settings-options">
-              <label class="settings-option">
-                <input type="radio" name="settings-theme" value="light" />
-                Light
-              </label>
-              <label class="settings-option">
-                <input type="radio" name="settings-theme" value="dark" />
-                Dark
-              </label>
-              <label class="settings-option">
-                <input type="radio" name="settings-theme" value="auto" />
-                Auto
-              </label>
-            </div>
-          </fieldset>
-          <p class="settings-hint">Auto follows the light or dark setting of your system.</p>
-        </section>
-        <section
-          class="settings-section settings-section-tight"
-          aria-labelledby="settings-add-title"
-        >
-          <h3 id="settings-add-title" class="settings-heading">Add a place</h3>
-          <form class="settings-add" data-role="add-form">
-            <label class="settings-field">
-              <span class="settings-label">City</span>
-              <select class="settings-input" data-role="city">
-                <option value="">Choose a city</option>
-              </select>
-            </label>
-            <button type="submit" class="button button-primary settings-add-button">
-              <svg
-                class="icon settings-add-icon"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-                focusable="false"
-              >
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              Add place
-            </button>
-          </form>
-          <p class="settings-hint">The new place uses the time zone of the city.</p>
-        </section>
-        <section class="settings-section" aria-labelledby="settings-places-title">
-          <h3 id="settings-places-title" class="settings-heading">Places</h3>
-          <p class="settings-hint settings-hint-large">
-            The first place is the reference for the meeting-time picker. Use the arrows to change
-            the order.
-          </p>
-          <ul class="settings-places" data-role="places"></ul>
-        </section>
-        <section
-          class="settings-section"
-          aria-labelledby="settings-holidays-title"
-          data-role="holidays"
-        >
-          <h3 id="settings-holidays-title" class="settings-heading">Holidays</h3>
-          <p class="settings-hint settings-hint-large">
-            Add a public holiday that the holiday service does not list. Hide a listed holiday from
-            its card in the month view.
-          </p>
-          <p class="settings-hint" data-role="holiday-table-credit">
-            Holidays of India, Israel, Malaysia, Pakistan, Saudi Arabia, Taiwan and the United Arab
-            Emirates for 2026 to 2028 come from the date-holidays library (CC BY-SA 3.0). Islamic
-            holidays are calculated and can be a day off the official date.
-          </p>
-          <form class="settings-holiday-form" data-role="holiday-form">
-            <label class="settings-field">
-              <span class="settings-label">Country</span>
-              <select class="settings-input" data-role="holiday-country">
-                <option value="">Choose a country</option>
-              </select>
-            </label>
+          <section class="settings-section" aria-labelledby="settings-hours-title">
+            <h3 id="settings-hours-title" class="settings-heading">Working hours</h3>
             <div class="settings-pair">
               <label class="settings-field">
-                <span class="settings-label">Date</span>
-                <input type="date" class="settings-input" data-role="holiday-date" />
+                <span class="settings-label">Start</span>
+                <select class="settings-input" data-role="work-start"></select>
               </label>
               <label class="settings-field">
-                <span class="settings-label">Name</span>
-                <input type="text" class="settings-input" data-role="holiday-name" />
+                <span class="settings-label">End</span>
+                <select class="settings-input" data-role="work-end"></select>
               </label>
             </div>
-            <button type="submit" class="button button-primary">
-              <svg
-                class="icon settings-add-icon"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-                focusable="false"
-              >
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              Add holiday
-            </button>
-          </form>
-          <div class="settings-file-actions">
-            <button type="button" class="button" data-role="holiday-export">Export</button>
-            <label class="button settings-file-button">
-              Import
-              <input
-                type="file"
-                class="settings-file-input"
-                accept=".json,application/json"
-                data-role="holiday-file-picker"
-              />
+            <p class="settings-hint settings-hint-large">
+              One setting for all places. It colours the working hours in the meeting-time picker.
+            </p>
+          </section>
+          <section
+            class="settings-section settings-section-tight"
+            aria-labelledby="settings-display-title"
+          >
+            <h3 id="settings-display-title" class="settings-heading">Display</h3>
+            <label class="settings-check">
+              <input type="checkbox" data-role="show-country" />
+              Show country names
             </label>
-          </div>
-          <p class="settings-hint settings-error" role="alert" data-role="import-refused" hidden>
-            The file was refused: it is not a Zuno holidays file. Nothing was changed.
-          </p>
-          <h4 class="settings-label settings-holidays-heading">Added holidays</h4>
-          <ul class="settings-holidays" data-role="added" hidden></ul>
-          <p class="settings-hint" data-role="added-empty">No holidays added.</p>
-          <h4 class="settings-label settings-holidays-heading">Hidden holidays</h4>
-          <ul class="settings-holidays" data-role="hidden" hidden></ul>
-          <p class="settings-hint" data-role="hidden-empty">No holidays hidden.</p>
-        </section>
+            <p class="settings-hint settings-hint-close">
+              Off by default. When on, the country appears next to each place.
+            </p>
+            <label class="settings-check">
+              <input type="checkbox" data-role="show-hijri" />
+              <span class="settings-hijri">Show Hijri calendar</span>
+            </label>
+            <p class="settings-hint settings-hint-close">
+              Off by default. When off, no Hijri dates are shown and the Hijri options for each
+              place are not used.
+            </p>
+            <fieldset class="settings-choice" data-role="theme">
+              <legend class="settings-label settings-legend">Theme</legend>
+              <div class="settings-options">
+                <label class="settings-option">
+                  <input type="radio" name="settings-theme" value="light" />
+                  Light
+                </label>
+                <label class="settings-option">
+                  <input type="radio" name="settings-theme" value="dark" />
+                  Dark
+                </label>
+                <label class="settings-option">
+                  <input type="radio" name="settings-theme" value="auto" />
+                  Auto
+                </label>
+              </div>
+            </fieldset>
+            <p class="settings-hint">Auto follows the light or dark setting of your system.</p>
+          </section>
+        </div>
+        <div
+          class="settings-cards"
+          role="tabpanel"
+          id="settings-panel-places"
+          aria-labelledby="settings-tab-places"
+        >
+          <section
+            class="settings-section settings-section-tight"
+            aria-labelledby="settings-add-title"
+          >
+            <h3 id="settings-add-title" class="settings-heading">Add a place</h3>
+            <form class="settings-add" data-role="add-form">
+              <label class="settings-field">
+                <span class="settings-label">City</span>
+                <select class="settings-input" data-role="city">
+                  <option value="">Choose a city</option>
+                </select>
+              </label>
+              <button type="submit" class="button button-primary settings-add-button">
+                <svg
+                  class="icon settings-add-icon"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Add place
+              </button>
+            </form>
+            <p class="settings-hint">The new place uses the time zone of the city.</p>
+          </section>
+          <section class="settings-section" aria-labelledby="settings-places-title">
+            <h3 id="settings-places-title" class="settings-heading">Places</h3>
+            <p class="settings-hint settings-hint-large">
+              The first place is the reference for the meeting-time picker. Use the arrows to change
+              the order.
+            </p>
+            <ul class="settings-places" data-role="places"></ul>
+          </section>
+        </div>
+        <div
+          class="settings-cards"
+          role="tabpanel"
+          id="settings-panel-holidays"
+          aria-labelledby="settings-tab-holidays"
+          data-role="holidays"
+        >
+          <section class="settings-section" aria-labelledby="settings-holidays-title">
+            <h3 id="settings-holidays-title" class="settings-heading">Holidays</h3>
+            <p class="settings-hint settings-hint-large">
+              Add a public holiday that the holiday service does not list. Hide a listed holiday
+              from its card in the month view.
+            </p>
+            <p class="settings-hint" data-role="holiday-table-credit">
+              Holidays of India, Israel, Malaysia, Pakistan, Saudi Arabia, Taiwan and the United
+              Arab Emirates for 2026 to 2028 come from the date-holidays library (CC BY-SA 3.0).
+              Islamic holidays are calculated and can be a day off the official date.
+            </p>
+            <form class="settings-holiday-form" data-role="holiday-form">
+              <label class="settings-field">
+                <span class="settings-label">Country</span>
+                <select class="settings-input" data-role="holiday-country">
+                  <option value="">Choose a country</option>
+                </select>
+              </label>
+              <div class="settings-pair">
+                <label class="settings-field">
+                  <span class="settings-label">Date</span>
+                  <input type="date" class="settings-input" data-role="holiday-date" />
+                </label>
+                <label class="settings-field">
+                  <span class="settings-label">Name</span>
+                  <input type="text" class="settings-input" data-role="holiday-name" />
+                </label>
+              </div>
+              <button type="submit" class="button button-primary">
+                <svg
+                  class="icon settings-add-icon"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Add holiday
+              </button>
+            </form>
+            <h4 class="settings-label settings-holidays-heading">Added holidays</h4>
+            <ul class="settings-holidays" data-role="added" hidden></ul>
+            <p class="settings-hint" data-role="added-empty">No holidays added.</p>
+            <h4 class="settings-label settings-holidays-heading">Hidden holidays</h4>
+            <ul class="settings-holidays" data-role="hidden" hidden></ul>
+            <p class="settings-hint" data-role="hidden-empty">No holidays hidden.</p>
+          </section>
+          <section class="settings-section" aria-labelledby="settings-file-title">
+            <h3 id="settings-file-title" class="settings-heading">Holidays and vacations file</h3>
+            <div class="settings-file-actions">
+              <button type="button" class="button" data-role="holiday-export">Export</button>
+              <label class="button settings-file-button">
+                Import
+                <input
+                  type="file"
+                  class="settings-file-input"
+                  accept=".json,application/json"
+                  data-role="holiday-file-picker"
+                />
+              </label>
+            </div>
+            <p class="settings-hint settings-error" role="alert" data-role="import-refused" hidden>
+              The file was refused: it is not a Zuno holidays file. Nothing was changed.
+            </p>
+          </section>
+        </div>
         <p class="settings-footer">
           Changes are saved in this browser and restored on your next visit.
           <br />

@@ -48,6 +48,15 @@ async function openSettings(page) {
 
 /**
  * @param {Page} page
+ * @param {string} name The tab's name: General, Places or Holidays and vacations (SET-019).
+ * @returns {Promise<void>} Selects that tab of the open settings.
+ */
+async function selectTab(page, name) {
+  await page.getByRole("tab", { name, exact: true }).click();
+}
+
+/**
+ * @param {Page} page
  * @returns {Promise<import("../../../src/domain/settings.js").Settings>} The settings in storage.
  */
 function storedSettings(page) {
@@ -81,6 +90,7 @@ test("ui_set_006_region_listed_by_code_and_empty_means_national", async () => {
   );
   await page.getByRole("button", { name: "Refresh" }).click();
   await openSettings(page);
+  await selectTab(page, "Places");
   await page.getByRole("button", { name: "Edit Washington, D.C." }).click();
   const region = page.getByLabel("Region for holidays (optional)");
   assert.deepEqual(await region.locator("option").allTextContents(), [
@@ -115,6 +125,7 @@ test("ui_dsp_004_hong_kong_place_and_city_list_ex_025", async () => {
   assert.deepEqual(await page.locator(".month-grid-place-country").allTextContents(), [
     "Hong Kong",
   ]);
+  await selectTab(page, "Places");
   const labels = await page
     .getByRole("combobox", { name: "City", exact: true })
     .locator("option")
@@ -127,12 +138,15 @@ test("ui_set_011_hijri_toggle_off_by_default", async () => {
   await openSettings(page);
   const toggle = page.getByLabel("Show Hijri calendar");
   assert.equal(await toggle.isChecked(), false);
+  await selectTab(page, "Places");
   await page.getByRole("button", { name: "Edit Riyadh" }).click();
   assert.equal(
     await page.getByRole("combobox", { name: "Hijri calendar", exact: true }).count(),
     0,
   );
+  await selectTab(page, "General");
   await toggle.check();
+  await selectTab(page, "Places");
   assert.equal(
     await page.getByRole("combobox", { name: "Hijri calendar", exact: true }).isVisible(),
     true,
@@ -144,6 +158,7 @@ test("ui_hij_002_variant_choice_per_place", async () => {
   const saved = { ...savedPlaces(["riyadh", "washington-dc"]), showHijri: true };
   const { page } = await openPage(browser, built.url, { saved });
   await openSettings(page);
+  await selectTab(page, "Places");
   await page.getByRole("button", { name: "Edit Riyadh" }).click();
   const variant = page
     .locator(".settings-place", { hasText: "Riyadh" })
@@ -163,6 +178,7 @@ test("ui_hij_003_adjustment_range_minus_one_to_plus_one", async () => {
   const saved = { ...savedPlaces(["riyadh"]), showHijri: true };
   const { page } = await openPage(browser, built.url, { saved });
   await openSettings(page);
+  await selectTab(page, "Places");
   await page.getByRole("button", { name: "Edit Riyadh" }).click();
   const adjust = page.getByRole("group", { name: "Hijri date adjustment" });
   const choices = adjust.getByRole("radio");
@@ -220,7 +236,14 @@ test("ui_dec_020_settings_sections_are_in_the_canvas_order_with_a_line_after_eac
   const { page } = await openPage(browser, built.url, { saved: savedPlaces(["riyadh"]) });
   await openSettings(page);
   const headings = await page.locator(".settings-section > .settings-heading").allTextContents();
-  assert.deepEqual(headings, ["Working hours", "Display", "Add a place", "Places", "Holidays"]);
+  assert.deepEqual(headings, [
+    "Working hours",
+    "Display",
+    "Add a place",
+    "Places",
+    "Holidays",
+    "Holidays and vacations file",
+  ]);
   const lineColour = await page.locator("body").evaluate((body) => {
     const probe = body.ownerDocument.createElement("span");
     probe.style.color = "var(--color-line-card)";
@@ -238,7 +261,7 @@ test("ui_dec_020_settings_sections_are_in_the_canvas_order_with_a_line_after_eac
       return { borderBottomWidth, borderBottomColor, paddingBottom };
     }),
   );
-  assert.equal(sections.length, 5);
+  assert.equal(sections.length, 6);
   for (const section of sections) {
     assert.deepEqual(section, {
       borderBottomWidth: "1px",
@@ -263,4 +286,102 @@ test("ui_ver_001_settings_footer_shows_the_version_ex_026", async () => {
   await openSettings(page);
   const footer = page.locator(".settings-footer");
   assert.match((await footer.textContent()) ?? "", /Version 2026\.11\.18\.1432/);
+});
+
+/**
+ * @param {Page} page
+ * @returns {Promise<{ x: number, y: number, width: number, height: number }>} The window's box.
+ */
+function windowBox(page) {
+  return page.locator("html").evaluate((root) => {
+    const { clientWidth, clientHeight } = root;
+    return { x: 0, y: 0, width: clientWidth, height: clientHeight };
+  });
+}
+
+test("ui_set_019_settings_layer_has_the_boxes_of_the_window_and_close_returns_the_focus", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["riyadh"]) });
+  const opener = page.getByRole("button", { name: "Settings", exact: true });
+  await openSettings(page);
+  assert.deepEqual(
+    await page.locator('[data-role="settings"]').boundingBox(),
+    await windowBox(page),
+  );
+  await page.getByRole("button", { name: "Close settings" }).click();
+  assert.equal(await page.getByRole("dialog").count(), 0);
+  assert.equal(
+    await opener.evaluate((button) => button === button.ownerDocument.activeElement),
+    true,
+  );
+  await openSettings(page);
+  await page.keyboard.press("Escape");
+  assert.equal(await page.getByRole("dialog").count(), 0);
+  assert.equal(
+    await opener.evaluate((button) => button === button.ownerDocument.activeElement),
+    true,
+  );
+});
+
+test("ui_set_019_three_tabs_show_one_panel_at_a_time_and_move_with_the_arrow_keys", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["riyadh"]) });
+  await openSettings(page);
+  const tabs = page.getByRole("tab");
+  const names = (await tabs.allTextContents()).map((text) => text.trim());
+  assert.deepEqual(names, ["General", "Places", "Holidays and vacations"]);
+  await tabs.first().focus();
+  const steps = /** @type {const} */ ([
+    ["ArrowRight", "Places"],
+    ["ArrowRight", "Holidays and vacations"],
+    ["ArrowRight", "General"],
+    ["ArrowLeft", "Holidays and vacations"],
+    ["Home", "General"],
+    ["End", "Holidays and vacations"],
+  ]);
+  for (const [key, name] of steps) {
+    await page.keyboard.press(key);
+    const selected = page.getByRole("tab", { name, exact: true });
+    assert.equal(await selected.getAttribute("aria-selected"), "true", `${key}: ${name}`);
+    assert.equal(await selected.getAttribute("tabindex"), "0", `${key}: roving tabindex`);
+    assert.equal(
+      await selected.evaluate((tab) => tab === tab.ownerDocument.activeElement),
+      true,
+      key,
+    );
+    assert.equal(await page.locator('[role="tab"][aria-selected="true"]').count(), 1, key);
+    assert.equal(await page.getByRole("tabpanel").count(), 1, `${key}: one panel`);
+    assert.equal(await page.getByRole("tabpanel", { name, exact: true }).count(), 1, key);
+  }
+});
+
+test("ui_set_019_settings_open_on_the_general_tab", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["riyadh"]) });
+  await openSettings(page);
+  const general = page.getByRole("tab", { name: "General", exact: true });
+  assert.equal(await general.getAttribute("aria-selected"), "true");
+  assert.equal(await page.getByRole("tabpanel", { name: "General", exact: true }).count(), 1);
+  await selectTab(page, "Places");
+  await page.getByRole("button", { name: "Close settings" }).click();
+  await openSettings(page);
+  assert.equal(await general.getAttribute("aria-selected"), "true");
+  assert.equal(await page.getByRole("tabpanel", { name: "General", exact: true }).count(), 1);
+});
+
+test("ui_set_019_cards_sit_side_by_side_and_stack_under_60rem", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["riyadh"]) });
+  await openSettings(page);
+  const cards = page.getByRole("tabpanel").locator(".settings-section");
+  const [first, second] = await Promise.all([
+    cards.nth(0).boundingBox(),
+    cards.nth(1).boundingBox(),
+  ]);
+  assert.ok(first !== null && second !== null);
+  assert.equal(first.y, second.y, "side by side: the same top");
+  assert.ok(second.x >= first.x + first.width, "side by side: the second is on the right");
+  const window = await windowBox(page);
+  assert.ok(second.x + second.width > window.width / 2, "the cards run across the window");
+  await page.setViewportSize({ width: 800, height: 900 });
+  const [top, below] = await Promise.all([cards.nth(0).boundingBox(), cards.nth(1).boundingBox()]);
+  assert.ok(top !== null && below !== null);
+  assert.equal(top.x, below.x, "stacked: the same left");
+  assert.ok(below.y >= top.y + top.height, "stacked: the second is under the first");
 });

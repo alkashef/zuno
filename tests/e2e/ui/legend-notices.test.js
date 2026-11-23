@@ -150,7 +150,8 @@ test("ui_hol_014_notice_goes_after_the_user_adds_a_holiday", async () => {
   const badge = page.locator('[data-role="notices-badge"]');
   await badge.waitFor();
   await page.getByRole("button", { name: "Settings", exact: true }).click();
-  const section = page.getByRole("region", { name: "Holidays" });
+  await page.getByRole("tab", { name: "Holidays and vacations", exact: true }).click();
+  const section = page.getByRole("tabpanel", { name: "Holidays and vacations", exact: true });
   await section.getByRole("combobox", { name: "Country" }).selectOption({ label: "Egypt" });
   await section.getByLabel("Date").fill("2026-11-20");
   await section.getByRole("textbox", { name: "Name" }).fill("Invented Day");

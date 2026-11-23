@@ -38,11 +38,13 @@ function savedPlaces(cityIds) {
 
 /**
  * @param {Page} page
- * @returns {Promise<void>} Opens the settings panel from the header.
+ * @returns {Promise<void>} Opens the settings panel from the header and selects the Places tab,
+ *   which holds the add form and the list (SET-019).
  */
 async function openSettings(page) {
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("dialog").waitFor();
+  await page.getByRole("tab", { name: "Places", exact: true }).click();
 }
 
 /**
@@ -126,6 +128,7 @@ test("test_set_013_add_a_place_lists_the_55_cities_with_their_countries", async 
 test("ui_set_004_places_survive_reload", async () => {
   const { page } = await openPage(browser, built.url, { saved: savedPlaces([]) });
   await page.getByRole("button", { name: "Add a place" }).click();
+  await page.getByRole("tab", { name: "Places", exact: true }).click();
   await addCity(page, "Riyadh, Saudi Arabia");
   await page.reload();
   assert.equal(await page.getByRole("button", { name: "Add a place" }).count(), 0);
