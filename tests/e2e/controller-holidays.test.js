@@ -118,7 +118,7 @@ test("test_hol_006_refused_holiday_action_saves_nothing", async () => {
   await controller.dispatch({ type: "open" });
   await controller.dispatch({ type: "addHoliday", ...diwali, date: "2026-02-30" });
   await controller.dispatch({ type: "addHoliday", ...diwali, name: " " });
-  await controller.dispatch({ type: "addHoliday", ...diwali, countryCode: "KE" });
+  await controller.dispatch({ type: "addHoliday", ...diwali, countryCode: "ZZ" });
   await controller.dispatch({ type: "removeHoliday", ...diwali });
   await controller.dispatch({ type: "showHoliday", ...christmas });
   assert.deepEqual(holidaySaves, []);

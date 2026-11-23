@@ -11,6 +11,9 @@ data/*
 !data/holiday-table.js
 !data/ne_110m_land.geojson
 !data/map-outline.svg
+!data/zone.tab
+!data/iso3166.tab
+!data/zone-table.js
 models/
 logs/
 *.before-*

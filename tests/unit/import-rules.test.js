@@ -59,13 +59,15 @@ function isAllowed(file, target) {
   const dataOwners = {
     "data/cities.js": "src/domain/cities.js",
     "data/holiday-table.js": "src/domain/holiday-table.js",
+    "data/zone-table.js": "src/domain/zone-table.js",
   };
   if (target in dataOwners) return file === dataOwners[target];
-  if (target === "src/controller-holidays.js") return file === "src/controller.js";
+  const subControllers = ["src/controller-holidays.js", "src/controller-places.js"];
+  if (subControllers.includes(target)) return file === "src/controller.js";
   if (file === "src/main.js") return true;
   if (inDomain(file)) return inDomain(target) || target.startsWith("data/");
   if (file === "src/controller.js") return inDomain(target);
-  if (file === "src/controller-holidays.js") return inDomain(target);
+  if (subControllers.includes(file)) return inDomain(target);
   if (file.startsWith("src/views/")) return target === "src/domain/format.js";
   if (file === "src/log.js") return target === "src/config.js";
   if (leaves.includes(file)) return ["src/config.js", "src/log.js"].includes(target);
@@ -138,4 +140,29 @@ test("test_import_rules_only_the_controller_imports_the_holiday_controller_and_i
     "src/controller-holidays.js": 'import { toHolidays } from "./domain/holidays.js";',
   };
   assert.deepEqual(findViolations(sources), []);
+});
+
+test("test_import_rules_only_the_zone_table_module_imports_the_zone_table", () => {
+  const sources = {
+    "src/domain/zone-table.js": 'import { zones } from "../../data/zone-table.js";',
+    "src/domain/places.js": 'import { zones } from "../../data/zone-table.js";',
+    "src/main.js": 'import { zones } from "../data/zone-table.js";',
+  };
+  assert.deepEqual(findViolations(sources), [
+    "src/domain/places.js must not import data/zone-table.js",
+    "src/main.js must not import data/zone-table.js",
+  ]);
+});
+
+test("test_import_rules_only_the_controller_imports_the_place_controller_and_it_imports_domain_only", () => {
+  const sources = {
+    "src/controller.js": 'import { placeHandlers } from "./controller-places.js";',
+    "src/controller-places.js":
+      'import { addPlace } from "./domain/places.js"; import { s } from "./storage.js";',
+    "src/main.js": 'import { placeHandlers } from "./controller-places.js";',
+  };
+  assert.deepEqual(findViolations(sources), [
+    "src/controller-places.js must not import src/storage.js",
+    "src/main.js must not import src/controller-places.js",
+  ]);
 });

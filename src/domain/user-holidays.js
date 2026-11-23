@@ -8,13 +8,13 @@
  * injected holiday storage), reads no file (files.js does) and reads no service data (api.js and
  * domain/holidays.js do). A refused change returns `null`, so the caller knows to save nothing.
  */
-import { isListedCountry } from "./cities.js";
+import { isKnownCountry } from "./zone-table.js";
 
 /** @typedef {import("./holidays.js").Holiday} Holiday */
 
 /**
  * @typedef {object} HolidayEntry One holiday of a country or territory, added or hidden.
- * @property {string} countryCode ISO 3166-1 alpha-2 code of a country of the city list.
+ * @property {string} countryCode ISO 3166-1 alpha-2 code of a known country or territory (DEC-029).
  * @property {string} date `YYYY-MM-DD`; a real calendar date.
  * @property {string} name Not empty after trimming.
  */
@@ -50,13 +50,13 @@ function isCalendarDate(value) {
 /**
  * @param {unknown} value Anything, such as one entry of a stored record or an action's fields.
  * @returns {HolidayEntry | null} The entry with its name trimmed, or `null` when the date is not a
- *   real calendar date, the name is empty after trimming or no city of the list is in the country.
+ *   real calendar date, the name is empty after trimming or the country is not known (DEC-029).
  */
 function toEntry(value) {
   if (typeof value !== "object" || value === null) return null;
   const { countryCode, date, name } = /** @type {Record<string, unknown>} */ (value);
   if (typeof name !== "string" || name.trim() === "") return null;
-  if (!isCalendarDate(date) || !isListedCountry(countryCode)) return null;
+  if (!isCalendarDate(date) || !isKnownCountry(countryCode)) return null;
   return { countryCode, date, name: name.trim() };
 }
 
@@ -98,11 +98,11 @@ function withoutEntry(record, list, entry) {
 }
 
 /**
- * Adds a holiday to a country or territory of the city list (HOL-006).
+ * Adds a holiday to a known country or territory (HOL-006, DEC-029).
  * @param {UserHolidays} record
  * @param {HolidayEntry} entry The country code, the date and the name (trimmed here).
  * @returns {UserHolidays | null} The new record, or `null` when refused: a date that is not a real
- *   calendar date, an empty name, a country no city of the list has, or a holiday already added.
+ *   calendar date, an empty name, a country that is not known, or a holiday already added.
  */
 export function addHoliday(record, entry) {
   const valid = toEntry(entry);

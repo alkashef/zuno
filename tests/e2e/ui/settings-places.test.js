@@ -1,12 +1,13 @@
 // @ts-check
-/** @module settings-places.test Headless-browser tests of the places part of the settings panel in Chromium (SET-001, SET-002, SET-004, SET-008, SET-009, SET-013). */
+/** @module settings-places.test Headless-browser tests of the places part of the settings panel in Chromium (SET-001, SET-002, SET-004, SET-008, SET-009, SET-013, SET-018). */
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
 import { config } from "../../../src/config.js";
 import { createPlace } from "../../../src/domain/places.js";
 import { defaultSettings } from "../../../src/domain/settings.js";
-import { buildToScratch, launchBrowser, openPage } from "./page-fixture.js";
+import { listZones } from "../../../src/domain/zone-table.js";
+import { browserNames, buildToScratch, launchBrowser, openPage } from "./page-fixture.js";
 
 /** @typedef {import("./page-fixture.js").PageBuild} PageBuild */
 /** @typedef {import("./page-fixture.js").Browser} Browser */
@@ -189,4 +190,25 @@ test("test_set_016_editor_shows_seven_day_boxes_with_the_default_ticked", async 
   await group.getByRole("checkbox", { name: "Sunday" }).click();
   assert.deepEqual(await ticked(), ["Sunday"]);
   assert.deepEqual(JSON.parse(await saved()).places[0].weekendDays, [7]);
+});
+
+test("ui_set_018_every_zone_of_the_table_is_known_to_the_browser", async () => {
+  const zones = listZones().map((row) => row.zone);
+  for (const name of browserNames) {
+    const each = await launchBrowser(name);
+    const { page } = await openPage(each, built.url, { saved: savedPlaces(["riyadh"]) });
+    const refused = await page.evaluate((names) => {
+      /** @param {string} zone @returns {boolean} Whether the browser refuses the zone. */
+      const isRefused = (zone) => {
+        try {
+          return new Intl.DateTimeFormat("en-US", { timeZone: zone }).format(0) === "";
+        } catch {
+          return true;
+        }
+      };
+      return names.filter(isRefused);
+    }, zones);
+    await each.close();
+    assert.deepEqual(refused, [], name);
+  }
 });

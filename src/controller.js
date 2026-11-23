@@ -4,10 +4,12 @@
  * The page workflows: applies an action to the page state, asks the injected `holidayTable` or `api` for the holidays
  * the shown month and the marker's window need, and tells subscribers about every new state
  * (PCK-004, PCK-006, PCK-007, PCK-009, LAY-003, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-001, SET-002,
- * SET-004 to SET-014, HIJ-002, HIJ-003, HOL-003, HOL-006 to HOL-013, DEC-007, DEC-016 to DEC-019, DEC-022).
+ * SET-004 to SET-014, SET-018, HIJ-002, HIJ-003, HOL-003, HOL-006 to HOL-013, DEC-007, DEC-016 to DEC-019, DEC-022,
+ * DEC-029).
  * Pure apart from its injected `api`, `storage`, `holidayStorage`, `files` and `clock`. It touches no DOM (the
  * views do) and builds no picker, grid, notices or holiday-list logic itself (domain/* does). The
- * user's holiday actions, the holidays the page uses and the notices are in controller-holidays.js.
+ * user's holiday actions, the holidays the page uses and the notices are in controller-holidays.js;
+ * adding a custom place is in controller-places.js.
  */
 import {
   holidayAt,
@@ -18,6 +20,7 @@ import {
   regionsByCountry,
   tableAnswer,
 } from "./controller-holidays.js";
+import { nextPlaceId, placeHandlers } from "./controller-places.js";
 import { buildMonth } from "./domain/calendar.js";
 import { cityOf } from "./domain/cities.js";
 import {
@@ -48,6 +51,7 @@ import { localDateTime } from "./domain/zones.js";
 /** @typedef {import("./controller-holidays.js").Notices} Notices */
 /** @typedef {import("./controller-holidays.js").ResultsByCountryYear} ResultsByCountryYear */
 /** @typedef {import("./controller-holidays.js").SelectedHoliday} SelectedHoliday */
+/** @typedef {import("./controller-places.js").PlaceAction} PlaceAction */
 /** @typedef {import("./domain/calendar.js").DayFacts} DayFacts */
 /** @typedef {import("./domain/calendar.js").MonthRef} MonthRef */
 /** @typedef {import("./domain/holidays.js").HolidayResult} HolidayResult */
@@ -127,7 +131,7 @@ import { localDateTime } from "./domain/zones.js";
  *   | { type: "setWorkingHours", start: number, end: number }
  *   | { type: "setShowCountry", value: boolean } | { type: "setShowHijri", value: boolean }
  *   | { type: "setTheme", value: string } | { type: "setPickerHours", hours: number }
- *   | { type: "setMapHeight", px: number | null } | HolidayAction} Action
+ *   | { type: "setMapHeight", px: number | null } | HolidayAction | PlaceAction} Action
  */
 
 /**
@@ -398,17 +402,6 @@ function selectHoliday(ctx, { cell }) {
 }
 
 /**
- * @param {Place[]} places
- * @returns {string} An id such as `place-3` that no place in the list has.
- */
-function nextPlaceId(places) {
-  const taken = new Set(places.map((place) => place.id));
-  let number = places.length + 1;
-  while (taken.has(`place-${number}`)) number += 1;
-  return `place-${number}`;
-}
-
-/**
  * @param {Context} ctx
  * @returns {Settings} The shown settings, or the defaults before the page is open (SET-005, SET-014).
  */
@@ -603,6 +596,7 @@ function handlers() {
     selectHoliday,
     ...settingsHandlers(),
     ...holidayHandlers(),
+    ...placeHandlers(changePlaces),
     toggleNotices: (ctx) => ctx.update({ noticesOpen: !ctx.read().noticesOpen }),
     openSettings: (ctx) => ctx.update({ settingsOpen: true }),
     closeSettings: (ctx) => ctx.update({ settingsOpen: false }),

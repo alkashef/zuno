@@ -1,11 +1,12 @@
 // @ts-check
-/** @module map.test Headless-browser tests of the world map in Chromium (MAP-001, CLK-001, CLK-003). */
+/** @module map.test Headless-browser tests of the world map in Chromium (MAP-001, MAP-002, CLK-001, CLK-003, EX-027). */
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
 import { config } from "../../../src/config.js";
-import { createPlace } from "../../../src/domain/places.js";
+import { createCustomPlace, createPlace } from "../../../src/domain/places.js";
 import { defaultSettings } from "../../../src/domain/settings.js";
+import { zoneRow } from "../../../src/domain/zone-table.js";
 import { buildToScratch, launchBrowser, openPage } from "./page-fixture.js";
 
 /** @typedef {import("./page-fixture.js").PageBuild} PageBuild */
@@ -176,4 +177,28 @@ test("ui_map_001_label_text_contrast_over_land_and_over_sea", async () => {
     assert.equal(ratios.length, 3);
     for (const ratio of ratios) assert.ok(ratio >= 4.5, `${scheme}: ${ratios.join(", ")}`);
   }
+});
+
+test("ui_map_002_custom_place_pin_is_at_the_zones_reference_city_ex_027", async () => {
+  const sara = createCustomPlace("place-1", {
+    name: "Sara",
+    zone: "Europe/Lisbon",
+    countryCode: "PT",
+  });
+  const saved = { ...defaultSettings(540, 1020), places: [sara] };
+  const { page } = await openPage(browser, built.url, { saved });
+  const pin = page.locator('[data-role="pin"]');
+  await pin.first().waitFor();
+  assert.equal(await pin.count(), 1);
+  assert.equal(await pin.locator('[data-role="pin-name"]').textContent(), "Sara");
+  assert.equal(await pin.locator('[data-role="pin-time"]').textContent(), "9:25 AM");
+  const view = await page.locator('[data-role="map-view"]').boundingBox();
+  const tip = await pin.locator(".map-pin-icon").boundingBox();
+  const lisbon = zoneRow("Europe/Lisbon");
+  assert.ok(view && tip && lisbon);
+  const spot = { x: (lisbon.longitude + 180) / 360, y: (90 - lisbon.latitude) / 180 };
+  const world = { width: view.width, height: view.height * (360 / 276) };
+  const top = view.y - world.height * (20 / 360);
+  assert.ok(Math.abs(tip.x + tip.width / 2 - (view.x + spot.x * world.width)) < 2);
+  assert.ok(Math.abs(tip.y + tip.height - (top + spot.y * world.height)) < 2);
 });

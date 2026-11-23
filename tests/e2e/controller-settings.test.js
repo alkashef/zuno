@@ -1,5 +1,5 @@
 // @ts-check
-/** @module controller-settings.test Settings workflows through src/controller.js with fake api, storage and clock (SET-001, SET-002, SET-004 to SET-006, SET-008 to SET-013, SET-015, HIJ-002, HIJ-003, LAY-003, LAY-005, EX-019). */
+/** @module controller-settings.test Settings workflows through src/controller.js with fake api, storage and clock (SET-001, SET-002, SET-004 to SET-006, SET-008 to SET-013, SET-015, SET-018, HIJ-002, HIJ-003, LAY-003, LAY-005, EX-019, EX-027). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -67,7 +67,7 @@ function placeIds(controller) {
 
 /**
  * @param {ReturnType<typeof createController>} controller
- * @returns {string[]} The city ids of the places in the settings, in order.
+ * @returns {(string | null)[]} The city ids of the places in the settings, in order.
  */
 function shownCityIds(controller) {
   return (controller.getState().settings?.places ?? []).map((place) => place.cityId);
@@ -438,4 +438,54 @@ test("test_lay_005_setting_the_map_height_saves_it", async () => {
   });
   await reloaded.controller.dispatch({ type: "open" });
   assert.equal(reloaded.controller.getState().settings?.mapHeight, 520);
+});
+
+const sara = { name: "Sara", zone: "Europe/Lisbon", countryCode: "PT" };
+
+test("test_set_018_add_custom_place_saves_it_and_asks_for_the_holidays_of_its_country_ex_027", async () => {
+  const { controller, calls, saves } = setup();
+  await controller.dispatch({ type: "open" });
+  await controller.dispatch({ type: "addCustomPlace", ...sara, name: " Sara " });
+  assert.equal(saves.length, 1);
+  const place = controller.getState().settings?.places[0];
+  assert.ok(place);
+  assert.deepEqual([place.id, place.cityId, place.custom], ["place-1", null, sara]);
+  assert.deepEqual([place.countryCode, place.zone], ["PT", "Europe/Lisbon"]);
+  assert.equal(placeName(place, true), "Sara, Portugal");
+  assert.ok(calls.includes("PT-2026"), calls.join());
+  assert.equal(zoneOffset(Date.UTC(2026, 6, 1, 12), place.zone), 60 * 60 * 1000);
+  assert.equal(zoneOffset(Date.UTC(2026, 11, 1, 12), place.zone), 0);
+  assert.equal(controller.getState().picker.length, 1);
+  await controller.dispatch({ type: "addPlace", cityId: "london" });
+  await controller.dispatch({ type: "addCustomPlace", ...sara });
+  assert.deepEqual(placeIds(controller), ["place-1", "place-2", "place-3"]);
+});
+
+test("test_set_018_custom_place_with_a_bad_zone_changes_nothing", async () => {
+  const { controller, saves, calls } = setup();
+  await controller.dispatch({ type: "open" });
+  const refused = [
+    { ...sara, zone: "Mars/Olympus_Mons" },
+    { ...sara, zone: "" },
+    { ...sara, name: "  " },
+    { ...sara, countryCode: "ZZ" },
+  ];
+  for (const entry of refused) {
+    await controller.dispatch({ type: "addCustomPlace", ...entry });
+  }
+  assert.deepEqual(saves, []);
+  assert.deepEqual(calls, []);
+  assert.deepEqual(controller.getState().settings?.places, []);
+});
+
+test("test_set_004_custom_place_survives_a_reload", async () => {
+  const first = setup();
+  await first.controller.dispatch({ type: "open" });
+  await first.controller.dispatch({ type: "addCustomPlace", ...sara });
+  const stored = JSON.parse(JSON.stringify(first.store.saved));
+  const second = setup({ store: { saved: parseSettings(stored, wholeDay) } });
+  await second.controller.dispatch({ type: "open" });
+  assert.deepEqual(second.controller.getState().settings, first.controller.getState().settings);
+  const place = second.controller.getState().settings?.places[0];
+  assert.equal(place && placeName(place, false), "Sara");
 });

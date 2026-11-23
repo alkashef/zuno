@@ -46,7 +46,7 @@ test("test_hol_003_effective_holidays_are_service_minus_hidden_plus_added", () =
   assert.deepEqual(effectiveHolidays(service, emptyUserHolidays(), "US"), service);
 });
 
-test("test_hol_006_add_refuses_a_bad_date_an_empty_name_and_an_unlisted_country", () => {
+test("test_hol_006_add_refuses_a_bad_date_an_empty_name_and_an_unknown_country", () => {
   const empty = emptyUserHolidays();
   const refused = [
     { ...diwali, date: "2026-02-30" },
@@ -54,7 +54,7 @@ test("test_hol_006_add_refuses_a_bad_date_an_empty_name_and_an_unlisted_country"
     { ...diwali, date: "8 Nov 2026" },
     { ...diwali, date: "" },
     { ...diwali, name: "   " },
-    { ...diwali, countryCode: "KE" },
+    { ...diwali, countryCode: "ZZ" },
     { ...diwali, countryCode: "" },
   ];
   for (const entry of refused) {
@@ -99,7 +99,7 @@ test("test_hol_009_parse_accepts_a_valid_record_and_refuses_others", () => {
     { version: 1, added: {}, hidden: [] },
     { version: 1, added: [{ ...diwali, date: "2026-02-30" }], hidden: [] },
     { version: 1, added: [{ ...diwali, name: "" }], hidden: [] },
-    { version: 1, added: [{ ...diwali, countryCode: "KE" }], hidden: [] },
+    { version: 1, added: [{ ...diwali, countryCode: "ZZ" }], hidden: [] },
     { version: 1, added: [{ date: diwali.date, name: diwali.name }], hidden: [] },
     { version: 1, added: [diwali, diwali], hidden: [] },
     { version: 1, added: [], hidden: [null] },
@@ -120,4 +120,12 @@ test("test_hol_011_merge_adds_the_imported_entries_and_never_doubles_or_removes_
   });
   assert.deepEqual(mergeUserHolidays(saved, emptyUserHolidays()), saved);
   assert.deepEqual(mergeUserHolidays(saved, saved), saved);
+});
+
+test("test_hol_006_an_added_holiday_accepts_any_known_country", () => {
+  const jamhuri = { countryCode: "KE", date: "2026-12-12", name: "Jamhuri Day" };
+  const added = accepted(addHoliday(emptyUserHolidays(), jamhuri));
+  assert.deepEqual(added.added, [jamhuri]);
+  assert.deepEqual(parseUserHolidays(added), added);
+  assert.ok(hideHoliday(emptyUserHolidays(), { ...jamhuri, countryCode: "PT" }));
 });

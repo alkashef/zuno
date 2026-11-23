@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                       | Description                                           | Model  | Effort | Status   |
 | ------------------------------- | ----------------------------------------------------- | ------ | ------ | -------- |
-| **M48** Custom places: model, zone table, map pin | A place can be a name, a time zone and a country; the zone table, the place model, the controller action and the map pin | opus | high | open |
 | **M49** Add a place or person in the settings | The form of a custom place in "Add a place or person", and the holiday country list that follows the user's places | sonnet | high | open |
 | **M50** Vacations on the grid and in the picker | Saved vacations show in their own colour in the month grid, count as a day off in the picker and appear in the legend | sonnet | high | open |
 | **M51** Hover card, day menu and holiday form | The hover card replaces the click card; a right-click opens the day menu with Add public holiday, Hide and Remove | sonnet | high | open |
@@ -23,54 +22,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M48 — Custom places: model, zone table, map pin
-
-- **Refs:** SET-015, SET-018, MAP-002, SET-004, SET-016, HOL-006 (domain part), EX-012, EX-013,
-  EX-027, DEC-029.
-- **Owner:** `scripts/make-zone-table.mjs` (development script; downloads and generates),
-  `data/zone-table.js` (generated), `src/domain/zone-table.js` (new; domain layer; the only reader of
-  the zone table), `src/domain/places.js`, `src/domain/cities.js`, `src/domain/user-holidays.js`,
-  `src/domain/settings.js`, `src/controller-places.js` (new; controller layer; the place handlers,
-  imported only by `controller.js`), `src/controller.js`, `src/main.js`, `README.md`.
-- **Tests first:**
-  - `tests/unit/make-zone-table.test.js`: `test_set_018_zone_tab_rows_become_zone_rows_with_degrees`
-    (both `±DDMM±DDDMM` and `±DDMMSS±DDDMMSS`).
-  - `tests/unit/zone-table.test.js`: `test_set_018_every_zone_has_a_known_country_and_coordinates_in_range`,
-    `test_set_015_a_zone_or_country_outside_the_table_is_not_known`,
-    `test_map_002_zone_row_holds_the_principal_location_of_europe_lisbon`.
-  - `tests/unit/places.test.js`: `test_set_018_custom_place_from_name_zone_and_country_ex_027`,
-    `test_set_018_custom_place_with_an_empty_name_is_refused`,
-    `test_set_015_a_stored_custom_place_with_an_unknown_zone_is_dropped_ex_013`,
-    `test_set_015_a_valid_stored_custom_place_is_kept_ex_013`,
-    `test_map_002_custom_place_pin_is_at_the_zones_reference_city`,
-    `test_set_016_custom_place_follows_the_weekend_of_its_country`,
-    `test_hol_006_holiday_countries_include_the_country_of_a_custom_place`.
-  - `tests/unit/user-holidays.test.js` and `tests/unit/cities.test.js`:
-    `test_hol_006_an_added_holiday_accepts_any_known_country`. The test that expects `KE` to be
-    refused (`isListedCountry`) changes, because SET-013 and HOL-006 changed; the report says so.
-  - `tests/e2e/controller-settings.test.js`:
-    `test_set_018_add_custom_place_saves_it_and_asks_for_the_holidays_of_its_country_ex_027`,
-    `test_set_018_custom_place_with_a_bad_zone_changes_nothing`,
-    `test_set_004_custom_place_survives_a_reload`.
-  - `tests/e2e/ui/map.test.js`: `ui_map_002_custom_place_pin_is_at_the_zones_reference_city_ex_027`
-    (settings are seeded in storage). `tests/e2e/ui/settings-places.test.js`:
-    `ui_set_018_every_zone_of_the_table_is_known_to_the_browser` (four browsers).
-- **Build:** `make-zone-table.mjs` as DEC-029 says: `--download` fetches `zone.tab` and
-  `iso3166.tab` into `data/` once, then the script writes `data/zone-table.js`. A `Place` has
-  `cityId` or `custom`; `createCustomPlace`, `restorePlace`, `placePin` and `holidayCountries` as in
-  section 2.1; `isUnusablePlace` replaces `isUnlistedPlace`, `isKnownCountry` replaces
-  `isListedCountry`, `countryName` names any code of the table. `controller-places.js` has
-  `addCustomPlace` (checks the three fields, makes the id `place-N`, saves, asks for the country's
-  holidays). A zone that a browser refuses goes on the script's skip list. Measure the page's growth
-  and write it in the design (DEC-029 estimates 25 KB).
-- **Gate:** `--download` has run once (approved below) and `data/zone.tab`, `data/iso3166.tab` and
-  `data/zone-table.js` are committed; the tests pass in the four browsers; `domain/zone-table.js` is
-  the only importer of `data/zone-table.js` (`import-rules.test.js`); no `isListedCountry` or
-  `isUnlistedPlace` is left.
-- **Approval:** The user, in chat on 2026-11-23: "yes for the one time download". It permits one run of
-  `node scripts/make-zone-table.mjs --download`, which fetches `zone.tab` and `iso3166.tab` from IANA
-  into `data/` and sends no user data, and nothing more.
 
 ### M49 — Add a place or person in the settings
 

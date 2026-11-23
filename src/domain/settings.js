@@ -5,7 +5,7 @@
  * LAY-003, LAY-005, DEC-016, DEC-019, DEC-028). Invalid input is refused by returning `null`; it is not an error. It
  * does not check one place (domain/places.js does).
  */
-import { createPlace, isUnlistedPlace, restorePlace } from "./places.js";
+import { createPlace, isUnusablePlace, restorePlace } from "./places.js";
 
 /** @typedef {import("./places.js").Place} Place */
 
@@ -137,14 +137,14 @@ function isTheme(value) {
 }
 
 /**
- * Restores the saved places. A place whose city is not in the list is dropped (SET-015); any
- * other fault refuses the whole list.
+ * Restores the saved places. A place that is neither a city of the list nor a valid custom place
+ * is dropped (SET-015, DEC-029); any other fault refuses the whole list.
  * @param {unknown} saved
  * @returns {Place[] | null} The places, or `null` when the list is invalid or two ids repeat.
  */
 function restorePlaces(saved) {
   if (!Array.isArray(saved)) return null;
-  const places = saved.filter((value) => !isUnlistedPlace(value)).map(restorePlace);
+  const places = saved.filter((value) => !isUnusablePlace(value)).map(restorePlace);
   const valid = places.filter((place) => place !== null);
   const unique = new Set(valid.map((place) => place.id)).size === places.length;
   return valid.length === places.length && unique ? valid : null;
@@ -178,8 +178,8 @@ function savedMapHeight(value, limits) {
 /**
  * Checks a value read from storage. A record without `theme` gets Auto, the default (SET-012), and
  * one without `pickerHours` gets the default hours (LAY-003). A `mapHeight` that is missing or
- * outside the map limits reads as `null`, so the places are kept (LAY-005, DEC-028). A place whose
- * city is not in the list is dropped (SET-015).
+ * outside the map limits reads as `null`, so the places are kept (LAY-005, DEC-028). A place that is
+ * neither a city of the list nor a valid custom place is dropped (SET-015).
  * @param {unknown} value
  * @param {SettingsLimits} limits The picker hour and map height limits (from config); required.
  * @returns {Settings | null} The settings when valid, else `null`. Any version but 2, such as a

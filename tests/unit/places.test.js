@@ -1,21 +1,26 @@
 // @ts-check
-/** @module places.test Unit tests for src/domain/places.js (SET-001, SET-008, SET-009, SET-010, SET-013, MAP-001). */
+/** @module places.test Unit tests for src/domain/places.js (SET-001, SET-008, SET-009, SET-010, SET-013, SET-015, SET-016, SET-018, MAP-001, MAP-002, HOL-006). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
   addPlace,
+  createCustomPlace,
   createPlace,
   editPlace,
   isPlace,
   movePlace,
   placeName,
   placeFacts,
+  holidayCountries,
   placePin,
   removePlace,
-  isUnlistedPlace,
+  isUnusablePlace,
   restorePlace,
 } from "../../src/domain/places.js";
+import { listCountries } from "../../src/domain/cities.js";
+import { placeWeekendDays } from "../../src/domain/weekends.js";
+import { zoneRow } from "../../src/domain/zone-table.js";
 
 test("test_set_001_add_and_remove_places", () => {
   const sa = createPlace("a", "riyadh");
@@ -68,9 +73,9 @@ test("test_set_015_restored_place_gets_its_citys_country_and_zone", () => {
   assert.equal(restorePlace({ ...stored, cityId: "nairobi" }), null);
   assert.equal(restorePlace({ ...stored, label: 3 }), null);
   assert.equal(restorePlace("text"), null);
-  assert.equal(isUnlistedPlace({ ...stored, cityId: "nairobi" }), true);
-  assert.equal(isUnlistedPlace(stored), false);
-  assert.equal(isUnlistedPlace({ ...stored, cityId: 7 }), false);
+  assert.equal(isUnusablePlace({ ...stored, cityId: "nairobi" }), true);
+  assert.equal(isUnusablePlace(stored), false);
+  assert.equal(isUnusablePlace({ ...stored, cityId: 7 }), false);
 });
 
 test("test_set_008_move_place_changes_order", () => {
@@ -157,4 +162,100 @@ test("test_set_017_edit_place_back_to_the_default_is_saved", () => {
   const edited = editPlace(places, "a", { weekendDays: [6, 7], label: "Home" });
   assert.equal(edited[0].weekendDays, null);
   assert.equal(edited[0].label, "Home");
+});
+
+const sara = { name: "Sara", zone: "Europe/Lisbon", countryCode: "PT" };
+
+test("test_set_018_custom_place_from_name_zone_and_country_ex_027", () => {
+  const place = createCustomPlace("place-1", { ...sara, name: "  Sara " });
+  assert.deepEqual(place, {
+    id: "place-1",
+    cityId: null,
+    custom: sara,
+    countryCode: "PT",
+    zone: "Europe/Lisbon",
+    label: "",
+    region: "",
+    weekendDays: null,
+    hijriVariant: "umalqura",
+    hijriAdjust: 0,
+  });
+  assert.ok(isPlace(place));
+  assert.equal(placeName(place, false), "Sara");
+  assert.equal(placeName(place, true), "Sara, Portugal");
+  assert.deepEqual(placeFacts({ ...place, label: "S. K." }, true), {
+    name: "S. K.",
+    city: "Sara",
+    country: "Portugal",
+  });
+  assert.equal(createPlace("a", "london").custom, null);
+});
+
+test("test_set_018_custom_place_with_an_empty_name_is_refused", () => {
+  assert.throws(() => createCustomPlace("a", { ...sara, name: "   " }), RangeError);
+  assert.throws(() => createCustomPlace("a", { ...sara, zone: "Mars/Olympus_Mons" }), RangeError);
+  assert.throws(() => createCustomPlace("a", { ...sara, countryCode: "ZZ" }), RangeError);
+  const place = createCustomPlace("a", sara);
+  assert.equal(isPlace({ ...place, zone: "Asia/Tokyo" }), false);
+  assert.equal(isPlace({ ...place, cityId: "london" }), false);
+  assert.equal(isPlace({ ...place, custom: { ...sara, name: "" } }), false);
+});
+
+test("test_set_015_a_stored_custom_place_with_an_unknown_zone_is_dropped_ex_013", () => {
+  const { countryCode, zone, ...stored } = createCustomPlace("a", sara);
+  const bad = { ...stored, custom: { ...sara, zone: "Mars/Olympus_Mons" } };
+  assert.equal(isUnusablePlace(bad), true);
+  assert.equal(restorePlace(bad), null);
+  assert.equal(isUnusablePlace({ ...stored, custom: { ...sara, countryCode: "ZZ" } }), true);
+  assert.equal(isUnusablePlace({ ...stored, custom: { ...sara, name: " " } }), true);
+  assert.deepEqual([countryCode, zone], ["PT", "Europe/Lisbon"]);
+});
+
+test("test_set_015_a_valid_stored_custom_place_is_kept_ex_013", () => {
+  const place = createCustomPlace("a", sara);
+  const { countryCode, zone, ...stored } = place;
+  assert.deepEqual([countryCode, zone], [place.countryCode, place.zone]);
+  assert.equal(isUnusablePlace(stored), false);
+  assert.deepEqual(restorePlace(stored), place);
+  assert.deepEqual(restorePlace({ ...stored, countryCode: "ES", zone: "Europe/Madrid" }), place);
+  const { custom, ...olderCity } = createPlace("b", "london");
+  assert.equal(custom, null);
+  assert.deepEqual(restorePlace(olderCity), createPlace("b", "london"));
+});
+
+test("test_map_002_custom_place_pin_is_at_the_zones_reference_city", () => {
+  const instant = Date.UTC(2026, 6, 1, 12);
+  const pin = placePin(createCustomPlace("a", sara), instant);
+  const lisbon = zoneRow("Europe/Lisbon");
+  assert.ok(lisbon);
+  assert.equal(pin.left, ((lisbon.longitude + 180) / 360) * 100);
+  assert.equal(pin.top, ((90 - lisbon.latitude) / 180) * 100);
+  assert.equal(pin.time, "1:00 PM");
+  assert.equal(pin.date, "01-Jul-26");
+});
+
+test("test_set_016_custom_place_follows_the_weekend_of_its_country", () => {
+  assert.deepEqual(placeWeekendDays(createCustomPlace("a", sara)), [6, 7]);
+  const riyadh = createCustomPlace("b", { name: "Omar", zone: "Asia/Riyadh", countryCode: "SA" });
+  assert.deepEqual(placeWeekendDays(riyadh), [5, 6]);
+  const [edited] = editPlace([riyadh], "b", { weekendDays: [6, 7] });
+  assert.deepEqual(edited.weekendDays, [6, 7]);
+  assert.deepEqual(edited.custom, riyadh.custom);
+});
+
+test("test_hol_006_holiday_countries_include_the_country_of_a_custom_place", () => {
+  const kenya = createCustomPlace("a", {
+    name: "Amani",
+    zone: "Africa/Nairobi",
+    countryCode: "KE",
+  });
+  const countries = holidayCountries([createPlace("b", "london"), kenya]);
+  assert.equal(countries.length, listCountries().length + 1);
+  assert.ok(countries.some((country) => country.code === "KE" && country.name === "Kenya"));
+  const names = countries.map((country) => country.name);
+  assert.deepEqual(
+    names,
+    [...names].sort((a, b) => a.localeCompare(b, "en")),
+  );
+  assert.deepEqual(holidayCountries([createPlace("c", "madrid")]), listCountries());
 });
