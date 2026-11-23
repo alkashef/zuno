@@ -6,7 +6,13 @@ import { after, before, test } from "node:test";
 import { config } from "../../../src/config.js";
 import { createPlace, placeName } from "../../../src/domain/places.js";
 import { defaultSettings } from "../../../src/domain/settings.js";
-import { buildToScratch, launchBrowser, openPage, startInstant } from "./page-fixture.js";
+import {
+  browserNames,
+  buildToScratch,
+  launchBrowser,
+  openPage,
+  startInstant,
+} from "./page-fixture.js";
 
 /** @typedef {import("./page-fixture.js").PageBuild} PageBuild */
 /** @typedef {import("./page-fixture.js").Browser} Browser */
@@ -307,4 +313,145 @@ test("test_pck_006_hour_slots_keep_one_width_at_24_and_30_hours", async () => {
   assert.ok(Math.abs(longer.slot - day.slot) < 0.1, `${longer.slot} vs ${day.slot}`);
   assert.deepEqual([day.ticks, longer.ticks], [5, 6]);
   assert.deepEqual([day.date, longer.date], ["16-Nov-26", "16–17-Nov-26"]);
+});
+
+/**
+ * @param {import("./page-fixture.js").Browser["browserType"]} _unused
+ * @returns {void}
+ */
+void 0;
+
+/**
+ * Opens London and New York in one named browser, with the marker at a fraction of the window.
+ * @param {string} name One of `browserNames`.
+ * @param {number} fraction 0 to 1.
+ * @param {"light" | "dark"} [colorScheme]
+ * @returns {Promise<{ page: Page, close: () => Promise<void> }>}
+ */
+async function openIn(name, fraction, colorScheme = "light") {
+  const own = await launchBrowser(/** @type {never} */ (name));
+  const places = ["london", "washington-dc"].map((id, index) => createPlace(`place-${index}`, id));
+  const { page } = await openPage(own, built.url, {
+    colorScheme,
+    saved: { ...defaultSettings(540, 1020), places },
+  });
+  await page.locator('[data-role="row"]').first().waitFor();
+  await dragMarkerTo(page, fraction);
+  return { page, close: () => own.close() };
+}
+
+/**
+ * @param {Page} page
+ * @param {string} selector
+ * @returns {Promise<{ x: number, y: number, width: number, height: number }[]>} The boxes.
+ */
+function boxes(page, selector) {
+  return page.locator(selector).evaluateAll((all) =>
+    all.map((element) => {
+      const { x, y, width, height } = element.getBoundingClientRect();
+      return { x, y, width, height };
+    }),
+  );
+}
+
+test("ui_pck_010_name_stays_at_the_left_end_at_every_marker_position_ex_033", async () => {
+  for (const name of browserNames) {
+    const lefts = new Set();
+    for (const fraction of [0.05, 0.5, 0.95]) {
+      const { page, close } = await openIn(name, fraction);
+      const names = await boxes(page, '[data-role="who"]');
+      const [track] = await boxes(page, '[data-role="track"]');
+      assert.equal(names.length, 2);
+      for (const who of names) {
+        assert.ok(Math.abs(who.x - track.x) <= 1, `${name}: name at ${who.x}, band at ${track.x}`);
+        lefts.add(Math.round(who.x));
+      }
+      await close();
+    }
+    assert.equal(lefts.size, 1, `${name}: the name moved`);
+  }
+});
+
+test("ui_pck_002_date_and_time_label_sits_inside_the_band_beside_the_marker_ex_033", async () => {
+  for (const name of browserNames) {
+    for (const [fraction, side] of /** @type {const} */ ([
+      [0.5, "right"],
+      [0.97, "left"],
+    ])) {
+      const { page, close } = await openIn(name, fraction);
+      const marks = await boxes(page, '[data-role="track"] [data-role="mark"]');
+      const tracks = await boxes(page, '[data-role="track"]');
+      const [line] = await boxes(page, ".picker-line");
+      assert.equal(marks.length, 2, `${name}: the label is not inside the band`);
+      marks.forEach((mark, index) => {
+        const track = tracks[index];
+        assert.ok(mark.x >= track.x - 1 && mark.x + mark.width <= track.x + track.width + 1, name);
+        assert.ok(
+          mark.y >= track.y - 1 && mark.y + mark.height <= track.y + track.height + 1,
+          name,
+        );
+        if (side === "right") assert.ok(mark.x >= line.x + line.width - 1, `${name}: not right`);
+        else assert.ok(mark.x + mark.width <= line.x + 1, `${name}: not left`);
+      });
+      const texts = await page.locator('[data-role="track"] [data-role="mark"]').allTextContents();
+      assert.match(texts[0].replace(/\s+/g, " ").trim(), /^\d+:\d\d [AP]M \d+-\w+-\d\d$/);
+      await close();
+    }
+  }
+});
+
+test("ui_pck_011_label_background_is_see_through_in_both_themes_ex_033", async (t) => {
+  for (const name of browserNames) {
+    for (const scheme of /** @type {const} */ (["light", "dark"])) {
+      const { page, close } = await openIn(name, 0.5, scheme);
+      const result = await page
+        .locator('[data-role="mark"]')
+        .first()
+        .evaluate((mark) => {
+          const doc = mark.ownerDocument;
+          const win = /** @type {Window} */ (doc.defaultView);
+          const canvas = /** @type {CanvasRenderingContext2D} */ (
+            doc.createElement("canvas").getContext("2d")
+          );
+          /** @param {string} css @returns {number[]} Red, green, blue, alpha (0 to 255). */
+          const rgba = (css) => {
+            canvas.clearRect(0, 0, 1, 1);
+            canvas.fillStyle = css;
+            canvas.fillRect(0, 0, 1, 1);
+            return [...canvas.getImageData(0, 0, 1, 1).data];
+          };
+          /** @param {number[]} c @returns {number} Relative luminance. */
+          const lum = (c) => {
+            const [r = 0, g = 0, b = 0] = c.slice(0, 3).map((v) => {
+              const u = v / 255;
+              return u <= 0.03928 ? u / 12.92 : ((u + 0.055) / 1.055) ** 2.4;
+            });
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          };
+          const style = win.getComputedStyle(mark);
+          const over = rgba(style.backgroundColor);
+          const alpha = (over[3] ?? 0) / 255;
+          const text = lum(rgba(style.color));
+          const root = win.getComputedStyle(doc.documentElement);
+          const ratios = ["working", "non-working", "day-off"].map((kind) => {
+            const back = rgba(root.getPropertyValue(`--color-${kind}`).trim() || "#000");
+            const probe = doc.createElement("i");
+            probe.style.background = `var(--color-${kind})`;
+            doc.body.append(probe);
+            const solid = rgba(win.getComputedStyle(probe).backgroundColor);
+            probe.remove();
+            const mixed = [0, 1, 2].map(
+              (i) => (over[i] ?? 0) * alpha + (solid[i] ?? back[i]) * (1 - alpha),
+            );
+            const [high = 0, low = 0] = [text, lum(mixed)].sort((a, b) => b - a);
+            return Number(((high + 0.05) / (low + 0.05)).toFixed(2));
+          });
+          return { over, alpha, ratios };
+        });
+      assert.ok(result.alpha > 0 && result.alpha < 1, `${name} ${scheme}: alpha ${result.alpha}`);
+      assert.ok(Math.abs(result.alpha - 0.82) < 0.01, `${name} ${scheme}: alpha ${result.alpha}`);
+      t.diagnostic(`${name} ${scheme}: label contrast over the slots ${result.ratios.join(", ")}`);
+      await close();
+    }
+  }
 });

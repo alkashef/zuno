@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                       | Description                                           | Model  | Effort | Status   |
 | ------------------------------- | ----------------------------------------------------- | ------ | ------ | -------- |
-| **M46** Picker row: names left, time over the slots | Each picker row keeps its name at the left end; the marker's date and time sit inside the band on a see-through background | sonnet | medium | open |
 | **M47** Settings as a full page with tabs | The settings cover the whole page, with the tabs General, Places and Holidays and vacations | sonnet | high | open |
 | **M48** Custom places: model, zone table, map pin | A place can be a name, a time zone and a country; the zone table, the place model, the controller action and the map pin | opus | high | open |
 | **M49** Add a place or person in the settings | The form of a custom place in "Add a place or person", and the holiday country list that follows the user's places | sonnet | high | open |
@@ -25,24 +24,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M46 — Picker row: names left, time over the slots
-
-- **Refs:** PCK-002, PCK-010, PCK-011, EX-033, DEC-034.
-- **Owner:** `src/views/picker.js` (the row's layout), `src/picker.css`, `src/theme.css`
-  (`--color-picker-label`).
-- **Tests first:** in `tests/e2e/ui/picker.test.js`:
-  `ui_pck_010_name_stays_at_the_left_end_at_every_marker_position_ex_033`,
-  `ui_pck_002_date_and_time_label_sits_inside_the_band_beside_the_marker_ex_033`,
-  `ui_pck_011_label_background_is_see_through_in_both_themes_ex_033`. The existing browser tests that
-  expect the time beside the name change, because PCK-002 changed; the report says so.
-- **Build:** the row's name, offset, city and country stay at the left end above the band. The
-  marker's time, date and, while Hijri is on, Hijri date are one label inside the band, just right of
-  the marker line (just left when it does not fit), in the text colour on `--color-picker-label`
-  (`#D6EBEE` at 82% in the light theme, `#07090D` at 82% in the dark theme). The band is 28 px high,
-  44 px while Hijri is on. Remove `--name-left`, `--name-width` and `data-name-side`.
-- **Gate:** the three tests pass in the four browsers; the browser test records the label's contrast
-  ratios over the slot colours (no threshold, design section 5); the hover label (PCK-008) still works.
 
 ### M47 — Settings as a full page with tabs
 

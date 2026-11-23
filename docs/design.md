@@ -535,7 +535,7 @@ code that moves the name clear of the marker time (`arrangeInfo`); the name bloc
 UTC, and the city and country where they apply) is always at the left. The marker label (`.picker-mark`)
 moves into `.picker-track`: absolutely placed, its left edge at the marker plus `--space-marker`, or its
 right edge at the marker minus that gap when it would pass the track's right end (the view measures the
-widest label as it measures it now, and sets `--mark-left` or `--mark-right`). It takes no pointer events, its
+widest label as it measures it now, and sets `data-mark-side` on the content, which CSS turns into the label's left or right edge). It takes no pointer events, its
 background is its own token, `--color-picker-label`, a little darker than the map label (user request 2026-11-23, canvas
 comment: `#D6EBEE` at 82% light, `#07090D` at 82% dark, made less clear on a second comment; `--color-map-label` stays as it is), and its text is `--color-text`, the Hijri line too, which limits the
 contrast risk that spec section 7 accepts for PCK-011. The track is `--picker-band-height` (28 px) high, or

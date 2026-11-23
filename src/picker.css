@@ -205,11 +205,8 @@
   border-top: var(--line-width) solid var(--color-line-hairline);
 }
 
-/* The name and the marker time share one grid cell, so the row is as tall as the taller of them;
-   each is moved along by a margin that views/picker.js sets (`--name-left`, `--mark-left`). */
 .picker-info {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  display: block;
 }
 
 .picker-row[data-reference="true"],
@@ -219,16 +216,8 @@
 
 .picker-who {
   display: flex;
-  width: var(--name-width, 100%);
   flex-direction: column;
   gap: var(--line-width);
-  grid-area: 1 / 1;
-  margin-left: var(--name-left, 0);
-}
-
-.picker-content[data-name-side="end"] .picker-who {
-  align-items: flex-end;
-  text-align: right;
 }
 
 .picker-name-line {
@@ -262,13 +251,31 @@
   flex: none;
 }
 
+/* The marker's time, inside the band beside the marker line, on a see-through background
+   (PCK-002, PCK-011); views/picker.js sets `data-mark-side` on the content. */
 .picker-mark {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: calc(var(--marker-fraction) * 100% + var(--space-marker));
   display: flex;
   flex-direction: column;
-  grid-area: 1 / 1;
-  justify-self: start;
-  margin-left: var(--mark-left, 0);
+  padding: 0 var(--space-tight);
+  border-radius: var(--radius-small);
+  background: var(--color-picker-label);
+  color: var(--color-text);
+  pointer-events: none;
+  transform: translateY(-50%);
   white-space: nowrap;
+}
+
+.picker-content[data-mark-side="left"] .picker-mark {
+  right: calc((1 - var(--marker-fraction)) * 100% + var(--space-marker));
+  left: auto;
+}
+
+.picker-mark .picker-date {
+  color: var(--color-text);
 }
 
 .picker-when {
@@ -284,7 +291,7 @@
 }
 
 .picker-hijri {
-  color: var(--color-hijri);
+  color: var(--color-text);
   font-size: var(--font-size-caption);
 }
 
@@ -386,4 +393,8 @@
   cursor: grab;
   touch-action: none;
   transform: translateX(-50%);
+}
+
+.picker[data-hijri="true"] .picker-track {
+  height: var(--picker-band-height-hijri);
 }

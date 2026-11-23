@@ -38,6 +38,7 @@
   --color-map-land: light-dark(#ffe6b8, #222b40);
   --color-map-coast: light-dark(#fff, #07090d);
   --color-map-label: color-mix(in srgb, var(--color-card) 50%, transparent);
+  --color-picker-label: light-dark(rgb(214 235 238 / 82%), rgb(7 9 13 / 82%));
   --color-danger: light-dark(#c9344a, #ff7a9e);
   --shadow-small:
     0 2px 8px light-dark(rgb(14 60 70 / 10%), transparent),
@@ -81,6 +82,7 @@
   --grip-height: 44px;
   --picker-max-height: calc(100vh - 15rem);
   --picker-band-height: 28px;
+  --picker-band-height-hijri: 44px;
   --marker-width: 3px;
   --marker-halo: 1.5px;
   --handle-size: 22px;

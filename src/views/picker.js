@@ -4,9 +4,9 @@
  * Owns the time picker panel: the hour axis of the picker window, one row per place with its
  * local date and time and its stretches of working, non-working and day-off time, and the marker,
  * moved by dragging or with the arrow keys (PCK-001 to PCK-003, PCK-005, PCK-006, DSP-001,
- * DSP-002, LAY-001). It passes the number of hour slots to CSS (`--picker-hours`), which makes the
- * panel that many slots of `--picker-slot` wide (DEC-019). It keeps each row's marker time beside
- * the marker line and its name clear of both. It clones its markup from templates in index.html. It does not own the day
+ * DSP-002, LAY-001, PCK-010, PCK-011). It passes the number of hour slots to CSS (`--picker-hours`),
+ * which makes the panel that many slots of `--picker-slot` wide (DEC-019). It keeps each row's name
+ * at the left end and its marker time inside the band beside the marker line (DEC-034). It clones its markup from templates in index.html. It does not own the day
  * selector (views/day-selector.js, built by `deps.makeDaySelector`), computes no window or kind of
  * time (domain/picker.js does) and picks no colour (picker.css does, from theme.css).
  */
@@ -135,7 +135,8 @@ function drawSegments(track, row, range) {
     element.style.setProperty("--segment-size", String((segment.to - segment.from) / span));
     return element;
   });
-  track.replaceChildren(...stretches);
+  track.querySelectorAll('[data-role="segment"]').forEach((old) => old.remove());
+  track.prepend(...stretches);
 }
 
 /**
@@ -249,51 +250,30 @@ function drawMarker(ctx, view, range) {
 }
 
 /**
- * @typedef {object} InfoLayout Where a row's name and marker time go, in pixels from the row's
- *   left edge.
- * @property {number} markLeft
- * @property {number} nameLeft
- * @property {number} nameWidth
- * @property {"start" | "end"} nameSide Whether the name sits at the row's start or its end.
+ * @param {{ width: number, x: number, markWidth: number, gap: number }} room The band's width, the
+ *   marker's position, the widest marker time, and the space kept between the marker and the time.
+ * @returns {"right" | "left"} The side of the marker line the time goes: right when it fits there.
  */
-
-/**
- * @param {{ width: number, x: number, markWidth: number, gap: number }} room The row's width, the
- *   marker's position, the widest marker time, and the space kept around the marker and the time.
- * @returns {InfoLayout} The time just right of the marker when it fits there, else just left of
- *   it; the name in the wider of the two spaces the marker and the time leave.
- */
-function infoLayout({ width, x, markWidth, gap }) {
-  const markRight = x + gap + markWidth <= width;
-  const markLeft = markRight ? x + gap : x - gap - markWidth;
-  const before = markRight ? x - gap : markLeft - gap;
-  const afterStart = markRight ? markLeft + markWidth + gap : x + gap;
-  if (before >= width - afterStart) {
-    return { markLeft, nameLeft: 0, nameWidth: Math.max(0, before), nameSide: "start" };
-  }
-  return { markLeft, nameLeft: afterStart, nameWidth: width - afterStart, nameSide: "end" };
+function markSide({ width, x, markWidth, gap }) {
+  return x + gap + markWidth <= width ? "right" : "left";
 }
 
 /**
  * @param {PanelContext} ctx
- * @returns {void} Places every row's marker time beside the marker and its name clear of both,
- *   through the custom properties `--mark-left`, `--name-left` and `--name-width`.
+ * @returns {void} Puts every row's marker time on the side of the marker line where it fits,
+ *   through `data-mark-side` (CSS places it).
  */
 function arrangeInfo(ctx) {
   const content = part(ctx.root, "content");
   const marks = [...content.querySelectorAll('[data-role="mark"]')];
   const { from, to } = ctx.memo.range;
   const width = content.clientWidth;
-  const layout = infoLayout({
+  content.dataset.markSide = markSide({
     width,
     x: ((ctx.memo.marker - from) / (to - from)) * width,
     markWidth: Math.max(0, ...marks.map((mark) => mark.getBoundingClientRect().width)),
     gap: Number.parseFloat(getComputedStyle(content).getPropertyValue("--space-marker")),
   });
-  content.style.setProperty("--mark-left", `${layout.markLeft}px`);
-  content.style.setProperty("--name-left", `${layout.nameLeft}px`);
-  content.style.setProperty("--name-width", `${layout.nameWidth}px`);
-  content.dataset.nameSide = layout.nameSide;
 }
 
 /**
@@ -309,6 +289,7 @@ function update(ctx, view) {
   ctx.memo.range = range;
   ctx.memo.marker = view.marker.instant;
   drawMarker(ctx, view, range);
+  ctx.root.dataset.hijri = String(view.picker.some((row) => row.hijri !== null));
   const signature = JSON.stringify([view.picker, view.settings]);
   if (signature !== ctx.memo.signature) {
     ctx.memo.signature = signature;
