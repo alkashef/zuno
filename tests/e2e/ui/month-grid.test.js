@@ -225,3 +225,110 @@ test("ui_cal_005_month_buttons_are_32_px_and_the_header_row_takes_40_px", async 
   assert.deepEqual([later?.width, later?.height], [32, 32]);
   assert.equal((box?.height ?? 0) + margin, 40);
 });
+
+const winterBreak = { start: "2026-12-21", end: "2026-12-31", label: "Winter break" };
+
+/**
+ * @param {boolean} showHijri
+ * @param {"light" | "dark"} [colorScheme]
+ * @returns {Promise<Page>} December 2026 with a London place that has a vacation (21 to 31
+ *   December) and a New York place with none, the settings record seeded.
+ */
+async function openVacation(showHijri, colorScheme = "light") {
+  const london = {
+    ...createPlace("place-1", "london"),
+    vacations: [winterBreak],
+  };
+  const { page } = await openPage(browser, built.url, {
+    colorScheme,
+    saved: {
+      ...defaultSettings(540, 1020),
+      showHijri,
+      places: [london, createPlace("place-2", "washington-dc")],
+    },
+  });
+  await page.locator('[data-role="grid-row"]').first().waitFor();
+  await showDecember(page);
+  return page;
+}
+
+/**
+ * @param {Page} page
+ * @param {number} rowIndex
+ * @param {number} dayIndex Zero-based index of the day in December.
+ * @returns {Promise<{ fill: string, image: string, colour: string }>} The cell's `data-fill`,
+ *   background image and background colour.
+ */
+function cellLook(page, rowIndex, dayIndex) {
+  return cellsOf(page, rowIndex)
+    .nth(dayIndex)
+    .evaluate((cell) => {
+      const style = /** @type {Window} */ (cell.ownerDocument.defaultView).getComputedStyle(cell);
+      return {
+        fill: cell.getAttribute("data-fill") ?? "",
+        image: style.backgroundImage,
+        colour: style.backgroundColor,
+      };
+    });
+}
+
+test("ui_vac_004_vacation_cells_have_their_own_colour_and_a_diagonal_split_on_a_holiday_or_weekend", async () => {
+  const page = await openVacation(false);
+  const vacation = await tokenColour(page, "vacation");
+  assert.notEqual(vacation, await tokenColour(page, "weekend"));
+  assert.notEqual(vacation, await tokenColour(page, "holiday"));
+  const plain = await cellLook(page, 0, 20);
+  assert.equal(plain.fill, "vacation");
+  assert.equal(plain.colour, vacation);
+  const christmas = await cellLook(page, 0, 24);
+  assert.equal(christmas.fill, "vacation-holiday");
+  assert.match(christmas.image, /linear-gradient/);
+  assert.ok(christmas.image.includes(vacation));
+  assert.ok(christmas.image.includes(await tokenColour(page, "holiday")));
+  const saturday = await cellLook(page, 0, 25);
+  assert.equal(saturday.fill, "vacation-weekend");
+  assert.match(saturday.image, /linear-gradient/);
+  assert.ok(saturday.image.includes(vacation));
+  assert.ok(saturday.image.includes(await tokenColour(page, "weekend")));
+  assert.equal((await cellLook(page, 0, 17)).fill, "plain");
+  for (let day = 0; day < 31; day += 1) {
+    assert.ok(!(await cellLook(page, 1, day)).fill.startsWith("vacation"), `New York ${day}`);
+  }
+});
+
+test("ui_vac_004_the_hijri_day_on_a_vacation_cell_keeps_its_contrast_in_both_schemes", async () => {
+  for (const colorScheme of /** @type {const} */ (["light", "dark"])) {
+    const page = await openVacation(true, colorScheme);
+    const probe = await cellsOf(page, 0)
+      .nth(20)
+      .evaluate((cell) => {
+        const win = /** @type {Window} */ (cell.ownerDocument.defaultView);
+        const text = win.getComputedStyle(
+          /** @type {Element} */ (cell.querySelector('[data-role="hijri-day"]')),
+        ).color;
+        return { text, back: win.getComputedStyle(cell).backgroundColor };
+      });
+    /** @param {string} rgb @returns {number} The relative luminance. */
+    const luminance = (rgb) => {
+      const [red = 0, green = 0, blue = 0] = (rgb.match(/\d+/g) ?? []).map(Number);
+      const linear = [red, green, blue].map((value) => {
+        const unit = value / 255;
+        return unit <= 0.03928 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+    };
+    const [high, low] = [luminance(probe.text), luminance(probe.back)].sort((a, b) => b - a);
+    const ratio = (high + 0.05) / (low + 0.05);
+    assert.ok(ratio >= 4.5, `${colorScheme}: Hijri day on vacation ${ratio.toFixed(2)}:1`);
+  }
+});
+
+test("ui_vac_006_a_saved_vacation_shows_after_a_reload", async () => {
+  const page = await openVacation(false);
+  assert.equal((await cellLook(page, 0, 22)).fill, "vacation");
+  await page.reload();
+  await page.locator('[data-role="grid-row"]').first().waitFor();
+  await showDecember(page);
+  assert.equal((await cellLook(page, 0, 22)).fill, "vacation");
+  assert.equal((await cellLook(page, 1, 22)).fill, "plain");
+});

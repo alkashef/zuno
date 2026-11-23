@@ -364,3 +364,20 @@ test("test_pck_005_picker_day_off_follows_the_places_weekend_days", () => {
   assert.equal(kindAt(buildPicker(settings, { instant: friday }, {})[0], friday), DayKind.working);
   assert.equal(kindAt(buildPicker(settings, { instant: sunday }, {})[0], sunday), DayKind.dayOff);
 });
+
+test("test_pck_005_a_vacation_day_is_a_day_off_in_the_picker_ex_029", () => {
+  const winter = { start: "2026-12-21", end: "2026-12-31", label: "Winter break" };
+  const [vacationPlace] = editPlace([createPlace("a", "london")], "a", { vacations: [winter] });
+  const settings = settingsWith([vacationPlace, createPlace("b", "washington-dc")]);
+  const tuesday = utc(2026, 12, 22, 17);
+  const [london, washington] = buildPicker(settings, { instant: tuesday }, {});
+  assert.deepEqual(
+    london.segments.map((segment) => segment.kind),
+    [DayKind.dayOff],
+  );
+  assert.equal(kindAt(washington, tuesday), DayKind.working);
+  const before = utc(2026, 12, 18, 11);
+  assert.equal(kindAt(buildPicker(settings, { instant: before }, {})[0], before), DayKind.working);
+  const lastDay = utc(2026, 12, 31, 11);
+  assert.equal(kindAt(buildPicker(settings, { instant: lastDay }, {})[0], lastDay), DayKind.dayOff);
+});

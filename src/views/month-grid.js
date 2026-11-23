@@ -4,7 +4,7 @@
  * Owns the month grid: the previous and next month buttons, the day headers, one row per place with
  * one cell per day (weekend, public holiday, split and today cells), and the holiday card beside
  * the place's name, with a Hide button for a service holiday and a Remove button for one the user
- * added (CAL-001 to CAL-007, LAY-001, HOL-007, HOL-008). It clones its markup from templates in
+ * added (CAL-001 to CAL-007, LAY-001, HOL-007, HOL-008, VAC-004). It clones its markup from templates in
  * index.html. It decides no cell kind (domain/calendar.js does), loads no holiday (the controller
  * does, through `deps.dispatch`) and picks no colour (month-grid.css does, from theme.css).
  */
@@ -111,6 +111,18 @@ function cellKind(day) {
 }
 
 /**
+ * @param {DayFacts} day
+ * @returns {string} The cell's fill (CAL-007, VAC-004): `plain`, `weekend`, `holiday` or
+ *   `vacation` for one colour; `split` for weekend and holiday; `vacation-holiday` or
+ *   `vacation-weekend` for a vacation day that is also one of those.
+ */
+function fillName({ fill }) {
+  if (fill.first === null) return "plain";
+  if (fill.second === null) return fill.first;
+  return fill.first === "vacation" ? `vacation-${fill.second}` : "split";
+}
+
+/**
  * @param {Document} doc
  * @param {HTMLElement} target The cell or button that shows the day.
  * @param {DayFacts} day
@@ -154,6 +166,7 @@ function buildCell(doc, placeId, day) {
   cell.className = "month-grid-cell";
   cell.dataset.role = "cell";
   cell.dataset.kind = cellKind(day);
+  cell.dataset.fill = fillName(day);
   cell.dataset.today = String(day.isToday);
   cell.dataset.date = day.date;
   if (day.holidayName === null) appendHijriDay(doc, cell, day);

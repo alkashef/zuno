@@ -65,19 +65,25 @@ test("ui_leg_001_month_grid_and_picker_each_show_their_own_legend", async () => 
   const picker = page.locator('[data-role="picker"] [data-role="legend"]');
   const inMonth = await readLegend(month);
   const inPicker = await readLegend(picker);
-  assert.deepEqual(inMonth.names, ["Weekend", "Public holiday", "Weekend and holiday", "Today"]);
+  assert.deepEqual(inMonth.names, [
+    "Weekend",
+    "Public holiday",
+    "Weekend and holiday",
+    "Vacation",
+    "Today",
+  ]);
   assert.deepEqual(inPicker.names, [
     "Working hours",
     "Non-working hours",
-    "Day off: weekend or holiday",
+    "Day off: weekend, holiday or vacation",
   ]);
   const plain = [inMonth.swatches[0], inMonth.swatches[1], ...inPicker.swatches];
   const colours = plain.map((swatch) => swatch.colour);
   assert.equal(new Set(colours).size, 5, colours.join(" | "));
   assert.match(inMonth.swatches[2].image, /linear-gradient/);
-  assert.equal(inMonth.swatches[3].ring, "solid");
+  assert.equal(inMonth.swatches[4].ring, "solid");
   const named = await page.locator('[data-role="legend-name"]').allTextContents();
-  assert.equal(new Set(named).size, 7, "every colour is named exactly once on the page");
+  assert.equal(new Set(named).size, 8, "every colour is named exactly once on the page");
 });
 
 test("ui_leg_001_legend_parts_sit_at_the_bottom_of_their_cards_with_no_page_banner", async () => {
@@ -158,4 +164,28 @@ test("ui_hol_014_notice_goes_after_the_user_adds_a_holiday", async () => {
   await section.getByRole("button", { name: "Add holiday" }).click();
   await badge.waitFor({ state: "hidden" });
   assert.equal(await badge.isHidden(), true);
+});
+
+test("ui_leg_001_legend_names_the_vacation_colour_and_the_day_off_includes_vacations", async () => {
+  const saved = withPlaces([createPlace("place-1", "london")]);
+  const { page } = await openPage(browser, built.url, { saved });
+  await page.locator('[data-role="legend"]').first().waitFor();
+  const month = await readLegend(page.locator('[data-role="month-grid"] [data-role="legend"]'));
+  const picker = await readLegend(page.locator('[data-role="picker"] [data-role="legend"]'));
+  const index = month.names.indexOf("Vacation");
+  assert.ok(index >= 0, month.names.join(", "));
+  const others = month.swatches.filter((_, at) => at !== index).map((swatch) => swatch.colour);
+  assert.ok(!others.includes(month.swatches[index].colour));
+  const vacationToken = await page.locator("body").evaluate((body) => {
+    const probe = body.ownerDocument.createElement("div");
+    probe.style.background = "var(--color-vacation)";
+    body.append(probe);
+    const colour = /** @type {Window} */ (body.ownerDocument.defaultView).getComputedStyle(
+      probe,
+    ).backgroundColor;
+    probe.remove();
+    return colour;
+  });
+  assert.equal(month.swatches[index].colour, vacationToken);
+  assert.ok(picker.names.includes("Day off: weekend, holiday or vacation"), picker.names.join());
 });

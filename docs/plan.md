@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                       | Description                                           | Model  | Effort | Status   |
 | ------------------------------- | ----------------------------------------------------- | ------ | ------ | -------- |
-| **M50** Vacations on the grid and in the picker | Saved vacations show in their own colour in the month grid, count as a day off in the picker and appear in the legend | sonnet | high | open |
 | **M51** Hover card, day menu and holiday form | The hover card replaces the click card; a right-click opens the day menu with Add public holiday, Hide and Remove | sonnet | high | open |
 | **M52** Add, edit and remove a vacation from the menu | The day menu and its forms add, change and remove a vacation, and refuse a reversed range | sonnet | high | open |
 | **M53** Export to CSV with its description | Export writes one CSV file of holidays, hidden holidays and vacations; the page describes the format | sonnet | high | open |
@@ -21,35 +20,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M50 — Vacations on the grid and in the picker
-
-- **Refs:** VAC-002 (domain part), VAC-003 (domain part), VAC-004, VAC-006, PCK-005, LEG-001, EX-029,
-  DEC-030.
-- **Owner:** `src/domain/vacations.js` (new; domain layer; the vacations of a place), `src/domain/places.js`
-  (`Place.vacations`), `src/domain/calendar.js` (`DayFacts.vacations` and `fill`),
-  `src/domain/picker.js` (a vacation day is `dayOff`), `src/views/month-grid.js`, `src/views/legend.js`,
-  `src/theme.css` (vacation colour tokens), `src/month-grid.css`, `src/index.html` (legend templates).
-- **Tests first:**
-  - `tests/unit/vacations.test.js`: `test_vac_002_adding_a_copy_of_a_saved_vacation_changes_nothing_and_overlap_is_allowed`,
-    `test_vac_003_a_vacation_that_ends_before_it_starts_is_refused`,
-    `test_vac_003_check_vacation_names_what_is_missing`, `test_vac_004_vacations_on_a_date_in_the_order_added`.
-  - `tests/unit/places.test.js`: `test_vac_006_vacations_are_saved_with_the_place_and_read_back`,
-    `test_vac_006_an_invalid_vacation_is_dropped_and_its_place_stays`.
-  - `tests/unit/calendar.test.js`: `test_vac_004_a_vacation_day_has_the_vacation_fill_ex_029`,
-    `test_vac_004_a_vacation_on_a_weekend_or_holiday_splits_the_fill`.
-  - `tests/unit/picker.test.js`: `test_pck_005_a_vacation_day_is_a_day_off_in_the_picker_ex_029`.
-  - `tests/e2e/ui/month-grid.test.js`:
-    `ui_vac_004_vacation_cells_have_their_own_colour_and_a_diagonal_split_on_a_holiday_or_weekend`,
-    `ui_vac_006_a_saved_vacation_shows_after_a_reload` (the settings record is seeded). In
-    `tests/e2e/ui/legend-notices.test.js`: `ui_leg_001_legend_names_the_vacation_colour_and_the_day_off_includes_vacations`.
-- **Build:** `domain/vacations.js` as in section 2.1; `Place.vacations` (none by default) read through
-  `restorePlace`, and removed with the place; `DayFacts` carries `vacations` and `fill { first, second }`;
-  the vacation tokens `#F2C14E` (light) and `#E9AE3B` (dark); the month-grid cell uses `data-fill`;
-  the picker treats a vacation day as `dayOff`; the legend names the vacation colour.
-- **Gate:** the browser test records the contrast ratios of the vacation colour on the month grid
-  (design section 5); the tests pass in the four browsers; `domain/vacations.js` imports only
-  `domain/user-holidays.js`.
 
 ### M51 — Hover card, day menu and holiday form
 

@@ -29,6 +29,7 @@
   --color-text-on-tint: light-dark(#0e2a33, #07090d);
   --color-weekend: light-dark(#88d5e7, #3fb6e0);
   --color-holiday: light-dark(#ff6b6b, #ff4f8b);
+  --color-vacation: light-dark(#f2c14e, #e9ae3b);
   --color-today: light-dark(#6c5ce7, #ffd166);
   --color-hijri: light-dark(#c0267c, #c7aeff);
   --color-hijri-on-tint: light-dark(#8f1a5b, #2b1464);

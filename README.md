@@ -23,7 +23,7 @@ Holidays and vacations tab to carry your holidays between them.
 ## What it does
 
 A timer app that tracks time across time zones: a world map with a location icon and the local time
-for each place, a month grid of weekends and public holidays, and a meeting-time picker for the
+for each place, a month grid of weekends, public holidays and vacations, and a meeting-time picker for the
 places you add. The map and the month grid are one rounded card, the picker is a card beside it, and
 each of those two cards ends with a legend of its colours. The cards fill the window from edge to
 edge. Drag the picker's left edge to show more hours, and drag the border between the map and the

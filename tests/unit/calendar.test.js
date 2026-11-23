@@ -155,3 +155,47 @@ test("test_cal_002_month_grid_marks_the_places_own_weekend_days", () => {
   assert.equal(saudi[20].isWeekend, true);
   assert.equal(saudi[21].isWeekend, false);
 });
+
+/**
+ * @param {string} cityId
+ * @param {import("../../src/domain/vacations.js").Vacation[]} vacations
+ * @returns {import("../../src/domain/places.js").Place} A place with these vacations.
+ */
+function placeWithVacations(cityId, vacations) {
+  return editPlace([createPlace("a", cityId)], "a", { vacations })[0];
+}
+
+const winterBreak = { start: "2026-12-21", end: "2026-12-31", label: "Winter break" };
+
+test("test_vac_004_a_vacation_day_has_the_vacation_fill_ex_029", () => {
+  const settings = settingsWith([placeWithVacations("london", [winterBreak])]);
+  const [london] = buildMonth(settings, { year: 2026, month: 12 }, {}, noon);
+  assert.deepEqual(london[17].vacations, []);
+  assert.deepEqual(london[17].fill, { first: null, second: null });
+  assert.deepEqual(london[20].vacations, [winterBreak]);
+  assert.deepEqual(london[20].fill, { first: "vacation", second: null });
+  assert.deepEqual(london[30].fill, { first: "vacation", second: null });
+  const other = settingsWith([createPlace("b", "washington-dc")]);
+  assert.deepEqual(buildMonth(other, { year: 2026, month: 12 }, {}, noon)[0][20].vacations, []);
+});
+
+test("test_vac_004_a_vacation_on_a_weekend_or_holiday_splits_the_fill", () => {
+  const settings = settingsWith([placeWithVacations("london", [winterBreak])]);
+  const holidays = {
+    GB: [holiday("2026-12-25", "Christmas Day"), holiday("2026-12-26", "Boxing")],
+  };
+  const [london] = buildMonth(settings, { year: 2026, month: 12 }, holidays, noon);
+  assert.deepEqual(london[24].fill, { first: "vacation", second: "holiday" });
+  assert.deepEqual(london[25].fill, { first: "vacation", second: "holiday" });
+  assert.deepEqual(london[26].fill, { first: "vacation", second: "weekend" });
+  const plain = buildMonth(
+    settingsWith([createPlace("a", "london")]),
+    { year: 2026, month: 12 },
+    holidays,
+    noon,
+  )[0];
+  assert.deepEqual(plain[24].fill, { first: "holiday", second: null });
+  assert.deepEqual(plain[25].fill, { first: "weekend", second: "holiday" });
+  assert.deepEqual(plain[26].fill, { first: "weekend", second: null });
+  assert.deepEqual(plain[27].fill, { first: null, second: null });
+});

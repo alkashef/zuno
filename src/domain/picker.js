@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * @module domain/picker
- * The picker model (PCK-001 to PCK-003, PCK-005 to PCK-007, PCK-009, SET-005, DEC-019): the window of
+ * The picker model (PCK-001 to PCK-003, PCK-005 to PCK-007, PCK-009, SET-005, DEC-019, DEC-030): the window of
  * `pickerHours` hours from midnight of the selected day in the first place, one row of segments per
  * place that covers the window exactly, each place's local date and time at the marker, the first
  * and last date of the window, the marker kept inside the window, and the selected day and marker
@@ -10,6 +10,7 @@
  */
 import { hijriDate } from "./hijri.js";
 import { holidayOn } from "./holidays.js";
+import { vacationsOn } from "./vacations.js";
 import { isWeekend } from "./weekends.js";
 import { instantAtLocal, localDateTime, offsetChange } from "./zones.js";
 
@@ -122,15 +123,28 @@ function isoDate(date) {
 
 /**
  * @param {RowContext} row
+ * @param {LocalDateTime} local The place's local date and time.
+ * @returns {boolean} Whether the day is a weekend day, a public holiday or a day covered by one of
+ *   the place's vacations (PCK-005).
+ */
+function isDayOff(row, local) {
+  const { place } = row;
+  const date = isoDate(local);
+  return (
+    isWeekend(place, local) ||
+    holidayOn(row.holidays, place.region, date) !== null ||
+    vacationsOn(place.vacations, date).length > 0
+  );
+}
+
+/**
+ * @param {RowContext} row
  * @param {number} instant UTC milliseconds.
  * @returns {DayKindName} The kind of time in the place at that instant.
  */
 function kindAt(row, instant) {
-  const { place } = row;
-  const local = localDateTime(instant, place.zone);
-  const isDayOff =
-    isWeekend(place, local) || holidayOn(row.holidays, place.region, isoDate(local)) !== null;
-  if (isDayOff) return DayKind.dayOff;
+  const local = localDateTime(instant, row.place.zone);
+  if (isDayOff(row, local)) return DayKind.dayOff;
   const minutes = local.hour * minutesPerHour + local.minute;
   const isWorking = minutes >= row.workStartMinutes && minutes < row.workEndMinutes;
   return isWorking ? DayKind.working : DayKind.nonWorking;

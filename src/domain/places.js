@@ -4,7 +4,7 @@
  * The list of places: makes a place from a city or a custom place from a name, a time zone and a
  * country, restores a saved one, validates, adds, removes, moves, edits and names them, puts each on
  * the map and lists the countries of the Holidays section (SET-001, SET-002, SET-006, SET-008,
- * SET-009, SET-010, SET-013, SET-015, SET-016, SET-018, MAP-001, MAP-002, HOL-006, DEC-029). Every
+ * SET-009, SET-010, SET-013, SET-015, SET-016, SET-018, MAP-001, MAP-002, HOL-006, VAC-006, DEC-029, DEC-030). Every
  * function returns a new list and leaves its input unchanged. The list order is the display order
  * (PCK-006). It does not hold the city list (domain/cities.js does) or the zone table
  * (domain/zone-table.js does).
@@ -12,6 +12,7 @@
 import { cityOf, countryName, listCountries } from "./cities.js";
 import { formatDate, formatTime } from "./format.js";
 import { HijriVariant, isHijriAdjust, isHijriVariant } from "./hijri.js";
+import { isVacationList, parseVacations } from "./vacations.js";
 import { countryWeekendDays, isWeekendChoice } from "./weekends.js";
 import { isKnownCountry, isKnownZone, zoneRow } from "./zone-table.js";
 import { localDateTime } from "./zones.js";
@@ -19,6 +20,7 @@ import { localDateTime } from "./zones.js";
 /** @typedef {import("./hijri.js").HijriVariantName} HijriVariantName */
 /** @typedef {import("./cities.js").City} City */
 /** @typedef {import("./cities.js").CountryChoice} CountryChoice */
+/** @typedef {import("./vacations.js").Vacation} Vacation */
 
 /**
  * @typedef {object} CustomPlace A place the user entered instead of choosing a city (SET-018).
@@ -41,6 +43,7 @@ import { localDateTime } from "./zones.js";
  *   `null` means the weekend of the place's country (SET-016).
  * @property {HijriVariantName} hijriVariant
  * @property {number} hijriAdjust -1, 0 or 1 days.
+ * @property {Vacation[]} vacations The place's vacations; none by default (VAC-006, DEC-030).
  */
 
 /** @typedef {{ countryCode: string, zone: string }} PlaceOrigin The country and zone of a place. */
@@ -115,6 +118,7 @@ export function isPlace(value) {
   const record = /** @type {Record<string, unknown>} */ (value);
   return (
     hasTextFields(record) &&
+    isVacationList(record.vacations) &&
     isWeekendChoice(record.weekendDays) &&
     isHijriVariant(record.hijriVariant) &&
     isHijriAdjust(record.hijriAdjust) &&
@@ -140,14 +144,15 @@ export function isUnusablePlace(value) {
  * custom entry, so a correction of the city table reaches saved places (DEC-016, DEC-029).
  * @param {unknown} value A place as read from storage.
  * @returns {Place | null} The place, or `null` when it is invalid, or neither a city of the list
- *   nor a valid custom place.
+ *   nor a valid custom place. An invalid vacation is dropped alone and the place stays (DEC-030).
  */
 export function restorePlace(value) {
   if (typeof value !== "object" || value === null) return null;
+  /** @type {Record<string, unknown>} */
   const record = { weekendDays: null, cityId: null, custom: null, ...value };
   const origin = originOf(record);
   if (origin === null) return null;
-  const place = { ...record, ...origin };
+  const place = { ...record, ...origin, vacations: parseVacations(record.vacations) };
   return isPlace(place) ? place : null;
 }
 
@@ -166,6 +171,7 @@ function newPlace(id, origin) {
     weekendDays: null,
     hijriVariant: HijriVariant.umalqura,
     hijriAdjust: 0,
+    vacations: [],
   };
 }
 

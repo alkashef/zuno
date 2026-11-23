@@ -42,6 +42,10 @@
   background: var(--color-holiday);
 }
 
+.legend-swatch-vacation {
+  background: var(--color-vacation);
+}
+
 .legend-swatch-working {
   background: var(--color-working);
 }

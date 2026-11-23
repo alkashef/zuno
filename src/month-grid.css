@@ -138,6 +138,18 @@
   background: linear-gradient(135deg, var(--color-weekend) 50%, var(--color-holiday) 50%);
 }
 
+.month-grid-cell[data-fill="vacation"] {
+  background: var(--color-vacation);
+}
+
+.month-grid-cell[data-fill="vacation-holiday"] {
+  background: linear-gradient(135deg, var(--color-vacation) 50%, var(--color-holiday) 50%);
+}
+
+.month-grid-cell[data-fill="vacation-weekend"] {
+  background: linear-gradient(135deg, var(--color-vacation) 50%, var(--color-weekend) 50%);
+}
+
 .month-grid-cell[data-today="true"] {
   outline: var(--today-outline-width) solid var(--color-today);
   outline-offset: calc(-1 * var(--today-outline-width));
@@ -170,7 +182,7 @@
   line-height: 1;
 }
 
-.month-grid-cell:not([data-kind="plain"]) .month-grid-hijri {
+.month-grid-cell:not([data-fill="plain"]) .month-grid-hijri {
   color: var(--color-hijri-on-tint);
 }
 

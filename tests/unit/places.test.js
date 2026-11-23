@@ -179,6 +179,7 @@ test("test_set_018_custom_place_from_name_zone_and_country_ex_027", () => {
     weekendDays: null,
     hijriVariant: "umalqura",
     hijriAdjust: 0,
+    vacations: [],
   });
   assert.ok(isPlace(place));
   assert.equal(placeName(place, false), "Sara");
@@ -258,4 +259,28 @@ test("test_hol_006_holiday_countries_include_the_country_of_a_custom_place", () 
     [...names].sort((a, b) => a.localeCompare(b, "en")),
   );
   assert.deepEqual(holidayCountries([createPlace("c", "madrid")]), listCountries());
+});
+
+test("test_vac_006_vacations_are_saved_with_the_place_and_read_back", () => {
+  const winter = { start: "2026-12-21", end: "2026-12-31", label: "Winter break" };
+  const place = createPlace("a", "london");
+  assert.deepEqual(place.vacations, []);
+  const [withVacation] = editPlace([place], "a", { vacations: [winter] });
+  assert.deepEqual(withVacation.vacations, [winter]);
+  assert.deepEqual(restorePlace(JSON.parse(JSON.stringify(withVacation))), withVacation);
+  const { vacations, ...oldRecord } = place;
+  assert.deepEqual(vacations, []);
+  assert.deepEqual(restorePlace(oldRecord)?.vacations, []);
+  assert.deepEqual(removePlace([withVacation], "a"), []);
+});
+
+test("test_vac_006_an_invalid_vacation_is_dropped_and_its_place_stays", () => {
+  const winter = { start: "2026-12-21", end: "2026-12-31", label: "Winter break" };
+  const reversed = { start: "2026-12-31", end: "2026-12-21", label: "" };
+  const stored = { ...createPlace("a", "london"), vacations: [reversed, winter, "text"] };
+  assert.deepEqual(restorePlace(stored)?.vacations, [winter]);
+  assert.deepEqual(restorePlace({ ...stored, vacations: "text" })?.vacations, []);
+  const [edited] = editPlace([createPlace("a", "london")], "a", { vacations: [reversed] });
+  assert.deepEqual(edited.vacations, []);
+  assert.equal(isPlace({ ...createPlace("a", "london"), vacations: [reversed] }), false);
 });

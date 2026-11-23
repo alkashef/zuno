@@ -38,7 +38,7 @@ export function emptyUserHolidays() {
  * @param {unknown} value
  * @returns {value is string} Whether the value is a `YYYY-MM-DD` string of a real calendar date.
  */
-function isCalendarDate(value) {
+export function isCalendarDate(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const [year, month, day] = value.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));
