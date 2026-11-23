@@ -156,21 +156,6 @@ test("ui_cal_005_previous_and_next_month_buttons", async () => {
   assert.equal(await cellsOf(page, 0).count(), 31);
 });
 
-test("ui_cal_006_holiday_card_opens_and_closes", async () => {
-  const page = await openWith(["london", "washington-dc"]);
-  await showDecember(page);
-  const card = page.getByRole("dialog", { name: "Holiday" });
-  assert.equal(await card.count(), 0);
-  await page.getByRole("button", { name: "Invented Day, 25-Dec-26" }).first().click();
-  assert.equal(await card.count(), 1);
-  assert.match((await card.textContent()) ?? "", /Invented Day/);
-  assert.match((await card.textContent()) ?? "", /25-Dec-26/);
-  const inFirstRow = await card.evaluate((node) => node.closest('[data-role="place"]') !== null);
-  assert.equal(inFirstRow, true);
-  await page.getByRole("button", { name: "Close holiday" }).click();
-  assert.equal(await card.count(), 0);
-});
-
 test("ui_cal_007_weekend_holiday_cell_is_split", async () => {
   const page = await openWith(["cairo"]);
   await showDecember(page);

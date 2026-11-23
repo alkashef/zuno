@@ -35,9 +35,11 @@ days of any place (the default is its country's weekend), and the Holidays form 
 each custom place. The
 settings cover the whole page and have three tabs: General (the working hours, the display
 switches and the theme: Light, Dark, or Auto, which follows your system), Places (add a place and
-the list of places) and Holidays and vacations. The Close button or Escape closes them. You can add a public holiday the holiday service does not
-list (by country, date and name), remove it, and hide a listed holiday from its card in the month grid and show it again from
-the settings panel. Your added and hidden holidays are saved in the browser. "Export" in the
+the list of places) and Holidays and vacations. The Close button or Escape closes them. Point at a holiday or vacation day in the month grid (or move the focus to it) and a card
+beside the place's name shows its name and dates. Right-click any day to open a menu: "Add public holiday…"
+asks for a name and adds the holiday, with the date you clicked, for that place's country; on a holiday day the
+menu also has "Hide public holiday", or "Remove public holiday" for one you added. The settings also
+add a public holiday the holiday service does not list (by country, date and name), remove it, and show a hidden holiday again. Your added and hidden holidays are saved in the browser. "Export" in the
 Holidays and vacations tab saves them to a file (`zuno-holidays.json`) that you can share, and "Import" adds the
 holidays of such a file to your own; a file that is not a Zuno holidays file is refused and nothing
 changes. Both use local files only. The settings panel ends with the version: the word "Version" and the

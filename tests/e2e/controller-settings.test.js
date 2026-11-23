@@ -148,12 +148,12 @@ test("test_set_001_removed_place_keeps_holidays_another_place_uses", async () =>
   assert.deepEqual([...calls].sort(), ["GB-2026", "US-2026"]);
 });
 
-test("test_set_001_removing_a_place_closes_its_holiday_card", async () => {
+test("test_set_001_removing_the_only_place_leaves_the_empty_page", async () => {
   const { controller } = setup();
   await controller.dispatch({ type: "open" });
   await controller.dispatch({ type: "addPlace", cityId: "london" });
   await controller.dispatch({ type: "removePlace", placeId: "place-1" });
-  assert.equal(controller.getState().selectedHoliday, null);
+  assert.equal(controller.getState().isEmpty, true);
 });
 
 test("test_set_002_add_city_sets_name_country_and_zone", async () => {

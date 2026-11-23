@@ -8,12 +8,12 @@ import { getHolidays } from "./api.js";
 import * as clock from "./clock.js";
 import { config } from "./config.js";
 import { createController } from "./controller.js";
-import { monthWeeks } from "./domain/calendar.js";
+import { dayMenuChoices, monthWeeks } from "./domain/calendar.js";
 import { countryName, listAllCountries, listCities } from "./domain/cities.js";
 import { isTableCountry, tableHolidays } from "./domain/holiday-table.js";
 import { holidayCountries, placeFacts, placeName, placePin } from "./domain/places.js";
 import { parseSettings } from "./domain/settings.js";
-import { isAddedHoliday, parseUserHolidays } from "./domain/user-holidays.js";
+import { parseUserHolidays } from "./domain/user-holidays.js";
 import { countryWeekendDays, placeWeekendDays } from "./domain/weekends.js";
 import { localDateTime, zoneOffset } from "./domain/zones.js";
 import { listZones } from "./domain/zone-table.js";
@@ -21,6 +21,9 @@ import { createFiles } from "./files.js";
 import { log } from "./log.js";
 import { createStorage } from "./storage.js";
 import { bindActions } from "./views/actions.js";
+import { createCellCard } from "./views/cell-card.js";
+import { createDayDialog } from "./views/day-dialog.js";
+import { createDayMenu } from "./views/day-menu.js";
 import { createEmptyPage } from "./views/empty.js";
 import { createDaySelector } from "./views/day-selector.js";
 import { createErrorScreen } from "./views/error-screen.js";
@@ -98,8 +101,15 @@ const views = [
   createMonthGrid(document, {
     dispatch: controller.dispatch,
     placeFacts,
-    isAddedHoliday,
     makeHijriNote: createHijriNote,
+    makeCellCard: createCellCard,
+    makeDayMenu: (doc, root, lookup) =>
+      createDayMenu(doc, root, {
+        ...lookup,
+        choicesOf: dayMenuChoices,
+        dispatch: controller.dispatch,
+        dialog: createDayDialog(doc, { dispatch: controller.dispatch }),
+      }),
   }),
   createPicker(document, {
     dispatch: controller.dispatch,

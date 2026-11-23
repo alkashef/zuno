@@ -3,7 +3,7 @@
  * @module controller
  * The page workflows: applies an action to the page state, asks the injected `holidayTable` or `api` for the holidays
  * the shown month and the marker's window need, and tells subscribers about every new state
- * (PCK-004, PCK-006, PCK-007, PCK-009, LAY-003, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-001, SET-002,
+ * (PCK-004, PCK-006, PCK-007, PCK-009, LAY-003, CAL-005, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-001, SET-002,
  * SET-004 to SET-014, SET-018, HIJ-002, HIJ-003, HOL-003, HOL-006 to HOL-013, DEC-007, DEC-016 to DEC-019, DEC-022,
  * DEC-029).
  * Pure apart from its injected `api`, `storage`, `holidayStorage`, `files` and `clock`. It touches no DOM (the
@@ -12,7 +12,6 @@
  * adding a custom place is in controller-places.js.
  */
 import {
-  holidayAt,
   holidayHandlers,
   holidaysByCountry,
   loadUserHolidays,
@@ -21,7 +20,7 @@ import {
   tableAnswer,
 } from "./controller-holidays.js";
 import { nextPlaceId, placeHandlers } from "./controller-places.js";
-import { buildMonth } from "./domain/calendar.js";
+import { buildMonth, markAddedHolidays } from "./domain/calendar.js";
 import { cityOf } from "./domain/cities.js";
 import {
   buildPicker,
@@ -50,7 +49,6 @@ import { localDateTime } from "./domain/zones.js";
 /** @typedef {import("./controller-holidays.js").HolidayTable} HolidayTable */
 /** @typedef {import("./controller-holidays.js").Notices} Notices */
 /** @typedef {import("./controller-holidays.js").ResultsByCountryYear} ResultsByCountryYear */
-/** @typedef {import("./controller-holidays.js").SelectedHoliday} SelectedHoliday */
 /** @typedef {import("./controller-places.js").PlaceAction} PlaceAction */
 /** @typedef {import("./domain/calendar.js").DayFacts} DayFacts */
 /** @typedef {import("./domain/calendar.js").MonthRef} MonthRef */
@@ -98,7 +96,6 @@ import { localDateTime } from "./domain/zones.js";
  * @property {MonthRef} month The month the grid shows (CAL-005).
  * @property {ResultsByCountryYear} holidayResults Every answer of the holiday service.
  * @property {UserHolidays} userHolidays The holidays the user added and hid (HOL-006 to HOL-008).
- * @property {SelectedHoliday | null} selectedHoliday
  * @property {boolean} noticesOpen
  * @property {boolean} settingsOpen
  * @property {"refused" | null} holidayImport `refused` while the last imported file was refused (HOL-012).
@@ -123,7 +120,6 @@ import { localDateTime } from "./domain/zones.js";
  * @typedef {{ type: "open" } | { type: "refresh" } | { type: "tick" }
  *   | { type: "setMarker", instant: number } | { type: "setMarker", date: CalendarDate }
  *   | { type: "shiftMarkerDay", days: number } | { type: "showMonth", offset: number }
- *   | { type: "selectHoliday", cell: { placeId: string, date: string } | null }
  *   | { type: "toggleNotices" } | { type: "openSettings" } | { type: "closeSettings" }
  *   | { type: "addPlace", cityId: string } | { type: "removePlace", placeId: string }
  *   | { type: "movePlace", placeId: string, offset: number }
@@ -226,7 +222,11 @@ function derive(state) {
     picker: buildPicker(settings, state.marker, holidays, state.selectedDay),
     pickerWindow: pickerWindow(settings, state.selectedDay),
     windowDates: windowDates(settings, state.selectedDay),
-    grid: buildMonth(settings, state.month, holidays, state.now),
+    grid: markAddedHolidays(
+      buildMonth(settings, state.month, holidays, state.now),
+      settings,
+      state.userHolidays,
+    ),
     notices: noticesOf(state.holidayResults, needed, settings.places, state.userHolidays),
   };
 }
@@ -381,24 +381,14 @@ function shiftMarkerDay(ctx, action) {
 }
 
 /**
- * Shows an earlier or later month and closes any holiday card (CAL-005).
+ * Shows an earlier or later month (CAL-005).
  * @param {Context} ctx
  * @param {Extract<Action, { type: "showMonth" }>} action
  * @returns {Promise<void>}
  */
 function showMonth(ctx, action) {
-  ctx.update({ month: shiftMonth(ctx.read().month, action.offset), selectedHoliday: null });
+  ctx.update({ month: shiftMonth(ctx.read().month, action.offset) });
   return requestMissing(ctx);
-}
-
-/**
- * Opens the card of a holiday cell, or closes it when the cell is `null` (CAL-006).
- * @param {Context} ctx
- * @param {Extract<Action, { type: "selectHoliday" }>} action
- * @returns {void}
- */
-function selectHoliday(ctx, { cell }) {
-  ctx.update({ selectedHoliday: cell === null ? null : holidayAt(ctx.read(), cell) });
 }
 
 /**
@@ -442,14 +432,11 @@ function settleDay(state, next) {
 function commitSettings(ctx, next) {
   if (next === null) return Promise.resolve();
   const state = ctx.read();
-  const { holidayResults, selectedHoliday } = state;
   ctx.deps.storage.save(next);
-  const shown = next.places.some((place) => place.id === selectedHoliday?.placeId);
   ctx.update({
     settings: next,
     ...settleDay(state, next),
-    holidayResults: keepUsedCountries(holidayResults, next.places),
-    selectedHoliday: shown ? selectedHoliday : null,
+    holidayResults: keepUsedCountries(state.holidayResults, next.places),
   });
   return requestMissing(ctx);
 }
@@ -593,7 +580,6 @@ function handlers() {
     setMarker,
     shiftMarkerDay,
     showMonth,
-    selectHoliday,
     ...settingsHandlers(),
     ...holidayHandlers(),
     ...placeHandlers(changePlaces),
@@ -617,7 +603,6 @@ function initialState(now) {
     month: monthAt(now, null),
     holidayResults: {},
     userHolidays: emptyUserHolidays(),
-    selectedHoliday: null,
     noticesOpen: false,
     settingsOpen: false,
     holidayImport: null,

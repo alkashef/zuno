@@ -208,30 +208,54 @@
       </section>
     </template>
 
-    <template id="month-grid-card-template">
-      <div class="month-grid-card" role="dialog" aria-label="Holiday">
-        <div class="month-grid-card-title">
-          <span class="month-grid-card-swatch" aria-hidden="true"></span>
-          <p class="month-grid-card-name" data-role="card-name"></p>
-          <button
-            type="button"
-            class="month-grid-card-close"
-            data-role="card-close"
-            aria-label="Close holiday"
-          >
-            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M6 6l12 12M18 6L6 18" />
-            </svg>
-          </button>
-        </div>
-        <p class="month-grid-card-facts">
-          <span data-role="card-date"></span>
-          <span class="month-grid-card-hijri" data-role="card-hijri" hidden></span>
-          <span>Public holiday</span>
+    <template id="cell-card-template">
+      <div class="cell-card" role="tooltip" data-role="cell-card"></div>
+    </template>
+
+    <template id="cell-card-entry-template">
+      <div class="cell-card-entry">
+        <p class="cell-card-title">
+          <span class="cell-card-swatch" data-role="card-swatch" aria-hidden="true"></span>
+          <span class="cell-card-name" data-role="card-name"></span>
         </p>
-        <button type="button" class="button" data-role="card-hide">Hide</button>
-        <button type="button" class="button" data-role="card-remove">Remove</button>
+        <p class="cell-card-facts">
+          <span data-role="card-date"></span>
+          <span class="cell-card-hijri" data-role="card-hijri" hidden></span>
+          <span data-role="card-kind"></span>
+        </p>
       </div>
+    </template>
+
+    <template id="day-menu-template">
+      <div class="day-menu" role="menu" aria-label="Day" data-role="day-menu"></div>
+    </template>
+
+    <template id="day-menu-item-template">
+      <button type="button" class="day-menu-item" role="menuitem" data-role="menu-item"></button>
+    </template>
+
+    <template id="day-dialog-template">
+      <dialog class="day-dialog" data-role="day-dialog" aria-labelledby="day-dialog-title">
+        <h2 class="day-dialog-title" id="day-dialog-title" data-role="dialog-title"></h2>
+        <div data-role="dialog-body"></div>
+      </dialog>
+    </template>
+
+    <template id="day-holiday-form-template">
+      <form class="day-dialog-form" data-role="holiday-form" novalidate>
+        <label class="day-dialog-field">
+          <span class="day-dialog-label">Name</span>
+          <input type="text" class="day-dialog-input" data-role="dialog-name" autofocus />
+        </label>
+        <label class="day-dialog-field">
+          <span class="day-dialog-label">Date</span>
+          <input type="date" class="day-dialog-input" data-role="dialog-date" />
+        </label>
+        <div class="day-dialog-buttons">
+          <button type="button" class="button" data-role="dialog-cancel">Cancel</button>
+          <button type="submit" class="button button-primary">Add holiday</button>
+        </div>
+      </form>
     </template>
 
     <template id="hijri-note-template">

@@ -2,12 +2,15 @@
 /**
  * @module domain/calendar
  * The month-grid model: one row per place, one cell of facts per day (CAL-001 to CAL-004, CAL-007,
- * VAC-004, HIJ-001, DEC-030), and the weeks of a month for the day selector's calendar (PCK-007). It says what each cell is; the view chooses colours, including the split cell for a
- * holiday on a weekend day (CAL-007). It reads no clock (the caller passes the instant), makes no
- * request, and does not format dates as text (domain/format.js does).
+ * VAC-004, HIJ-001, DEC-030), the choices of the day menu of a cell (HOL-015, HOL-019, DEC-031) and
+ * the weeks of a month for the day selector's calendar (PCK-007). It says what each cell is; the view
+ * chooses colours, including the split cell for a holiday on a weekend day (CAL-007). It reads no
+ * clock (the caller passes the instant), makes no request, and does not format dates as text
+ * (domain/format.js does).
  */
 import { hijriDate } from "./hijri.js";
 import { holidayOn } from "./holidays.js";
+import { isAddedHoliday } from "./user-holidays.js";
 import { vacationsOn } from "./vacations.js";
 import { isWeekend } from "./weekends.js";
 import { localDateTime } from "./zones.js";
@@ -27,6 +30,17 @@ export const FillKind = Object.freeze({
 
 /** @typedef {typeof FillKind[keyof typeof FillKind]} FillKindName */
 
+/** The choices of the day menu (HOL-015, HOL-019, DEC-031). */
+export const DayChoiceKind = Object.freeze({
+  addHoliday: "addHoliday",
+  hideHoliday: "hideHoliday",
+  removeHoliday: "removeHoliday",
+});
+
+/** @typedef {typeof DayChoiceKind[keyof typeof DayChoiceKind]} DayChoiceKindName */
+/** @typedef {{ kind: DayChoiceKindName }} DayMenuChoice One choice of the day menu. */
+/** @typedef {import("./user-holidays.js").UserHolidays} UserHolidays */
+
 /**
  * @typedef {object} Fill What a cell is filled with (DEC-030).
  * @property {FillKindName | null} first The kind of the first colour, or `null` for a plain day.
@@ -45,6 +59,9 @@ export const FillKind = Object.freeze({
  * @property {string} date `YYYY-MM-DD`.
  * @property {boolean} isWeekend Whether the day is a weekend day of the place (CAL-002).
  * @property {string | null} holidayName The public holiday's name, or `null` (CAL-003).
+ * @property {boolean} holidayAdded Whether the user added that holiday (HOL-019); `false` for a
+ *   holiday of the service or the table, and for a day with none. `buildMonth` gives `false`;
+ *   `markAddedHolidays` sets it.
  * @property {Vacation[]} vacations The place's vacations that cover the day, in the order added
  *   (VAC-004).
  * @property {Fill} fill The kinds of the cell's colours (CAL-007, VAC-004).
@@ -108,6 +125,7 @@ function dayFacts(row, monthRef, day) {
     date,
     isWeekend: weekend,
     holidayName,
+    holidayAdded: false,
     vacations,
     fill: fillOf({ isWeekend: weekend, isHoliday: holidayName !== null, vacations }),
     isToday: date === row.today,
@@ -144,6 +162,40 @@ export function buildMonth(settings, monthRef, holidays, nowInstant) {
     };
     return Array.from({ length: dayCount }, (_, index) => dayFacts(row, monthRef, index + 1));
   });
+}
+
+/**
+ * Marks the holidays the user added (HOL-019).
+ * @param {DayFacts[][]} grid The grid of `buildMonth`, one row per place of `settings`.
+ * @param {Settings} settings The places of the grid's rows.
+ * @param {UserHolidays} userHolidays
+ * @returns {DayFacts[][]} The grid with `holidayAdded` true on every day whose holiday the user
+ *   added for the row's country.
+ */
+export function markAddedHolidays(grid, settings, userHolidays) {
+  return grid.map((days, index) => {
+    const { countryCode } = settings.places[index];
+    return days.map((day) => ({
+      ...day,
+      holidayAdded:
+        day.holidayName !== null &&
+        isAddedHoliday(userHolidays, { countryCode, date: day.date, name: day.holidayName }),
+    }));
+  });
+}
+
+/**
+ * The choices of the day menu of a cell (HOL-015, HOL-019, DEC-031).
+ * @param {DayFacts} day The cell's facts.
+ * @returns {DayMenuChoice[]} Add public holiday for every day, then Hide public holiday for a
+ *   holiday of the service or the table, or Remove public holiday for one the user added.
+ */
+export function dayMenuChoices(day) {
+  /** @type {DayMenuChoice[]} */
+  const choices = [{ kind: DayChoiceKind.addHoliday }];
+  if (day.holidayName === null) return choices;
+  const kind = day.holidayAdded ? DayChoiceKind.removeHoliday : DayChoiceKind.hideHoliday;
+  return [...choices, { kind }];
 }
 
 /**

@@ -3,7 +3,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { buildMonth, monthWeeks } from "../../src/domain/calendar.js";
+import {
+  buildMonth,
+  dayMenuChoices,
+  markAddedHolidays,
+  monthWeeks,
+} from "../../src/domain/calendar.js";
 import { createPlace, editPlace } from "../../src/domain/places.js";
 import { defaultSettings } from "../../src/domain/settings.js";
 
@@ -198,4 +203,46 @@ test("test_vac_004_a_vacation_on_a_weekend_or_holiday_splits_the_fill", () => {
   assert.deepEqual(plain[25].fill, { first: "weekend", second: "holiday" });
   assert.deepEqual(plain[26].fill, { first: "weekend", second: null });
   assert.deepEqual(plain[27].fill, { first: null, second: null });
+});
+
+/**
+ * @param {import("../../src/domain/user-holidays.js").HolidayEntry[]} added
+ * @returns {import("../../src/domain/user-holidays.js").UserHolidays} A record with these added holidays.
+ */
+function recordWith(added) {
+  return { version: 1, added, hidden: [] };
+}
+
+/**
+ * @param {import("../../src/domain/calendar.js").DayFacts} cell
+ * @returns {string[]} The kinds of the choices the day menu gives for the cell.
+ */
+function menuKinds(cell) {
+  return dayMenuChoices(cell).map((choice) => choice.kind);
+}
+
+test("test_hol_019_day_menu_of_a_service_holiday_offers_hide_and_of_an_added_one_remove", () => {
+  const settings = settingsWith([createPlace("a", "london")]);
+  const holidays = {
+    GB: [holiday("2026-11-12", "Service Day"), holiday("2026-11-13", "Team Day")],
+  };
+  const added = [{ countryCode: "GB", date: "2026-11-13", name: "Team Day" }];
+  const grid = buildMonth(settings, { year: 2026, month: 11 }, holidays, noon);
+  const [row] = markAddedHolidays(grid, settings, recordWith(added));
+  assert.equal(row[11].holidayName, "Service Day");
+  assert.equal(row[11].holidayAdded, false);
+  assert.deepEqual(menuKinds(row[11]), ["addHoliday", "hideHoliday"]);
+  assert.equal(row[12].holidayAdded, true);
+  assert.deepEqual(menuKinds(row[12]), ["addHoliday", "removeHoliday"]);
+});
+
+test("test_hol_015_day_menu_of_any_day_offers_add_public_holiday", () => {
+  const settings = settingsWith([createPlace("a", "london")]);
+  const [row] = buildMonth(settings, { year: 2026, month: 11 }, {}, noon);
+  assert.equal(
+    row.every((cell) => cell.holidayAdded === false),
+    true,
+  );
+  assert.deepEqual(menuKinds(row[0]), ["addHoliday"]);
+  assert.deepEqual(menuKinds(row[20]), ["addHoliday"]);
 });

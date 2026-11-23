@@ -2,28 +2,21 @@
 /**
  * @module views/month-grid
  * Owns the month grid: the previous and next month buttons, the day headers, one row per place with
- * one cell per day (weekend, public holiday, split and today cells), and the holiday card beside
- * the place's name, with a Hide button for a service holiday and a Remove button for one the user
- * added (CAL-001 to CAL-007, LAY-001, HOL-007, HOL-008, VAC-004). It clones its markup from templates in
- * index.html. It decides no cell kind (domain/calendar.js does), loads no holiday (the controller
- * does, through `deps.dispatch`) and picks no colour (month-grid.css does, from theme.css).
+ * one cell per day (weekend, public holiday, vacation, split and today cells; a holiday or vacation
+ * cell is a button so it takes focus) and the hooks of the hover card and the day menu on the grid
+ * (CAL-001 to CAL-007, LAY-001, HOL-015, HOL-019, VAC-004, DEC-031). It clones its markup from
+ * templates in index.html. It decides no cell kind (domain/calendar.js does), loads no holiday (the
+ * controller does, through `deps.dispatch`), draws neither the card nor the menu (views/cell-card.js
+ * and views/day-menu.js do) and picks no colour (month-grid.css does, from theme.css).
  */
-import {
-  formatDate,
-  formatHijri,
-  formatHijriMonth,
-  formatMonth,
-  formatWeekday,
-} from "../domain/format.js";
+import { formatDate, formatHijriMonth, formatMonth, formatWeekday } from "../domain/format.js";
 
 /** @typedef {import("../domain/calendar.js").DayFacts} DayFacts */
-/** @typedef {import("../domain/hijri.js").HijriDate} HijriDate */
 /** @typedef {import("../domain/places.js").Place} Place */
 /** @typedef {{ name: string, city: string | null, country: string | null }} PlaceFacts */
 /** @typedef {import("../controller.js").Action} Action */
-/** @typedef {import("../domain/user-holidays.js").HolidayEntry} HolidayEntry */
-/** @typedef {import("../domain/user-holidays.js").UserHolidays} UserHolidays */
-/** @typedef {{ placeId: string, date: string, name: string }} SelectedHoliday */
+/** @typedef {{ day: DayFacts, countryCode: string }} CellFacts One cell and the country of its row. */
+/** @typedef {(placeId: string, date: string) => CellFacts | null} FactsOf */
 
 /**
  * @typedef {object} MonthGridView The part of the page view the grid draws.
@@ -31,8 +24,6 @@ import {
  * @property {DayFacts[][]} grid One row per place.
  * @property {{ year: number, month: number }} month
  * @property {{ places: Place[], showCountry: boolean } | null} settings
- * @property {SelectedHoliday | null} selectedHoliday
- * @property {UserHolidays} userHolidays The holidays the user added and hid.
  */
 
 /**
@@ -40,8 +31,10 @@ import {
  * @property {(action: Action) => Promise<void>} dispatch The controller's `dispatch`.
  * @property {(place: Place, showCountry: boolean) => PlaceFacts} placeFacts The place's name and,
  *   while country names are on, its country.
- * @property {(record: UserHolidays, entry: HolidayEntry) => boolean} isAddedHoliday Whether the
- *   user added a holiday (its card then offers Remove instead of Hide).
+ * @property {(doc: Document, root: HTMLElement, lookup: { factsOf: FactsOf }) => void} makeCellCard Starts the
+ *   hover card on the grid (views/cell-card.js, passed in by main.js).
+ * @property {(doc: Document, root: HTMLElement, lookup: { factsOf: FactsOf }) => void} makeDayMenu Starts the day
+ *   menu on the grid (views/day-menu.js, passed in by main.js).
  * @property {(doc: Document) => { root: HTMLElement }} makeHijriNote Builds the information button
  *   and card beside the Hijri month band (views/hijri-note.js, passed in by main.js).
  */
@@ -49,10 +42,10 @@ import {
 /**
  * @typedef {object} GridContext
  * @property {HTMLElement} root The grid section.
- * @property {HTMLTemplateElement} cardTemplate
  * @property {Deps} deps
  * @property {HTMLElement} note The Hijri information button and card, built once.
- * @property {{ signature: string, selected: string }} memo What was last drawn.
+ * @property {{ signature: string }} memo What was last drawn.
+ * @property {{ view: MonthGridView | null }} latest The view of the last `render`, for the lookup of a cell.
  */
 
 /**
@@ -138,20 +131,32 @@ function appendHijriDay(doc, target, day) {
 }
 
 /**
- * @param {Document} doc
- * @param {string} placeId
- * @param {DayFacts} day A holiday day.
- * @returns {HTMLElement} The button that opens the day's holiday card (CAL-006).
+ * @param {DayFacts} day
+ * @returns {string} What the cell's button says: the holiday's name and date, then each vacation's
+ *   label and dates.
  */
-function holidayButton(doc, placeId, day) {
+function dayLabel(day) {
+  const holiday = day.holidayName === null ? [] : [`${day.holidayName}, ${dateText(day.date)}`];
+  const vacations = day.vacations.map(
+    ({ start, end, label }) =>
+      `${label === "" ? "Vacation" : label}, ${dateText(start)} to ${dateText(end)}`,
+  );
+  return [...holiday, ...vacations].join("; ");
+}
+
+/**
+ * @param {Document} doc
+ * @param {DayFacts} day A holiday or vacation day.
+ * @returns {HTMLElement} The button that fills the cell, so the cell takes focus and shows its card
+ *   (CAL-006).
+ */
+function dayButton(doc, day) {
   const button = doc.createElement("button");
   button.type = "button";
-  button.className = "month-grid-holiday";
-  button.dataset.role = "holiday";
-  button.dataset.placeId = placeId;
-  button.dataset.date = day.date;
+  button.className = "month-grid-day-button";
+  button.dataset.role = "day-button";
   appendHijriDay(doc, button, day);
-  button.setAttribute("aria-label", `${day.holidayName}, ${dateText(day.date)}`);
+  button.setAttribute("aria-label", dayLabel(day));
   return button;
 }
 
@@ -159,7 +164,7 @@ function holidayButton(doc, placeId, day) {
  * @param {Document} doc
  * @param {string} placeId
  * @param {DayFacts} day
- * @returns {HTMLElement} One cell of a place's row.
+ * @returns {HTMLElement} One cell of a place's row, with its place and date for the card and the menu.
  */
 function buildCell(doc, placeId, day) {
   const cell = doc.createElement("td");
@@ -168,52 +173,11 @@ function buildCell(doc, placeId, day) {
   cell.dataset.kind = cellKind(day);
   cell.dataset.fill = fillName(day);
   cell.dataset.today = String(day.isToday);
+  cell.dataset.placeId = placeId;
   cell.dataset.date = day.date;
-  if (day.holidayName === null) appendHijriDay(doc, cell, day);
-  else cell.append(holidayButton(doc, placeId, day));
+  if (day.holidayName === null && day.vacations.length === 0) appendHijriDay(doc, cell, day);
+  else cell.append(dayButton(doc, day));
   return cell;
-}
-
-/**
- * @param {HTMLElement} card
- * @param {HolidayEntry} entry The holiday's country, date and name.
- * @param {boolean} added Whether the user added it.
- * @returns {void} Keeps the Remove button for a holiday the user added (HOL-007), else the Hide
- *   button (HOL-008), and gives it the holiday's country, date and name.
- */
-function keepCardAction(card, entry, added) {
-  part(card, added ? "card-hide" : "card-remove").remove();
-  Object.assign(part(card, added ? "card-remove" : "card-hide").dataset, entry);
-}
-
-/**
- * @param {GridContext} ctx
- * @param {{ holiday: SelectedHoliday, countryCode: string, added: boolean }} shown The holiday,
- *   its country and whether the user added it.
- * @param {HijriDate | null} hijri The holiday's Hijri date, or `null` while Hijri is off.
- * @returns {HTMLElement} The card with the holiday's name, date, Hijri date and its Hide or Remove
- *   button (CAL-006, DSP-003, HOL-007, HOL-008).
- */
-function buildCard(ctx, { holiday, countryCode, added }, hijri) {
-  const card = /** @type {HTMLElement} */ (
-    ctx.cardTemplate.content.firstElementChild?.cloneNode(true)
-  );
-  keepCardAction(card, { countryCode, date: holiday.date, name: holiday.name }, added);
-  part(card, "card-name").textContent = holiday.name;
-  part(card, "card-date").textContent = dateText(holiday.date);
-  const hijriText = part(card, "card-hijri");
-  hijriText.hidden = hijri === null;
-  hijriText.textContent = hijri === null ? "" : formatHijri(hijri);
-  return card;
-}
-
-/**
- * @param {DayFacts[]} days One place's days.
- * @param {string} date `YYYY-MM-DD`.
- * @returns {HijriDate | null} The Hijri date of that day, or `null` while Hijri is off.
- */
-function hijriOf(days, date) {
-  return days.find((day) => day.date === date)?.hijri ?? null;
 }
 
 /**
@@ -232,22 +196,8 @@ function textSpan(doc, className, text) {
 /**
  * @param {GridContext} ctx
  * @param {MonthGridView} view
- * @param {number} index The position of the place whose holiday is selected.
- * @returns {HTMLElement} The card of the selected holiday.
- */
-function placeCard(ctx, view, index) {
-  const holiday = /** @type {SelectedHoliday} */ (view.selectedHoliday);
-  const { countryCode } = /** @type {{ places: Place[] }} */ (view.settings).places[index];
-  const added = ctx.deps.isAddedHoliday(view.userHolidays, { ...holiday, countryCode });
-  const hijri = hijriOf(view.grid[index], holiday.date);
-  return buildCard(ctx, { holiday, countryCode, added }, hijri);
-}
-
-/**
- * @param {GridContext} ctx
- * @param {MonthGridView} view
  * @param {number} index The place's position.
- * @returns {HTMLElement} The row header: the place's name, and its holiday card when one is open.
+ * @returns {HTMLElement} The row header: the place's name (the hover card goes in it).
  */
 function buildRowHeader(ctx, view, index) {
   const doc = ctx.root.ownerDocument;
@@ -263,7 +213,6 @@ function buildRowHeader(ctx, view, index) {
   if (facts.country !== null) {
     header.append(textSpan(doc, "month-grid-place-country", facts.country));
   }
-  if (view.selectedHoliday?.placeId === place.id) header.append(placeCard(ctx, view, index));
   return header;
 }
 
@@ -279,12 +228,6 @@ function buildRow(ctx, view, index) {
   row.dataset.role = "grid-row";
   const placeId = /** @type {{ places: Place[] }} */ (view.settings).places[index].id;
   const cells = view.grid[index].map((day) => buildCell(doc, placeId, day));
-  const selected = view.selectedHoliday;
-  for (const cell of cells) {
-    cell.dataset.selected = String(
-      selected?.placeId === placeId && selected.date === cell.dataset.date,
-    );
-  }
   row.append(buildRowHeader(ctx, view, index), ...cells);
   return row;
 }
@@ -383,68 +326,40 @@ function draw(ctx, view) {
 /**
  * @param {GridContext} ctx
  * @param {MonthGridView} view
- * @returns {void} Moves the focus into a newly opened card, or back to the cell of a closed one.
- */
-function moveFocus(ctx, view) {
-  const selected = view.selectedHoliday;
-  const key = selected === null ? "" : `${selected.placeId}|${selected.date}`;
-  const previous = ctx.memo.selected;
-  ctx.memo.selected = key;
-  if (key === previous) return;
-  if (selected !== null) {
-    part(ctx.root, "card-close").focus();
-    return;
-  }
-  const [placeId, date] = previous.split("|");
-  /** @type {HTMLElement | null} */ (
-    ctx.root.querySelector(`[data-role="holiday"][data-place-id="${placeId}"][data-date="${date}"]`)
-  )?.focus();
-}
-
-/**
- * @param {GridContext} ctx
- * @param {MonthGridView} view
  * @returns {void} Brings the grid up to date; it is redrawn only when something it shows changed.
  */
 function update(ctx, view) {
-  const { grid, month, settings, selectedHoliday, userHolidays } = view;
-  const signature = JSON.stringify([grid, month, settings, selectedHoliday, userHolidays]);
+  ctx.latest.view = view;
+  const { grid, month, settings } = view;
+  const signature = JSON.stringify([grid, month, settings]);
   if (signature === ctx.memo.signature) return;
   ctx.memo.signature = signature;
   draw(ctx, view);
-  moveFocus(ctx, view);
-}
-
-/**
- * @param {HTMLElement} button
- * @returns {HolidayEntry} The holiday a card's Hide or Remove button names (empty for others).
- */
-function cardEntry(button) {
-  const { countryCode = "", date = "", name = "" } = button.dataset;
-  return { countryCode, date, name };
 }
 
 /**
  * @param {GridContext} ctx
  * @param {MouseEvent} event
- * @returns {void} Handles a click: a month button, a holiday cell, or the card's close, Hide or
- *   Remove button. The controller closes the card of a holiday that is hidden or removed.
+ * @returns {void} Handles a click on the previous or next month button.
  */
 function onClick(ctx, event) {
   const button = event.target instanceof Element ? event.target.closest("button") : null;
-  if (button === null) return;
-  const { role = "", placeId = "", date = "" } = button.dataset;
-  const entry = cardEntry(button);
-  /** @type {Record<string, Action>} */
-  const actions = {
-    earlier: { type: "showMonth", offset: -1 },
-    later: { type: "showMonth", offset: 1 },
-    "card-close": { type: "selectHoliday", cell: null },
-    "card-hide": { type: "hideHoliday", ...entry },
-    "card-remove": { type: "removeHoliday", ...entry },
-    holiday: { type: "selectHoliday", cell: { placeId, date } },
+  const role = button?.dataset.role;
+  if (role === "earlier") void ctx.deps.dispatch({ type: "showMonth", offset: -1 });
+  if (role === "later") void ctx.deps.dispatch({ type: "showMonth", offset: 1 });
+}
+
+/**
+ * @param {{ view: MonthGridView | null }} latest
+ * @returns {FactsOf} The lookup of a cell's facts in the view of the last `render`.
+ */
+function factsLookup(latest) {
+  return (placeId, date) => {
+    const places = latest.view?.settings?.places ?? [];
+    const index = places.findIndex((place) => place.id === placeId);
+    const day = latest.view?.grid[index]?.find((candidate) => candidate.date === date);
+    return day === undefined ? null : { day, countryCode: places[index].countryCode };
   };
-  if (role in actions) void ctx.deps.dispatch(actions[role]);
 }
 
 /**
@@ -456,16 +371,14 @@ function buildGrid(doc, deps) {
   const root = /** @type {HTMLElement} */ (
     templateOf(doc, "month-grid-template").content.firstElementChild?.cloneNode(true)
   );
-  const memo = { signature: "", selected: "" };
+  const memo = { signature: "" };
+  const latest = { view: null };
   const note = deps.makeHijriNote(doc).root;
-  const cardTemplate = templateOf(doc, "month-grid-card-template");
-  const ctx = { root, cardTemplate, deps, note, memo };
+  const ctx = { root, deps, note, memo, latest };
   root.addEventListener("click", (event) => onClick(ctx, event));
-  root.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && memo.selected !== "") {
-      void deps.dispatch({ type: "selectHoliday", cell: null });
-    }
-  });
+  const lookup = { factsOf: factsLookup(latest) };
+  deps.makeCellCard(doc, root, lookup);
+  deps.makeDayMenu(doc, root, lookup);
   return ctx;
 }
 

@@ -255,30 +255,15 @@ test("test_cal_005_next_month_in_new_year_requests_that_year", async () => {
   assert.deepEqual(calls, ["US-2026", "US-2027"]);
 });
 
-test("test_cal_006_select_and_close_holiday_cell", async () => {
+test("test_cal_006_the_hover_card_is_view_state_the_controller_keeps_no_selection", async () => {
   const { controller } = setup(
     settingsWith([createPlace("a", "washington-dc")]),
     utc(2026, 12, 10, 12),
   );
   await controller.dispatch({ type: "open" });
-  await controller.dispatch({ type: "selectHoliday", cell: { placeId: "a", date: "2026-12-25" } });
-  assert.deepEqual(controller.getState().selectedHoliday, {
-    placeId: "a",
-    date: "2026-12-25",
-    name: "Christmas Day",
-  });
-  await controller.dispatch({ type: "selectHoliday", cell: null });
-  assert.equal(controller.getState().selectedHoliday, null);
-});
-
-test("test_cal_006_non_holiday_cell_opens_no_card", async () => {
-  const { controller } = setup(
-    settingsWith([createPlace("a", "washington-dc")]),
-    utc(2026, 12, 10, 12),
-  );
-  await controller.dispatch({ type: "open" });
-  await controller.dispatch({ type: "selectHoliday", cell: { placeId: "a", date: "2026-12-24" } });
-  assert.equal(controller.getState().selectedHoliday, null);
+  const christmas = controller.getState().grid[0].find((day) => day.date === "2026-12-25");
+  assert.equal(christmas?.holidayName, "Christmas Day");
+  assert.equal("selectedHoliday" in controller.getState(), false);
 });
 
 test("test_controller_toggles_notices_and_settings_panel", async () => {

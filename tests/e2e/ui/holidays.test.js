@@ -1,5 +1,5 @@
 // @ts-check
-/** @module holidays.test Headless-browser tests of the holidays a user adds and hides, in Chromium (HOL-006 to HOL-009, EX-015, EX-016, DEC-017). */
+/** @module holidays.test Headless-browser tests of the holidays a user adds and hides, in Chromium (HOL-006 to HOL-009, HOL-015, HOL-019, CAL-006, EX-015, EX-016, EX-028, EX-030, DEC-017, DEC-031). */
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
@@ -109,15 +109,106 @@ test("test_hol_006_holidays_section_adds_and_lists_a_holiday", async () => {
   assert.equal(await cells.count(), 0);
 });
 
-test("test_hol_008_holiday_card_hides_a_service_holiday_and_removes_an_added_one", async () => {
+/**
+ * @param {Page} page
+ * @param {number} row The place's position.
+ * @param {string} date `YYYY-MM-DD`.
+ * @returns {import("playwright").Locator} The cell of that day in that place's row.
+ */
+function cellOf(page, row, date) {
+  return page
+    .locator('[data-role="grid-row"]')
+    .nth(row)
+    .locator(`[data-role="cell"][data-date="${date}"]`);
+}
+
+/**
+ * @param {Page} page
+ * @returns {Promise<void>} Right-clicks the 2026-12-25 cell of the first row, then waits for the menu.
+ */
+async function openMenuOnChristmas(page) {
+  await cellOf(page, 0, "2026-12-25").click({ button: "right" });
+  await page.getByRole("menu").waitFor();
+}
+
+test("ui_cal_006_hovering_a_holiday_cell_shows_its_card_and_leaving_removes_it_ex_030", async () => {
   const { page } = await openPage(browser, built.url, { saved: savedPlaces(["new-york"]) });
   await showDecember(page);
-  const card = page.getByRole("dialog", { name: "Holiday" });
+  assert.equal(await page.getByRole("tooltip").count(), 0);
+  await cellOf(page, 0, "2026-12-25").hover();
+  const card = page.getByRole("tooltip");
+  await card.waitFor();
+  const text = await card.innerText();
+  assert.match(text, /Invented Day/);
+  assert.match(text, /25-Dec-26/);
+  assert.equal(await card.locator("button").count(), 0);
+  assert.equal(
+    await card.evaluate(
+      (element) => element.ownerDocument.defaultView?.getComputedStyle(element).pointerEvents,
+    ),
+    "none",
+  );
+  const place = page.locator('[data-role="place"]').first();
+  assert.equal(await place.locator('[role="tooltip"]').count(), 1);
+  await page.mouse.move(0, 0);
+  assert.equal(await page.getByRole("tooltip").count(), 0);
+});
+
+test("ui_cal_006_keyboard_focus_on_a_holiday_cell_shows_its_card", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["new-york"]) });
+  await showDecember(page);
+  const button = page.getByRole("button", { name: "Invented Day, 25-Dec-26" });
+  await button.focus();
+  assert.match(await page.getByRole("tooltip").innerText(), /Invented Day/);
+  await button.blur();
+  assert.equal(await page.getByRole("tooltip").count(), 0);
+});
+
+test("ui_cal_006_a_vacation_cell_card_shows_the_label_and_the_dates", async () => {
+  const trip = { start: "2026-11-18", end: "2026-11-20", label: "Trip" };
+  const saved = savedPlaces(["new-york"]);
+  saved.places = [{ ...saved.places[0], vacations: [trip] }];
+  const { page } = await openPage(browser, built.url, { saved });
+  await cellOf(page, 0, "2026-11-19").hover();
+  const text = await page.getByRole("tooltip").innerText();
+  assert.match(text, /Trip/);
+  assert.match(text, /18-Nov-26/);
+  assert.match(text, /20-Nov-26/);
+  await page.mouse.move(0, 0);
+  assert.equal(await page.getByRole("tooltip").count(), 0);
+});
+
+test("ui_hol_015_right_click_add_public_holiday_presets_the_clicked_day_ex_028", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["mumbai", "pune"]) });
+  await cellOf(page, 0, "2026-11-08").click({ button: "right" });
+  const menu = page.getByRole("menu");
+  await menu.waitFor();
+  assert.equal(await menu.getByRole("menuitem", { name: /Hide public holiday/ }).count(), 0);
+  await menu.getByRole("menuitem", { name: /Add public holiday/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Add public holiday" });
+  await dialog.waitFor();
+  assert.equal(await dialog.getByLabel("Date").inputValue(), "2026-11-08");
+  await dialog.getByRole("button", { name: "Add holiday" }).click();
+  assert.equal(await dialog.getByLabel("Name").getAttribute("aria-invalid"), "true");
+  assert.equal(await dialog.isVisible(), true);
+  await dialog.getByLabel("Name").fill("Diwali");
+  await dialog.getByRole("button", { name: "Add holiday" }).click();
+  assert.equal(await dialog.isVisible(), false);
+  assert.equal(await page.getByRole("button", { name: "Diwali, 08-Nov-26" }).count(), 2);
+  const diwali = { countryCode: "IN", date: "2026-11-08", name: "Diwali" };
+  const record = { version: 1, added: [diwali], hidden: [] };
+  assert.deepEqual(await storedRecord(page, config.holidaysStorageKey), record);
+});
+
+test("ui_hol_019_the_day_menu_hides_a_holiday_and_the_settings_show_it_again_ex_016", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["new-york"]) });
+  await showDecember(page);
+  await openMenuOnChristmas(page);
+  const menu = page.getByRole("menu");
+  assert.equal(await menu.getByRole("menuitem", { name: /Remove public holiday/ }).count(), 0);
+  await menu.getByRole("menuitem", { name: /Hide public holiday/ }).click();
+  assert.equal(await page.getByRole("menu").count(), 0);
   const invented = page.getByRole("button", { name: "Invented Day, 25-Dec-26" });
-  await invented.click();
-  assert.equal(await card.getByRole("button", { name: "Remove", exact: true }).count(), 0);
-  await card.getByRole("button", { name: "Hide", exact: true }).click();
-  assert.equal(await card.count(), 0);
   assert.equal(await invented.count(), 0);
   const hidden = { countryCode: "US", date: "2026-12-25", name: "Invented Day" };
   const stored = { version: 1, added: [], hidden: [hidden] };
@@ -129,16 +220,38 @@ test("test_hol_008_holiday_card_hides_a_service_holiday_and_removes_an_added_one
     .getByRole("button", { name: "Show Invented Day, United States, 25-Dec-26" })
     .click();
   assert.equal(await section.getByText("No holidays hidden.").isVisible(), true);
-  await addHoliday(section, { country: "United States", date: "2026-12-01", name: "Team Day" });
   await page.keyboard.press("Escape");
   assert.equal(await invented.count(), 1);
-  await page.getByRole("button", { name: "Team Day, 01-Dec-26" }).click();
-  assert.equal(await card.getByRole("button", { name: "Hide", exact: true }).count(), 0);
-  await card.getByRole("button", { name: "Remove", exact: true }).click();
-  assert.equal(await card.count(), 0);
-  assert.equal(await page.getByRole("button", { name: "Team Day, 01-Dec-26" }).count(), 0);
+});
+
+test("ui_hol_019_the_day_menu_removes_an_added_holiday", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["new-york"]) });
+  await showDecember(page);
+  await cellOf(page, 0, "2026-12-01").click({ button: "right" });
+  await page.getByRole("menuitem", { name: /Add public holiday/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Add public holiday" });
+  await dialog.getByLabel("Name").fill("Team Day");
+  await dialog.getByRole("button", { name: "Add holiday" }).click();
+  const team = page.getByRole("button", { name: "Team Day, 01-Dec-26" });
+  assert.equal(await team.count(), 1);
+  await cellOf(page, 0, "2026-12-01").click({ button: "right" });
+  const menu = page.getByRole("menu");
+  assert.equal(await menu.getByRole("menuitem", { name: /Hide public holiday/ }).count(), 0);
+  await menu.getByRole("menuitem", { name: /Remove public holiday/ }).click();
+  assert.equal(await team.count(), 0);
   const emptied = { version: 1, added: [], hidden: [] };
   assert.deepEqual(await storedRecord(page, config.holidaysStorageKey), emptied);
+});
+
+test("ui_hol_019_escape_and_a_click_outside_close_the_day_menu", async () => {
+  const { page } = await openPage(browser, built.url, { saved: savedPlaces(["new-york"]) });
+  await showDecember(page);
+  await openMenuOnChristmas(page);
+  await page.keyboard.press("Escape");
+  assert.equal(await page.getByRole("menu").count(), 0);
+  await openMenuOnChristmas(page);
+  await page.getByRole("heading", { name: "Zuno" }).click();
+  assert.equal(await page.getByRole("menu").count(), 0);
 });
 
 test("ui_hol_013_riyadh_holiday_and_credit_line_ex_022", async () => {

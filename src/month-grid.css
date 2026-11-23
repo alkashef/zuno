@@ -1,7 +1,8 @@
 /**
  * The month grid: its card (joined under the map, rounded at the bottom), the month buttons and title, the Hijri month band, the
- * day headers, the place rows with their weekend, holiday, split, today and selected cells, and the
- * holiday card. It does not style the picker (picker.css) or the page shell (layout.css), and it
+ * day headers and the place rows with their weekend, holiday, vacation, split and today cells. It
+ * does not style the hover card, the day menu or the dialog (popovers.css), the picker (picker.css)
+ * or the page shell (layout.css), and it
  * holds no colour or size value of its own (theme.css does).
  */
 .month-grid {
@@ -113,7 +114,7 @@
   white-space: nowrap;
 }
 
-.month-grid-place:has(.month-grid-card) {
+.month-grid-place:has(.cell-card) {
   z-index: 4;
 }
 
@@ -155,12 +156,13 @@
   outline-offset: calc(-1 * var(--today-outline-width));
 }
 
-.month-grid-cell[data-selected="true"] {
+/* A holiday or vacation cell is outlined while the pointer is over it or it has focus (CAL-006). */
+.month-grid-cell:has(.month-grid-day-button:is(:hover, :focus-visible)) {
   outline: var(--selected-outline-width) solid var(--color-text);
   outline-offset: calc(-1 * var(--today-outline-width));
 }
 
-.month-grid-holiday {
+.month-grid-day-button {
   display: flex;
   width: 100%;
   height: 100%;
@@ -207,70 +209,6 @@
   font-weight: var(--font-weight-strong);
   text-align: left;
   white-space: nowrap;
-}
-
-.month-grid-card {
-  position: absolute;
-  z-index: 6;
-  top: 0;
-  left: calc(100% - var(--space-tight));
-  display: flex;
-  width: var(--card-width);
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-control) var(--space-marker);
-  border: var(--line-width) solid var(--color-line-control);
-  border-radius: var(--radius-popover);
-  background: var(--color-card);
-  box-shadow: var(--shadow-large);
-  white-space: normal;
-}
-
-.month-grid-card-title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.month-grid-card-swatch {
-  width: var(--swatch-size);
-  height: var(--swatch-size);
-  flex: none;
-  border-radius: var(--radius-swatch);
-  background: var(--color-holiday);
-}
-
-.month-grid-card-name {
-  flex: 1;
-  font-weight: bold;
-}
-
-.month-grid-card-close {
-  display: inline-flex;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.month-grid-card-close .icon {
-  width: var(--icon-size-small);
-  height: var(--icon-size-small);
-}
-
-.month-grid-card-facts {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-small);
-}
-
-.month-grid-card-facts > :not(:first-child)::before {
-  content: " · ";
-  color: var(--color-text-secondary);
-}
-
-.month-grid-card-hijri {
-  color: var(--color-hijri);
 }
 
 .hijri-note {

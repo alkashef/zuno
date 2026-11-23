@@ -4,7 +4,6 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
-  holidayAt,
   holidayHandlers,
   holidaysByCountry,
   loadUserHolidays,
@@ -19,7 +18,6 @@ import { usRecords2026 } from "./holiday-fixtures.js";
 /** @typedef {import("../../src/controller-holidays.js").HolidayChanges} HolidayChanges */
 /** @typedef {import("../../src/controller-holidays.js").HolidayContext} HolidayContext */
 /** @typedef {import("../../src/controller-holidays.js").HolidayData} HolidayData */
-/** @typedef {import("../../src/controller-holidays.js").HolidayState} HolidayState */
 /** @typedef {import("../../src/domain/user-holidays.js").UserHolidays} UserHolidays */
 
 const diwali = Object.freeze({ countryCode: "IN", date: "2026-11-08", name: "Diwali" });
@@ -29,15 +27,14 @@ const mumbai = createPlace("place-2", "mumbai");
 const settings = { ...defaultSettings(540, 1020), places: [losAngeles, mumbai] };
 
 /**
- * @param {Partial<HolidayState>} [state]
- * @returns {HolidayState} A page state with the US 2026 holidays loaded and nothing the user changed.
+ * @param {Partial<HolidayData>} [state]
+ * @returns {HolidayData} A page state with the US 2026 holidays loaded and nothing the user changed.
  */
 function stateOf(state = {}) {
   return {
     settings,
     holidayResults: { US: { 2026: { status: "loaded", holidays: usRecords2026() } } },
     userHolidays: emptyUserHolidays(),
-    selectedHoliday: null,
     ...state,
   };
 }
@@ -47,11 +44,11 @@ function stateOf(state = {}) {
  * @property {UserHolidays[]} saves The records saved through `holidayStorage`.
  * @property {{ fileName: string, value: unknown }[]} files The files saved through `files.saveJson`.
  * @property {HolidayChanges[]} updates The changes handed to `update`.
- * @property {HolidayState} state The current state; `update` merges into it.
+ * @property {HolidayData} state The current state; `update` merges into it.
  */
 
 /**
- * @param {Partial<HolidayState>} [state]
+ * @param {Partial<HolidayData>} [state]
  * @param {(file: Blob) => Promise<import("../../src/controller-holidays.js").FileRead>} [readJson]
  * @returns {{ ctx: HolidayContext, fakes: Fakes }}
  */
@@ -152,18 +149,6 @@ test("test_hol_004_notices_list_places_whose_region_has_no_regional_data", () =>
   );
 });
 
-test("test_cal_006_holiday_at_gives_the_cells_holiday_or_null", () => {
-  const state = stateOf();
-  assert.deepEqual(holidayAt(state, { placeId: "place-1", date: "2026-12-25" }), {
-    placeId: "place-1",
-    date: "2026-12-25",
-    name: "Christmas Day",
-  });
-  assert.equal(holidayAt(state, { placeId: "place-1", date: "2026-12-26" }), null);
-  assert.equal(holidayAt(state, { placeId: "place-9", date: "2026-12-25" }), null);
-  assert.equal(holidayAt(stateOf({ settings: null }), { placeId: "place-1", date: "x" }), null);
-});
-
 test("test_hol_006_add_saves_the_record_and_shows_it_once", async () => {
   const { ctx, fakes } = fakeContext();
   await holidayHandlers().addHoliday(ctx, { type: "addHoliday", ...diwali });
@@ -182,11 +167,9 @@ test("test_hol_006_refused_change_saves_and_shows_nothing", async () => {
   assert.deepEqual(fakes.updates, []);
 });
 
-test("test_hol_008_hide_closes_the_card_of_the_hidden_holiday", async () => {
-  const selectedHoliday = { placeId: "place-1", date: "2026-12-25", name: "Christmas Day" };
-  const { ctx, fakes } = fakeContext({ selectedHoliday });
+test("test_hol_008_hide_and_show_save_the_record_each_time", async () => {
+  const { ctx, fakes } = fakeContext();
   await holidayHandlers().hideHoliday(ctx, { type: "hideHoliday", ...christmas });
-  assert.equal(fakes.state.selectedHoliday, null);
   assert.deepEqual(fakes.state.userHolidays.hidden, [christmas]);
   await holidayHandlers().showHoliday(ctx, { type: "showHoliday", ...christmas });
   assert.deepEqual(fakes.state.userHolidays.hidden, []);

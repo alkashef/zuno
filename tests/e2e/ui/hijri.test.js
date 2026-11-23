@@ -122,7 +122,7 @@ test("ui_dsp_003_hijri_format_in_picker_and_card", async () => {
   await page
     .getByRole("button", { name: /Invented Day/ })
     .first()
-    .click();
+    .hover();
   const card = page.locator('[data-role="card-hijri"]');
   assert.equal(await card.textContent(), "16-Rajab-1448");
 });

@@ -125,37 +125,28 @@ test("test_hol_006_refused_holiday_action_saves_nothing", async () => {
   assert.deepEqual(controller.getState().userHolidays, { version: 1, added: [], hidden: [] });
 });
 
-test("test_hol_007_user_removes_an_added_holiday", async () => {
+test("test_hol_007_remove_an_added_holiday_without_selecting_it", async () => {
   const { controller, holidaySaves } = setup(["mumbai"]);
   await controller.dispatch({ type: "open" });
   await controller.dispatch({ type: "addHoliday", ...diwali });
-  await controller.dispatch({
-    type: "selectHoliday",
-    cell: { placeId: "place-1", date: diwali.date },
-  });
-  assert.deepEqual(controller.getState().selectedHoliday, {
-    placeId: "place-1",
-    date: diwali.date,
-    name: "Diwali",
-  });
+  const cell = controller.getState().grid[0].find((day) => day.date === diwali.date);
+  assert.equal(cell?.holidayAdded, true);
+  assert.equal("selectedHoliday" in controller.getState(), false);
   await controller.dispatch({ type: "removeHoliday", ...diwali });
   assert.deepEqual(holidaysInRow(controller, 0), []);
   assert.deepEqual(holidaySaves.at(-1)?.added, []);
-  assert.equal(controller.getState().selectedHoliday, null);
 });
 
-test("test_hol_008_hidden_service_holiday_is_not_a_holiday_until_shown_again", async () => {
+test("test_hol_008_hide_a_service_holiday_without_selecting_it", async () => {
   const { controller, holidaySaves } = setup(["new-york"]);
   await controller.dispatch({ type: "open" });
   await controller.dispatch({ type: "showMonth", offset: 1 });
   assert.deepEqual(holidaysInRow(controller, 0), ["2026-12-25 Christmas Day"]);
-  const cell = { placeId: "place-1", date: christmas.date };
-  await controller.dispatch({ type: "selectHoliday", cell });
-  assert.equal(controller.getState().selectedHoliday?.name, "Christmas Day");
+  const shown = controller.getState().grid[0].find((day) => day.date === christmas.date);
+  assert.equal(shown?.holidayAdded, false);
   await controller.dispatch({ type: "hideHoliday", ...christmas });
   assert.deepEqual(holidaysInRow(controller, 0), []);
   assert.deepEqual(controller.getState().userHolidays.hidden, [christmas]);
-  assert.equal(controller.getState().selectedHoliday, null);
   await controller.dispatch({ type: "showHoliday", ...christmas });
   assert.deepEqual(holidaysInRow(controller, 0), ["2026-12-25 Christmas Day"]);
   assert.deepEqual(holidaySaves.at(-1)?.hidden, []);

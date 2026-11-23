@@ -3,16 +3,15 @@
  * @module controller-holidays
  * The holidays side of the page workflows: loads the user's holiday record, applies the add, remove,
  * hide, show, export and import actions to it and saves it, works out the holidays the page uses
- * (the service's holidays without those the user hid, plus those the user added), opens the holiday
- * card of a cell and lists the notices about missing holiday data (HOL-003, HOL-004, HOL-006 to
- * HOL-013, CAL-006, REF-002, SET-006, DEC-017, DEC-018, DEC-022). Pure apart from the `holidayStorage`
+ * (the service's holidays without those the user hid, plus those the user added) and lists the
+ * notices about missing holiday data (HOL-003, HOL-004, HOL-006 to HOL-013, REF-002, SET-006,
+ * DEC-017, DEC-018, DEC-022). Pure apart from the `holidayStorage`
  * and `files` it is given. It keeps no state (controller.js does, and passes it in), asks the holiday
  * service for nothing (controller.js does, through `api`) and builds no grid, picker or holiday list
  * logic itself (domain/* does). Only controller.js imports it.
  */
 import {
   HolidayType,
-  holidayOn,
   listRegions,
   placesMissingRegionalData,
   toHolidays,
@@ -31,13 +30,6 @@ import * as userHolidayList from "./domain/user-holidays.js";
 /** @typedef {{ status: "read", value: unknown } | { status: "unreadable" }} FileRead What a picked file holds (DEC-018). */
 
 /**
- * @typedef {object} SelectedHoliday The holiday cell whose card is open (CAL-006).
- * @property {string} placeId
- * @property {string} date `YYYY-MM-DD`.
- * @property {string} name
- */
-
-/**
  * @typedef {object} Notices What the notices card lists (REF-002, HOL-004).
  * @property {string[]} countries Country codes with no holiday data for the shown dates.
  * @property {string[]} placeIds Places whose chosen region has no regional holiday data.
@@ -50,12 +42,9 @@ import * as userHolidayList from "./domain/user-holidays.js";
  * @property {UserHolidays} userHolidays
  */
 
-/** @typedef {HolidayData & { selectedHoliday: SelectedHoliday | null }} HolidayState */
-
 /**
  * @typedef {object} HolidayChanges The state fields the holiday actions change.
  * @property {UserHolidays} [userHolidays]
- * @property {SelectedHoliday | null} [selectedHoliday]
  * @property {"refused" | null} [holidayImport] `refused` while the last imported file was refused (HOL-012).
  */
 
@@ -77,7 +66,7 @@ import * as userHolidayList from "./domain/user-holidays.js";
 /**
  * @typedef {object} HolidayContext What a holiday action handler uses.
  * @property {HolidayDeps} deps
- * @property {() => HolidayState} read
+ * @property {() => HolidayData} read
  * @property {(changes: HolidayChanges) => void} update
  */
 
@@ -210,20 +199,8 @@ export function noticesOf(holidayResults, needed, places, userHolidays) {
 }
 
 /**
- * @param {HolidayData} state
- * @param {{ placeId: string, date: string }} cell
- * @returns {SelectedHoliday | null} The cell's holiday, or `null` when the cell is not a holiday.
- */
-export function holidayAt(state, { placeId, date }) {
-  const place = state.settings?.places.find((candidate) => candidate.id === placeId);
-  if (place === undefined) return null;
-  const holiday = holidayOn(countryHolidays(state, place.countryCode), place.region, date);
-  return holiday === null ? null : { placeId, date, name: holiday.name };
-}
-
-/**
- * Saves a change of the user's holidays and shows it; a holiday card whose holiday is gone closes
- * (HOL-006 to HOL-009). `null` is a refused change: nothing is saved or shown.
+ * Saves a change of the user's holidays and shows it (HOL-006 to HOL-009). `null` is a refused
+ * change: nothing is saved or shown.
  * @param {HolidayContext} ctx
  * @param {UserHolidays | null} next
  * @returns {void}
@@ -231,12 +208,7 @@ export function holidayAt(state, { placeId, date }) {
 function commitUserHolidays(ctx, next) {
   if (next === null) return;
   ctx.deps.holidayStorage.save(next);
-  const state = { ...ctx.read(), userHolidays: next };
-  const selected = state.selectedHoliday;
-  ctx.update({
-    userHolidays: next,
-    selectedHoliday: selected === null ? null : holidayAt(state, selected),
-  });
+  ctx.update({ userHolidays: next });
 }
 
 /**

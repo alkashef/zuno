@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                       | Description                                           | Model  | Effort | Status   |
 | ------------------------------- | ----------------------------------------------------- | ------ | ------ | -------- |
-| **M51** Hover card, day menu and holiday form | The hover card replaces the click card; a right-click opens the day menu with Add public holiday, Hide and Remove | sonnet | high | open |
 | **M52** Add, edit and remove a vacation from the menu | The day menu and its forms add, change and remove a vacation, and refuse a reversed range | sonnet | high | open |
 | **M53** Export to CSV with its description | Export writes one CSV file of holidays, hidden holidays and vacations; the page describes the format | sonnet | high | open |
 | **M54** Import from CSV with a confirmation | Import reads the CSV file, shows how many rows can be imported, and adds them or cancels | sonnet | high | open |
@@ -20,37 +19,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M51 — Hover card, day menu and holiday form
-
-- **Refs:** CAL-006, HOL-015, HOL-019, HOL-007, HOL-008, EX-016, EX-028, EX-030, DEC-031.
-- **Owner:** `src/views/cell-card.js` (new; view layer; the hover and focus card of a cell),
-  `src/views/day-menu.js` (new; view layer; the right-click menu), `src/views/day-dialog.js` (new;
-  view layer; the forms of the day menu, here the holiday form), `src/views/month-grid.js`,
-  `src/domain/calendar.js` (`dayMenuChoices`, `holidayAdded`), `src/controller.js` and
-  `src/controller-holidays.js` (drop `selectHoliday`, `selectedHoliday`, `SelectedHoliday` and
-  `holidayAt`), `src/popovers.css` (new sheet), `src/main.js`.
-- **Tests first:**
-  - `tests/unit/calendar.test.js`: `test_hol_019_day_menu_of_a_service_holiday_offers_hide_and_of_an_added_one_remove`,
-    `test_hol_015_day_menu_of_any_day_offers_add_public_holiday`.
-  - `tests/e2e/controller-holidays.test.js`: `test_hol_007_remove_an_added_holiday_without_selecting_it`,
-    `test_hol_008_hide_a_service_holiday_without_selecting_it`. The existing tests that dispatch
-    `selectHoliday` change, because CAL-006 and HOL-019 changed; the report says so.
-  - `tests/e2e/ui/holidays.test.js`: `ui_cal_006_hovering_a_holiday_cell_shows_its_card_and_leaving_removes_it_ex_030`,
-    `ui_cal_006_keyboard_focus_on_a_holiday_cell_shows_its_card`,
-    `ui_cal_006_a_vacation_cell_card_shows_the_label_and_the_dates`,
-    `ui_hol_015_right_click_add_public_holiday_presets_the_clicked_day_ex_028`,
-    `ui_hol_019_the_day_menu_hides_a_holiday_and_the_settings_show_it_again_ex_016`,
-    `ui_hol_019_the_day_menu_removes_an_added_holiday`,
-    `ui_hol_019_escape_and_a_click_outside_close_the_day_menu`.
-- **Build:** DEC-031: one delegated `contextmenu` listener on the month grid opens a `role="menu"`
-  popover at the pointer; the choices come from `dayMenuChoices`; Add public holiday opens the form
-  in a native `<dialog>`; Hide and Remove dispatch the existing actions. The hover card shows on
-  `pointerenter` and `focusin` for a holiday or vacation cell, has no buttons and no pointer events.
-  Each cell has `data-place-id`, `data-date` and `data-fill`. No keyboard route (accepted risk).
-- **Gate:** no `selectHoliday`, `selectedHoliday`, `SelectedHoliday` or `holidayAt` is left in `src/`
-  (search); a listed holiday can be hidden and an added one removed at every commit; the tests pass in
-  the four browsers.
 
 ### M52 — Add, edit and remove a vacation from the menu
 

@@ -1,5 +1,5 @@
 // @ts-check
-/** @module nfr.test Headless-browser tests of the non-functional requirements and the cross-browser examples, in Chromium, Firefox, WebKit and Edge (NFR-001, NFR-002, NFR-003, DEC-009, EX-002, EX-010; LAY-002, PCK-007, PCK-008, HOL-006, HOL-008, HOL-013, VER-001 in the newer workflows). */
+/** @module nfr.test Headless-browser tests of the non-functional requirements and the cross-browser examples, in Chromium, Firefox, WebKit and Edge (NFR-001, NFR-002, NFR-003, DEC-009, EX-002, EX-010; LAY-002, PCK-007, PCK-008, HOL-006, HOL-008, HOL-013, HOL-015, HOL-019, DEC-031, VER-001 in the newer workflows). */
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
@@ -359,17 +359,27 @@ async function nextDayAndAddHoliday(page, name) {
 /**
  * @param {Page} page
  * @param {string} name The browser, for messages.
- * @returns {Promise<void>} Hides the built-in Saudi National Day and reads the version.
+ * @returns {Promise<void>} Adds a holiday from the day menu (the native dialog), hides the built-in
+ *   Saudi National Day with the menu and reads the version.
  */
-async function hideBuiltInAndReadVersion(page, name) {
+async function useDayMenuAndReadVersion(page, name) {
   await page.keyboard.press("Escape");
   const previous = page.getByRole("button", { name: "Previous month" });
   await previous.click();
   await previous.click();
   await page.getByRole("heading", { name: "September 2026" }).waitFor();
+  await page
+    .locator('[data-role="cell"][data-date="2026-09-10"]')
+    .first()
+    .click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Add public holiday" }).click();
+  const dialog = page.getByRole("dialog", { name: "Add public holiday" });
+  await dialog.getByLabel("Name").fill("Menu Day");
+  await dialog.getByRole("button", { name: "Add holiday" }).click();
+  assert.ok((await page.getByRole("button", { name: "Menu Day, 10-Sep-26" }).count()) >= 1, name);
   const nationalDay = page.getByRole("button", { name: "National Day, 23-Sep-26" });
-  await nationalDay.click();
-  await page.getByRole("dialog", { name: "Holiday" }).getByRole("button", { name: "Hide" }).click();
+  await nationalDay.click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Hide public holiday" }).click();
   assert.equal(await nationalDay.count(), 0, `${name}: the built-in holiday stayed`);
   await openSettings(page);
   const footer = await page.locator(".settings-footer").textContent();
@@ -381,6 +391,6 @@ test("ui_nfr_002_newer_workflows_in_chromium_firefox_webkit_edge", async () => {
     const { page } = await openDrawn(name, { saved: savedSettings() });
     await widenAndHover(page, name);
     await nextDayAndAddHoliday(page, name);
-    await hideBuiltInAndReadVersion(page, name);
+    await useDayMenuAndReadVersion(page, name);
   }
 });
