@@ -38,6 +38,8 @@ chosen time across all places.
 - A list of the imported files, each of which the user can delete to undo what only it added (HOL-020 to HOL-023).
 - A built-in table of public holidays for the seven countries that the holiday service does not cover (HOL-013).
 - A version, shown in the settings panel (VER-001).
+- An icon for the browser tab: a black Z on a solid cyan background (ICN-001).
+- A pin button on each place's card that shows and changes the first place (PIN-001 to PIN-005).
 
 **Exclusions.**
 - Phones and small screens (NFR-002).
@@ -82,6 +84,12 @@ chosen time across all places.
   the place's country or territory, which differs by country; the user can change them for a place (SET-016).
 - **Working hours**: one start and one end time of day, in the user's settings, applied to every place's local time.
 - **Marker**: the chosen date and time in the time picker.
+- **Following**: the state of the marker in which it moves with the clock (PCK-012). It starts when the page opens
+  (PCK-004) and ends when the user moves the marker: drags it, uses the arrow keys (PCK-002), or chooses the
+  previous day, the next day or a day in a calendar (PCK-007). The reset-marker button starts it again (PCK-013).
+  The refresh button (REF-001) does not change it.
+- **Pin button**: the button of a place's card that shows whether the place is the first place (the reference of the
+  picker, PCK-006) and makes a place the first place (PIN-003). It is not the map pin (MAP-001).
 - **Selected day**: the date chosen in the day selector. The picker window starts at its midnight in the first
   place (PCK-006). The marker's date can be one day later when the marker is on the next day's hours.
 - **Hijri date**: the date in the Islamic lunar calendar.
@@ -192,12 +200,20 @@ chosen time across all places.
 | HOL-018 | When the user chooses Cancel in the import dialog (HOL-017), the system shall change nothing. | Must | Confirmed | A user who sees a bad count can back out. | User decision (2026-11-23, dialog) | SCN-002 | EX-032 |
 | PCK-010 | The system shall show each place's name at the left end of its picker row, whatever the position of the marker. | Must | Confirmed | The names stay in one place, so the user can read them without searching (agent inference). | User request (2026-11-23, "keep the city names pinned to the left") | SCN-001 | EX-033 |
 | PCK-011 | The system shall give the local date and time of a picker row (PCK-002) a see-through background, as the map labels (MAP-001) have, so the colours of the hour slots show through it. | Must | Confirmed | The label over the slots must not hide which hours are working hours. | User request (2026-11-23, "transparent bg color ... similar to the map") | SCN-001 | EX-033 |
+| PCK-012 | While the marker is following the clock, the system shall move the marker to the current date and time each time the current time updates (CLK-003), and shall make today in the first place the selected day. | Must | Confirmed | An idle page shows the current time on the picker as on the map, also after midnight of the first place. | User request (2026-11-25, "when the time is updated on the map (every min), the slider is updated as well"); follow only until the user moves the marker, and the selected day moves to the new day, by user decision (2026-11-25, dialog) | SCN-001 | EX-035 |
+| PCK-013 | When the user presses the reset-marker button, the system shall move the marker to the current date and time, make today in the first place the selected day, and make the marker follow the clock again. | Must | Confirmed | A user who has moved the marker needs a way back to now, and the refresh button must not undo a chosen meeting time (REF-001). | User decision (2026-11-25, dialog: a new reset-marker button) | SCN-001 | EX-036 |
 | HOL-019 | When the user right-clicks a public-holiday day, the system shall also offer Hide public holiday, or Remove public holiday for a holiday the user added, in the day menu. | Must | Confirmed | The hover card (CAL-006) has no buttons, so a holiday is hidden or removed in the day menu (HOL-007, HOL-008). | Agent inference from the design (DEC-031), approved by the user (2026-11-23, chat) | SCN-002 | EX-016 |
 | HOL-020 | The system shall list each imported file with its name, the time and date of its import and the number of holidays, hidden holidays and vacations that came from it. | Must | Confirmed | The user sees what came from which file. | User request (2026-11-23, canvas comment "add a list of imported files and allow thier deletion") | SCN-002 | EX-034 |
 | HOL-021 | When the user chooses to delete an imported file, the system shall first show a dialog that says how many entries the deletion removes and how many stay, with the choices Delete and Cancel. | Must | Confirmed | Deleting removes saved data, so the user sees the effect first. | User request (2026-11-23); the dialog approved by the user (2026-11-23, chat) | SCN-002 | EX-034 |
 | HOL-022 | When the user chooses Delete in that dialog, the system shall remove the file from the list and remove the holidays, hidden holidays and vacations that came only from that file; entries that the user added, or that another imported file also lists, stay. | Must | Confirmed | Deleting a file undoes what it added. | User decision (2026-11-23, dialog: undo what it added) | SCN-002 | EX-034 |
 | HOL-023 | When the user imports a file or deletes an imported file, the system shall save the list of imported files in the browser and restore it on the next visit. | Must | Confirmed | The list, and which entries came from which file, must survive a reload. | Agent inference from HOL-009, approved by the user (2026-11-23, chat) | SCN-002 | EX-034 |
 | HIJ-005 | Withdrawn on 2026-11-23, the day it was added. It read: "Where the Hijri calendar is on and a place uses the Egyptian General Authority of Survey variant, the system shall take that place's Hijri date from the table of the Authority's month starts built into the page and, for a date outside the table's years, shall show the Umm al-Qura date and say so in the Hijri note (HIJ-004)." No source for the table was found, so the variant is not built. | Must | Withdrawn | Egyptian teams follow the dates that their own authority publishes, which the browser's calendars do not give. | User request (2026-11-23, canvas comment "add egyptain authority"); withdrawn by user decision (2026-11-23, chat: "drop the Egyptian Hijri variant from all docs") | SCN-002 | |
+| ICN-001 | The system shall give the page an icon, shown in the browser tab beside the page's title, whose whole background is solid cyan (#00BCD4) and that shows an uppercase letter Z in black (#000000) on top of it. | Must | Confirmed | The user finds the page among many tabs by its icon. | User request (2026-11-25, "solid CYAN bg with a Z letter in black on top"); shade by user decision (2026-11-25, dialog: softer cyan #00BCD4) | SCN-001, SCN-002 | EX-037 |
+| PIN-001 | The system shall show a pin button at the right of each place's card in the picker, pinned for the first place and not pinned for every other place. | Must | Confirmed | The user sees which place is the reference of the picker without a colour that sets one card apart. | User request (2026-11-25, "the first country in the main menu ... has a pin button in the right of the card instead of the different bg color"); "main menu" read as the picker's cards (section 7) | SCN-001 | EX-038 |
+| PIN-002 | The system shall show a pin button at the right of each place's card in the places list of the settings, pinned for the first place and not pinned for every other place. | Must | Confirmed | The settings show the reference in the same way as the picker. | User request (2026-11-25, "the first country in the main menu and the settings menu") | SCN-001 | EX-038 |
+| PIN-003 | When the user presses the pin button of a place that is not the first place, the system shall move that place to the first position of the list, keep the order of the other places, reorder the place's rows in both views as SET-008 does, and save the order as SET-004 does. | Must | Confirmed | One press chooses the reference of the picker. | User decision (2026-11-25, dialog: the pin marks and changes the reference; the place moves to the top and the others keep their order) | SCN-001 | EX-039 |
+| PIN-004 | When the user presses the pin button of the first place, the system shall change nothing. | Must | Confirmed | The picker always needs a reference while there is a place. | Agent inference, approved by the user (2026-11-25, chat) | SCN-001 | EX-039 |
+| PIN-005 | The system shall mark the first place in the picker and in the settings only by its pin button: its card has no background colour that the cards of the other places lack. | Must | Confirmed | The user asked for the pin instead of the different background colour. | User request (2026-11-25, "instead of the different bg color") | SCN-001 | EX-038 |
 
 ## 5. Non-functional requirements
 
@@ -235,6 +251,11 @@ No load-time limit is set. A page of this size has no stated performance need; a
 | EX-018 | HOL-012 | The user imports a file whose text is `hello`. | The saved holidays are unchanged and the page says the file was refused. | User (2026-11-18) |
 | EX-019 | PCK-006, PCK-009, LAY-002, LAY-003 | First place Tokyo, selected day 2026-11-20, the picker at 24 slots. Then the user widens it by 6 slots. Then the page is reloaded. | At 24 slots the window runs from 12:00 AM on 20-Nov-26 to 12:00 AM on 21-Nov-26 in Tokyo and the day selector shows 20-Nov-26. At 30 slots the window ends at 6:00 AM on 21-Nov-26, each slot is as wide as before, and the day selector shows 20–21-Nov-26. After the reload the picker still has 30 slots. | User (2026-11-18) |
 | EX-020 | PCK-006, PCK-007 | EX-019 at 30 slots. The user drags the marker to 2:00 AM on 21-Nov-26 in Tokyo, then chooses the next day. | After the drag the window still starts at 12:00 AM on 20-Nov-26. After "next day" the selected day is 2026-11-21 and the marker is at 2:00 AM on 21-Nov-26 in Tokyo. | User (2026-11-18) |
+| EX-035 | PCK-012, PCK-004, CLK-003 | Tokyo first place, the picker at 24 slots. The page opens at 10:45 AM on 24-Nov-26 in Tokyo. The current time updates to 10:46 AM. Then the user drags the marker to 2:00 PM and the current time updates to 10:47 AM. On a second page that the user does not touch, the current time updates to 12:00 AM on 25-Nov-26. | After the first update the marker is at 10:46 AM on 24-Nov-26. After the drag and the second update the marker is still at 2:00 PM on 24-Nov-26. On the second page the marker is at 12:00 AM on 25-Nov-26, the selected day is 2026-11-25, the picker window starts at 12:00 AM on 25-Nov-26 and the day selector shows 25-Nov-26. | User (2026-11-25, chat: approved as written) |
+| EX-036 | PCK-013, PCK-007, PCK-012 | Tokyo first place, the current time is 10:50 AM on 24-Nov-26. The user has chosen the next day twice (selected day 2026-11-26) and moved the marker. The user presses the reset-marker button. Then the current time updates to 10:51 AM. | After the press the marker is at 10:50 AM on 24-Nov-26 and the selected day is 2026-11-24. After the update the marker is at 10:51 AM on 24-Nov-26. | User (2026-11-25, chat: approved as written) |
+| EX-037 | ICN-001 | The page opens in a headless browser. | The page declares an icon. Drawn at 32 by 32 pixels, the pixels at the four corners are #00BCD4, and the middle of the icon holds black (#000000) pixels that form a Z. The tab title is "Zuno". | User (2026-11-25, chat: approved as written) |
+| EX-038 | PIN-001, PIN-002, PIN-005 | No settings are saved in the browser. The page opens with the default places. | In the picker and in the places list of the settings, Tokyo's pin button is pinned and the other six are not pinned. Tokyo's picker card has the same background colour as Madrid's. | User (2026-11-25, chat: approved as written) |
+| EX-039 | PIN-003, PIN-004, SET-008, SET-004 | The default places. The user presses Islamabad's pin button. After a reload the user presses Islamabad's pin button again. | After the first press the order in the picker, the month grid and the places list is Islamabad, Tokyo, Cairo, New Delhi, Madrid, Bogotá, Riyadh, and only Islamabad's pin is pinned. After the reload the order is the same. After the second press nothing changes. | User (2026-11-25, chat: approved as written) |
 | EX-021 | PCK-008 | First place Tokyo, selected day 2026-11-20, and a Bogotá place. The pointer is over Bogotá's row at 10:00 AM Tokyo time. | The page shows 8:00 PM · 19-Nov-26 for Bogotá. | User (2026-11-18) |
 | EX-022 | HOL-013, CAL-003 | A Riyadh place, September 2026, and a New Delhi place, January 2026. The holiday service returns nothing for Saudi Arabia and India. | Riyadh: 2026-09-23 is marked as a public holiday (Saudi National Day). New Delhi: 2026-01-26 is marked as a public holiday (Republic Day). | User (2026-11-18) |
 | EX-023 | HOL-013, HOL-014, REF-002 | A Riyadh place, January 2029 (after the table's last year). Then the user adds the holiday "Founding Day" on 2029-02-22 for Saudi Arabia. | Before: no day of January 2029 is a public holiday for Riyadh, and the page lists Saudi Arabia as having no holiday data. After: the page no longer lists Saudi Arabia. | User (2026-11-18) |
@@ -290,6 +311,8 @@ missing (HOL-004).
 | Wording of the examples of 2026-11-23 | The user approved the list and the substance of EX-027 to EX-033 and of the changes to EX-012, EX-013 and EX-017, in chat on 2026-11-23. The agent wrote the full texts from that substance (the CSV rows of EX-031, the dates of EX-029, the New York time of EX-033). | Tests would rest on wording the user has not read in full. | User | Read section 6 at the next review. |
 | The term "settings panel" | SET-001 and VER-001 still say "settings panel"; since SET-019 the settings fill the page. | None for behaviour. | Design | The design may rename the term. |
 | Imported files (HOL-020 to HOL-023) | User decision (2026-11-23, dialog): deleting a file undoes what only it added. Assumptions approved the same day with the design: an entry that two files list stays until both are deleted; an entry the user typed is never removed by a deletion; a file with no importable row makes no list entry; the same file imported twice makes two entries. | A user who expects a deletion to remove a shared entry sees it stay. | User | Revisit if the sharing rule confuses. |
+| The tab icon (ICN-001) | Agent inference, approved by the user on 2026-11-25: the icon is the same in the light and the dark theme, because a solid background does not depend on the theme; it is part of the one file (PKG-001) and makes no network request (NFR-001). The design chooses the font, the size of the Z and the shape of the corners. | A browser that draws the icon on a dark tab strip may show a bright square; the user can ask for a theme-aware icon. | User | Revisit if the icon clashes with a theme. |
+| The pin button (PIN-001 to PIN-005) | Agent inference, approved by the user on 2026-11-25: "main menu" means the picker's place cards, so the month grid and the map are unchanged; the first place cannot be unpinned, because the picker always needs a reference; the arrows in the settings (SET-008) stay as a second way to change the order. | A user who expects a pin on the month grid's rows, or an unpin, does not find one. | User | Revisit if the month grid needs a pin. |
 
 ## 8. Review and approval
 
@@ -347,6 +370,26 @@ Egyptian General Authority of Survey variant) was added and withdrawn the same d
 holiday keeps its name); new example EX-034; and section 7: the two open questions turned into decisions
 (vacations may overlap and an identical one is skipped; no keyboard route to the day menu) and three new
 items. The user approved the design as a whole, DEC-029 to DEC-035, in the same message.
+
+Changes approved by the user on 2026-11-25, in a dialog, after deciding three points one at a time (the marker
+follows the clock until the user moves it, a reset-marker button starts it again, and the selected day moves to the
+new day at midnight of the first place): new requirements PCK-012 and PCK-013, the new glossary entry
+"Following", and the new examples EX-035 and EX-036. No existing requirement changed. The design (the "Clock tick"
+workflow, which says the marker does not move) and the test `test_clk_003_tick_updates_time_but_not_marker` need
+to change with them.
+
+Changes approved by the user on 2026-11-25, in a dialog, after deciding the shade of cyan (#00BCD4): new requirement
+ICN-001 (the tab icon: a black Z on a solid cyan background), the new line in the scope (section 1), the new example
+EX-037 and one new assumption in section 7. No existing requirement changed. The design needs a decision on how the
+icon is carried in the single file; no existing test changes.
+
+Changes approved by the user on 2026-11-25, in a dialog, after deciding what the pin does (it marks and changes the
+first place) and where the other places go (the pinned place moves to the top, the others keep their order): new
+requirements PIN-001 to PIN-005 (a pin button on each place's card in the picker and in the settings, instead of a
+different background colour), the new glossary entry "Pin button", the new line in the scope (section 1), the new
+examples EX-038 and EX-039 and one new assumption in section 7. No existing requirement changed. The design needs
+the pin in place of the reference background; the tests `ui_pck_006_first_place_is_reference` and the colour check
+in `tests/e2e/ui/canvas-layout.test.js` assert the different background and need to change with it.
 
 ## 9. City list
 
