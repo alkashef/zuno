@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                       | Description                                           | Model  | Effort | Status   |
 | ------------------------------- | ----------------------------------------------------- | ------ | ------ | -------- |
-| **M59** Pin buttons | A pin button on each picker card and settings card; the first picker row loses its own background | sonnet | high | open |
 | **M60** Tab icon | The page's tab icon is a black Z on a solid `#00BCD4` square | sonnet | medium | open |
 
 ## Milestones
@@ -17,41 +16,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M59 — Pin buttons
-
-- **Refs:** PIN-001, PIN-002, PIN-005, SET-008, PCK-006, EX-038, EX-039, DEC-039, DEC-020.
-- **Owner:** `#picker-row-template`, `#settings-place-template` and the settings hint in
-  `src/index.html`, `src/views/picker.js`, `src/views/settings-places.js`, `src/base.css` (the shared
-  pin look), `src/picker.css` (the background rule goes), `src/popovers.css` and `src/theme.css` (the
-  token `--color-reference` becomes `--color-menu-hover`).
-- **Tests first:**
-  - `tests/e2e/ui/picker.test.js`:
-    `ui_pin_001_each_picker_card_has_a_pin_at_its_right_and_only_the_first_is_pinned_ex_038`,
-    `ui_pin_005_the_first_picker_row_has_the_same_background_as_the_others_ex_038`,
-    `ui_pin_003_pressing_a_pin_in_the_picker_moves_that_place_first_ex_039`,
-    `ui_pin_004_pressing_the_first_pin_changes_nothing_ex_039`,
-    `ui_pin_003_the_order_survives_a_reload_ex_039`,
-    `ui_pin_001_the_pin_icon_has_at_least_3_to_1_contrast_on_its_card_in_both_themes`.
-  - `tests/e2e/ui/settings-places.test.js`:
-    `ui_pin_002_each_settings_card_has_a_pin_at_its_right_and_only_the_first_is_pinned_ex_038`,
-    `ui_pin_005_the_first_settings_card_has_the_same_background_as_the_others_ex_038`,
-    `ui_pin_003_pressing_a_pin_in_the_settings_moves_that_place_first_ex_039`,
-    `ui_pin_004_the_first_places_pin_is_aria_disabled_and_named_as_the_first_place`.
-  - Changed: the colour check of `ui_pck_006_first_place_is_reference` goes and its `data-reference`
-    check stays; the colour check of `tests/e2e/ui/canvas-layout.test.js` (about line 230) is replaced
-    by `ui_pin_005_...` above. Both asserted the different background, which PIN-005 removes.
-- **Build:** DEC-039. A button (`data-role="pin"`, an inline thumbtack) at the right end of the name
-  card in the picker row, and before Expand and Remove in the settings place row; `data-pinned` true
-  or false drives a filled or an outline look from the text and muted-text tokens; the filled one has
-  `aria-disabled="true"` and sends nothing; the name is "Make <name> the first place" or "<name> is
-  the first place". `picker.js` gives each row `data-place-id` and has one delegated click listener
-  that dispatches `pinPlace`; `settings-places.js` adds the role `pin`. Delete the rule that gives
-  `.picker-row[data-reference="true"]` a background; keep the attribute. Rename the token. Change the
-  settings hint to the wording of DEC-039.
-- **Gate:** the existing tests listed above are changed because PIN-005 changed their requirement;
-  the report says so; no `--color-reference` is left in `src/`; the browser tests pass in the four
-  browsers.
 
 ### M60 — Tab icon
 

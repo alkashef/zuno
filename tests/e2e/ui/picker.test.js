@@ -214,11 +214,6 @@ test("ui_pck_006_first_place_is_reference", async () => {
   const rows = page.locator('[data-role="row"]');
   assert.equal(await rows.nth(0).getAttribute("data-reference"), "true");
   assert.equal(await rows.nth(1).getAttribute("data-reference"), "false");
-  const reference = await rows
-    .nth(0)
-    .locator('[data-role="info"]')
-    .evaluate((info) => info.ownerDocument.defaultView?.getComputedStyle(info).backgroundColor);
-  assert.equal(reference, await tokenColour(page, "reference"));
   const handle = handleOf(page);
   assert.equal(Number(await handle.getAttribute("aria-valuemin")), Date.UTC(2026, 10, 15, 15, 0));
   assert.equal(Number(await handle.getAttribute("aria-valuemax")), Date.UTC(2026, 10, 16, 15, 0));
@@ -519,4 +514,161 @@ test("ui_pck_013_the_now_button_works_from_the_keyboard", async () => {
   await page.keyboard.press("Enter");
   assert.equal(await markerInstant(page), startInstant.getTime());
   assert.equal(await nowButton(page).getAttribute("aria-disabled"), "true");
+});
+
+/**
+ * @param {Page} page
+ * @returns {import("playwright").Locator} The pin buttons of the picker's cards.
+ */
+function pinsOf(page) {
+  return page.locator('[data-role="row"] [data-role="place-pin"]');
+}
+
+/**
+ * @param {Page} page
+ * @returns {Promise<string[]>} The names of the picker's places, in order.
+ */
+async function pickerNames(page) {
+  return (await rowFacts(page)).map((row) => row.name);
+}
+
+/**
+ * @param {Page} page
+ * @returns {Promise<string[]>} The `data-pinned` value of each picker pin, in order.
+ */
+function pinStates(page) {
+  return pinsOf(page).evaluateAll((all) => all.map((pin) => pin.getAttribute("data-pinned") ?? ""));
+}
+
+const defaultNames = ["Tokyo", "Cairo", "New Delhi", "Madrid", "Bogotá", "Riyadh", "Islamabad"];
+
+test("ui_pin_001_each_picker_card_has_a_pin_at_its_right_and_only_the_first_is_pinned_ex_038", async () => {
+  const { page } = await openPage(browser, built.url);
+  await page.locator('[data-role="row"]').first().waitFor();
+  assert.equal(await pinsOf(page).count(), 7);
+  assert.deepEqual(await pinStates(page), [
+    "true",
+    "false",
+    "false",
+    "false",
+    "false",
+    "false",
+    "false",
+  ]);
+  const rows = await page.locator('[data-role="row"]').count();
+  for (let index = 0; index < rows; index += 1) {
+    const info = await page.locator('[data-role="info"]').nth(index).boundingBox();
+    const pin = await pinsOf(page).nth(index).boundingBox();
+    assert.ok(info !== null && pin !== null);
+    assert.ok(pin.x > info.x + info.width / 2, `row ${index}: the pin is in the right half`);
+    assert.ok(pin.x + pin.width <= info.x + info.width + 1, `row ${index}: inside the card`);
+  }
+});
+
+test("ui_pin_005_the_first_picker_row_has_the_same_background_as_the_others_ex_038", async () => {
+  const { page } = await openPage(browser, built.url);
+  await page.locator('[data-role="row"]').first().waitFor();
+  const backgrounds = await page
+    .locator('[data-role="row"], [data-role="info"]')
+    .evaluateAll((all) =>
+      all.map((each) => each.ownerDocument.defaultView?.getComputedStyle(each).backgroundColor),
+    );
+  assert.equal(new Set(backgrounds).size, 1, `one background for every row: ${backgrounds}`);
+});
+
+test("ui_pin_003_pressing_a_pin_in_the_picker_moves_that_place_first_ex_039", async () => {
+  const { page } = await openPage(browser, built.url);
+  await page.locator('[data-role="row"]').first().waitFor();
+  await page.getByRole("button", { name: "Make Islamabad the first place" }).click();
+  assert.deepEqual(await pickerNames(page), [
+    "Islamabad",
+    "Tokyo",
+    "Cairo",
+    "New Delhi",
+    "Madrid",
+    "Bogotá",
+    "Riyadh",
+  ]);
+  assert.deepEqual(await pinStates(page), [
+    "true",
+    "false",
+    "false",
+    "false",
+    "false",
+    "false",
+    "false",
+  ]);
+  assert.equal(await markerInstant(page), startInstant.getTime(), "the marker keeps following");
+});
+
+test("ui_pin_004_pressing_the_first_pin_changes_nothing_ex_039", async () => {
+  const { page } = await openPage(browser, built.url);
+  await page.locator('[data-role="row"]').first().waitFor();
+  const first = page.getByRole("button", { name: "Tokyo is the first place" });
+  assert.equal(await first.getAttribute("aria-disabled"), "true");
+  await first.click({ force: true });
+  assert.deepEqual(await pickerNames(page), defaultNames);
+  const saved = await page.evaluate((key) => localStorage.getItem(key), config.storageKey);
+  assert.equal(saved, null, "nothing is saved");
+});
+
+test("ui_pin_003_the_order_survives_a_reload_ex_039", async () => {
+  const { page } = await openPage(browser, built.url);
+  await page.locator('[data-role="row"]').first().waitFor();
+  await page.getByRole("button", { name: "Make Islamabad the first place" }).click();
+  await page.reload();
+  await page.locator('[data-role="row"]').first().waitFor();
+  assert.deepEqual((await pickerNames(page)).slice(0, 3), ["Islamabad", "Tokyo", "Cairo"]);
+  await page.getByRole("button", { name: "Islamabad is the first place" }).click({ force: true });
+  assert.deepEqual((await pickerNames(page)).slice(0, 3), ["Islamabad", "Tokyo", "Cairo"]);
+});
+
+/**
+ * @param {string} first An `rgb(...)` colour.
+ * @returns {number} Its relative luminance.
+ */
+function luminanceOf(first) {
+  const [r = 0, g = 0, b = 0] = (first.match(/[\d.]+/g) ?? []).slice(0, 3).map((part) => {
+    const unit = Number(part) / 255;
+    return unit <= 0.03928 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+test("ui_pin_001_the_pin_icon_has_at_least_3_to_1_contrast_on_its_card_in_both_themes", async () => {
+  for (const scheme of /** @type {const} */ (["light", "dark"])) {
+    const { page, close } = await openIn("chromium", 1, scheme);
+    const looks = await pinsOf(page).evaluateAll((all) =>
+      all.map((pin) => {
+        const win = /** @type {Window} */ (pin.ownerDocument.defaultView);
+        const card = /** @type {Element} */ (pin.closest(".picker"));
+        return {
+          pinned: pin.getAttribute("data-pinned"),
+          icon: win.getComputedStyle(pin).color,
+          card: win.getComputedStyle(card).backgroundColor,
+        };
+      }),
+    );
+    for (const look of looks) {
+      const [high = 0, low = 0] = [luminanceOf(look.icon), luminanceOf(look.card)].sort(
+        (a, b) => b - a,
+      );
+      const ratio = (high + 0.05) / (low + 0.05);
+      assert.ok(ratio >= 3, `${scheme}, pinned ${look.pinned}: contrast ${ratio.toFixed(2)}`);
+    }
+    await close();
+  }
+});
+
+test("ui_pin_003_a_pin_press_moves_the_place_first_in_the_four_browsers_ex_039", async () => {
+  for (const name of browserNames) {
+    const own = await launchBrowser(/** @type {never} */ (name));
+    const { page } = await openPage(own, built.url);
+    await page.locator('[data-role="row"]').first().waitFor();
+    assert.deepEqual((await pinStates(page)).slice(0, 2), ["true", "false"], name);
+    await page.getByRole("button", { name: "Make Islamabad the first place" }).click();
+    assert.deepEqual((await pickerNames(page)).slice(0, 2), ["Islamabad", "Tokyo"], name);
+    assert.deepEqual((await pinStates(page)).slice(0, 2), ["true", "false"], name);
+    await own.close();
+  }
 });

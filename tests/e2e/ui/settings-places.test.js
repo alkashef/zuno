@@ -328,3 +328,91 @@ test("ui_set_018_every_zone_of_the_table_is_known_to_the_browser", async () => {
     assert.deepEqual(refused, [], name);
   }
 });
+
+/**
+ * @param {Page} page
+ * @returns {import("playwright").Locator} The pin buttons of the settings cards.
+ */
+function settingsPins(page) {
+  return page.locator('.settings-place [data-role="place-pin"]');
+}
+
+/**
+ * @param {Page} page
+ * @returns {Promise<string[]>} The `data-pinned` value of each settings pin, in order.
+ */
+function settingsPinStates(page) {
+  return settingsPins(page).evaluateAll((all) =>
+    all.map((pin) => pin.getAttribute("data-pinned") ?? ""),
+  );
+}
+
+test("ui_pin_002_each_settings_card_has_a_pin_at_its_right_and_only_the_first_is_pinned_ex_038", async () => {
+  const { page } = await openPage(browser, built.url);
+  await openSettings(page);
+  assert.equal(await settingsPins(page).count(), 7);
+  assert.deepEqual(await settingsPinStates(page), [
+    "true",
+    "false",
+    "false",
+    "false",
+    "false",
+    "false",
+    "false",
+  ]);
+  const rows = page.locator(".settings-place-row");
+  for (let index = 0; index < 7; index += 1) {
+    const row = rows.nth(index);
+    const name = await row.locator('[data-role="name"]').boundingBox();
+    const pin = await row.locator('[data-role="place-pin"]').boundingBox();
+    const toggle = await row.locator('[data-role="toggle"]').boundingBox();
+    assert.ok(name !== null && pin !== null && toggle !== null);
+    assert.ok(pin.x > name.x, `row ${index}: the pin is after the name`);
+    assert.ok(pin.x + pin.width <= toggle.x + 1, `row ${index}: the pin is before Expand`);
+  }
+});
+
+test("ui_pin_005_the_first_settings_card_has_the_same_background_as_the_others_ex_038", async () => {
+  const { page } = await openPage(browser, built.url);
+  await openSettings(page);
+  const backgrounds = await page
+    .locator(".settings-place, .settings-place-row")
+    .evaluateAll((all) =>
+      all.map((each) => each.ownerDocument.defaultView?.getComputedStyle(each).backgroundColor),
+    );
+  assert.equal(new Set(backgrounds).size, 1, `one background for every card: ${backgrounds}`);
+});
+
+test("ui_pin_003_pressing_a_pin_in_the_settings_moves_that_place_first_ex_039", async () => {
+  const { page } = await openPage(browser, built.url);
+  await openSettings(page);
+  await page
+    .getByRole("tabpanel", { name: "Places" })
+    .getByRole("button", { name: "Make Islamabad the first place" })
+    .click();
+  assert.deepEqual(await listedNames(page), [
+    "Islamabad",
+    "Tokyo",
+    "Cairo",
+    "New Delhi",
+    "Madrid",
+    "Bogotá",
+    "Riyadh",
+  ]);
+  assert.equal((await settingsPinStates(page)).filter((state) => state === "true").length, 1);
+  assert.equal(await settingsPins(page).first().getAttribute("data-pinned"), "true");
+  const focused = await page.locator(":focus").getAttribute("aria-label");
+  assert.equal(focused, "Islamabad is the first place", "the focus stays on that place's pin");
+});
+
+test("ui_pin_004_the_first_places_pin_is_aria_disabled_and_named_as_the_first_place", async () => {
+  const { page } = await openPage(browser, built.url);
+  await openSettings(page);
+  const first = page
+    .getByRole("tabpanel", { name: "Places" })
+    .getByRole("button", { name: "Tokyo is the first place" });
+  assert.equal(await first.getAttribute("aria-disabled"), "true");
+  await first.click({ force: true });
+  assert.deepEqual((await listedNames(page)).slice(0, 2), ["Tokyo", "Cairo"]);
+  await page.getByText("The first place, marked with a filled pin, is the reference").waitFor();
+});

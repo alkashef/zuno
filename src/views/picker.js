@@ -46,7 +46,10 @@ import { formatDate, formatHijri, formatOffset, formatTime } from "../domain/for
  *   behaviour of the resize handle (views/picker-resize.js).
  * @property {(rows: HTMLElement) => { render: (shown: HoverWindow) => void }} makeHover Builds the
  *   hover label behaviour of the rows (views/picker-hover.js).
+ * @property {PinButtons} pins What the pin buttons share (views/pin-button.js).
  */
+
+/** @typedef {typeof import("./pin-button.js")} PinButtons */
 
 /** @typedef {import("./picker-hover.js").HoverWindow} HoverWindow */
 
@@ -142,8 +145,22 @@ function drawSegments(track, row, range) {
 /**
  * @typedef {object} RowText What a row says about its place.
  * @property {PlaceFacts} facts
+ * @property {string} placeId
+ * @property {boolean} pinned Whether the place is the first place (its pin is filled).
  * @property {string} offset The place's offset from UTC at the marker, for example `UTC+3`.
  */
+
+/**
+ * @param {PanelContext} ctx
+ * @param {HTMLElement} item A row.
+ * @param {RowText} text
+ * @returns {void} Gives the row its place's id and shows the state of its pin (PIN-001).
+ */
+function markPlace(ctx, item, text) {
+  item.dataset.placeId = text.placeId;
+  const { placeId, pinned, facts } = text;
+  ctx.deps.pins.showPin(part(item, "place-pin"), { placeId, name: facts.name, pinned });
+}
 
 /**
  * @param {PanelContext} ctx
@@ -158,6 +175,7 @@ function buildRow(ctx, row, text, range) {
     ctx.rowTemplate.content.firstElementChild?.cloneNode(true)
   );
   part(item, "name").textContent = text.facts.name;
+  markPlace(ctx, item, text);
   part(item, "zone").textContent = text.offset;
   const sub = part(item, "sub");
   sub.textContent = [text.facts.city, text.facts.country].filter(Boolean).join(" · ");
@@ -183,13 +201,18 @@ function drawRows(ctx, view, range) {
   const items = view.picker.map((row, index) => {
     const text = {
       facts: ctx.deps.placeFacts(places[index], showCountry),
+      placeId: places[index].id,
+      pinned: index === 0,
       offset: formatOffset(ctx.deps.offsetAt(view.marker.instant, places[index].zone)),
     };
     const item = buildRow(ctx, row, text, range);
     item.dataset.reference = String(index === 0);
     return item;
   });
-  part(ctx.root, "rows").replaceChildren(...items);
+  const rows = part(ctx.root, "rows");
+  const focused = ctx.deps.pins.focusedPinPlace(rows);
+  rows.replaceChildren(...items);
+  ctx.deps.pins.refocusPin(rows, focused);
 }
 
 /**
@@ -327,14 +350,24 @@ function instantAt(ctx, clientX) {
 /**
  * @param {PanelContext} ctx
  * @param {PointerEvent} event
+ * @param {Element} target The element the pointer pressed.
+ * @returns {boolean} Whether the press starts a drag: the main button on the axis, the rows or the
+ *   handle, but not on a pin (its press makes a place the first, PIN-003).
+ */
+function startsDrag(ctx, event, target) {
+  const onTrack = target.closest('[data-role="axis"], [data-role="rows"], [data-role="handle"]');
+  return event.button === 0 && onTrack !== null && !ctx.deps.pins.isOnPin(event);
+}
+
+/**
+ * @param {PanelContext} ctx
+ * @param {PointerEvent} event
  * @returns {void} Starts a drag on the axis or the rows; a press away from the handle moves the
  *   marker there at once.
  */
 function startDrag(ctx, event) {
   const target = event.target instanceof Element ? event.target : null;
-  const onTrack =
-    target?.closest('[data-role="axis"], [data-role="rows"], [data-role="handle"]') ?? null;
-  if (event.button !== 0 || target === null || onTrack === null) return;
+  if (target === null || !startsDrag(ctx, event, target)) return;
   ctx.memo.dragging = true;
   ctx.root.setPointerCapture(event.pointerId);
   if (target.closest('[data-role="handle"]') === null) moveTo(ctx, instantAt(ctx, event.clientX));
@@ -371,6 +404,18 @@ function bindMarker(ctx) {
 }
 
 /**
+ * @param {PanelContext} ctx
+ * @returns {void} Makes a place the first when its pin is pressed (PIN-003); the first place's pin
+ *   sends nothing (PIN-004).
+ */
+function bindPins(ctx) {
+  part(ctx.root, "rows").addEventListener("click", (event) => {
+    const placeId = ctx.deps.pins.pressedPlace(event);
+    if (placeId !== null) void ctx.deps.dispatch({ type: "pinPlace", placeId });
+  });
+}
+
+/**
  * @param {Document} doc
  * @param {Deps} deps
  * @returns {{ ctx: PanelContext, daySelector: { render: (view: DaySelectorView) => void } }}
@@ -390,6 +435,7 @@ function buildPanel(doc, deps) {
     hover: deps.makeHover(part(root, "rows")),
   };
   bindMarker(ctx);
+  bindPins(ctx);
   new ResizeObserver(() => arrangeInfo(ctx)).observe(part(root, "content"));
   return { ctx, daySelector: deps.makeDaySelector(part(root, "day-selector-slot")) };
 }

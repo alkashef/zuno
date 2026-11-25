@@ -85,7 +85,7 @@
 
 .day-menu-item:hover,
 .day-menu-item:focus-visible {
-  background: var(--color-reference);
+  background: var(--color-menu-hover);
 }
 
 .day-dialog {

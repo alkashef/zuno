@@ -210,13 +210,19 @@
   border-top: var(--line-width) solid var(--color-line-hairline);
 }
 
+/* The pin sits at the right end of the card and out of the flow, so it does not make the card
+   taller (PIN-001); the name leaves room for it. */
 .picker-info {
+  position: relative;
   display: block;
+  padding-right: var(--control-height-small);
 }
 
-.picker-row[data-reference="true"],
-.picker-row[data-reference="true"] .picker-info {
-  background: var(--color-reference);
+.picker-info .pin-button {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
 }
 
 .picker-who {

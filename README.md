@@ -28,7 +28,8 @@ places you add. The map and the month grid are one rounded card, the picker is a
 each of those two cards ends with a legend of its colours. The cards fill the window from edge to
 edge. Drag the picker's left edge to show more hours, and drag the border between the map and the
 month grid (or focus it and press the up and down arrow keys) to give the map more or less room;
-the browser remembers both. Each place is a city from a fixed list
+the browser remembers both. The first place is the picker's reference and has a filled pin; press the
+outline pin on another place's card, in the picker or in the settings, to make it the first place. Each place is a city from a fixed list
 of 55 cities, or a custom place that you add in the Places tab with "A person or another city": a
 name (a person's, if you like), a time zone and a country or territory. You can choose the weekend
 days of any place (the default is its country's weekend), and the Holidays form offers the country of

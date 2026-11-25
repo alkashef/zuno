@@ -24,6 +24,7 @@ import { formatDayNames, formatOffset } from "../domain/format.js";
  * @property {(place: Place) => number[]} placeWeekendDays The place's weekend days, 1 = Monday to 7 =
  *   Sunday: the days the user chose, else its country's.
  * @property {(countryCode: string) => number[]} countryWeekendDays The weekend days of a country.
+ * @property {typeof import("./pin-button.js")} pins What the pin buttons share (views/pin-button.js).
  */
 
 /**
@@ -90,7 +91,7 @@ function labelButtons(item, place, name) {
   for (const [role, [before, after]] of Object.entries(buttonLabels)) {
     part(item, role).setAttribute("aria-label", `${before}${name}${after}`);
   }
-  for (const role of ["up", "down", "toggle", "remove"]) {
+  for (const role of ["up", "down", "place-pin", "toggle", "remove"]) {
     part(item, role).dataset.focusKey = `${place.id}:${role}`;
   }
 }
@@ -210,6 +211,11 @@ function buildItem(ctx, place, view) {
   fillRegion(item, place, view.regions[place.countryCode] ?? []);
   fillWeekend(ctx, item, place);
   fillHijri(item, place, view.settings?.showHijri ?? false);
+  ctx.lookup.pins.showPin(part(item, "place-pin"), {
+    placeId: place.id,
+    name,
+    pinned: view.settings?.places[0]?.id === place.id,
+  });
   setExpanded(item, ctx.expanded.has(place.id));
   return item;
 }
@@ -256,6 +262,11 @@ function toggleEditor(ctx, item) {
  * @returns {void}
  */
 function onClick(ctx, event) {
+  const pinned = ctx.lookup.pins.pressedPlace(event);
+  if (pinned !== null) {
+    void ctx.dispatch({ type: "pinPlace", placeId: pinned });
+    return;
+  }
   const clicked = rowButton(event);
   if (clicked === null) return;
   if (clicked.role === "toggle") {

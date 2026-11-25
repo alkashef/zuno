@@ -227,9 +227,6 @@ test("ui_dec_020_picker_is_a_card_with_no_heading_and_the_date_sits_beside_the_t
   assert.ok(Math.abs(row.height - (1 + 8 + info.height + 6 + 44 + 8)) <= 1, "row height");
   const [who] = await boxesOf(page, '[data-role="who"]');
   assert.ok(Math.abs(info.height - who.height) <= 1, "as tall as the text");
-  const reference = await styleOf(page, '[data-role="row"]', "backgroundColor");
-  const other = await styleOf(page, '[data-role="row"][data-reference="false"]', "backgroundColor");
-  assert.notEqual(reference, other);
 });
 
 test("ui_dec_020_month_grid_weekday_sits_above_the_day_number", async () => {

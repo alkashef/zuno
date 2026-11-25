@@ -79,6 +79,29 @@ p {
   stroke-width: 2;
 }
 
+/* The pin button of a place's card (PIN-001, PIN-002): filled in the text colour for the first place,
+   an outline in the muted colour for the others. Both keep 3:1 against the card. */
+.pin-button {
+  width: var(--control-height-small);
+  min-height: var(--control-height-small);
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.pin-button[data-pinned="true"] {
+  color: var(--color-text);
+  cursor: default;
+}
+
+.pin-button[data-pinned="true"] .icon {
+  fill: currentcolor;
+}
+
+.pin-button[data-pinned="false"]:hover {
+  color: var(--color-text);
+}
+
 :focus-visible {
   outline: 2px solid var(--color-today);
   outline-offset: 2px;

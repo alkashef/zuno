@@ -39,6 +39,7 @@ import { createNotices } from "./views/notices.js";
 import { createPicker } from "./views/picker.js";
 import { createPickerHover } from "./views/picker-hover.js";
 import { createPickerResize } from "./views/picker-resize.js";
+import * as pinButtons from "./views/pin-button.js";
 import { createCustomPlaceForm } from "./views/settings-custom-place.js";
 import { createFileSection } from "./views/settings-file.js";
 import { createImportDialog } from "./views/import-dialog.js";
@@ -91,6 +92,7 @@ const lookup = {
   offsetAt: zoneOffset,
   placeWeekendDays,
   countryWeekendDays,
+  pins: pinButtons,
 };
 const importDialog = createImportDialog(document, {
   dispatch: controller.dispatch,
@@ -137,6 +139,7 @@ const views = [
       }),
     makeHover: (rows) =>
       createPickerHover(rows, { localAt: localDateTime, stepMinutes: config.pickerStepMinutes }),
+    pins: pinButtons,
   }),
   createLegend(document),
   importDialog,

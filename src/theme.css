@@ -33,7 +33,7 @@
   --color-today: light-dark(#6c5ce7, #ffd166);
   --color-hijri: light-dark(#c0267c, #c7aeff);
   --color-hijri-on-tint: light-dark(#8f1a5b, #2b1464);
-  --color-reference: light-dark(#dff3f3, #161b2a);
+  --color-menu-hover: light-dark(#dff3f3, #161b2a);
   --color-marker: var(--color-text);
   --color-map-sea: light-dark(#bfe9f2, #0b0f18);
   --color-map-land: light-dark(#ffe6b8, #222b40);
