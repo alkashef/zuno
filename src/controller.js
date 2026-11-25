@@ -123,7 +123,7 @@ import { localDateTime } from "./domain/zones.js";
 /**
  * @typedef {{ type: "open" } | { type: "refresh" } | { type: "tick" }
  *   | { type: "setMarker", instant: number } | { type: "setMarker", date: CalendarDate }
- *   | { type: "shiftMarkerDay", days: number } | { type: "showMonth", offset: number }
+ *   | { type: "shiftMarkerDay", days: number } | { type: "resetMarker" } | { type: "showMonth", offset: number }
  *   | { type: "toggleNotices" } | { type: "openSettings" } | { type: "closeSettings" }
  *   | { type: "addPlace", cityId: string } | { type: "removePlace", placeId: string }
  *   | { type: "movePlace", placeId: string, offset: number }
@@ -405,6 +405,20 @@ function shiftMarkerDay(ctx, action) {
 }
 
 /**
+ * Puts the marker at now, selects today in the first place, makes the marker follow the clock again
+ * and asks for any year the window needs (PCK-013, EX-036, DEC-037).
+ * @param {Context} ctx
+ * @returns {Promise<void>}
+ */
+function resetMarker(ctx) {
+  const { settings } = ctx.read();
+  if (settings === null) return Promise.resolve();
+  const now = ctx.deps.clock.now();
+  ctx.update({ now, ...followClock(settings, now), following: true });
+  return requestMissing(ctx);
+}
+
+/**
  * Shows an earlier or later month (CAL-005).
  * @param {Context} ctx
  * @param {Extract<Action, { type: "showMonth" }>} action
@@ -607,6 +621,7 @@ function handlers() {
     tick,
     setMarker,
     shiftMarkerDay,
+    resetMarker,
     showMonth,
     ...settingsHandlers(),
     ...holidayHandlers(changePlaces),

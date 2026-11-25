@@ -63,6 +63,11 @@
   font-size: var(--font-size-emphasis);
 }
 
+.day-selector-now[aria-disabled="true"] {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
 .day-selector-date::before {
   width: var(--icon-size);
   height: var(--icon-size);

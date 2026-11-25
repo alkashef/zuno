@@ -4,7 +4,8 @@
  * Owns the picker's day selector: the previous-day and next-day buttons, the date button that shows
  * the first and last date of the picker window in the first place (PCK-009), and the month calendar
  * that button opens on the selected day. A day picked in the calendar closes it; Escape closes it
- * and returns the focus to the date button (PCK-007, DSP-001). It clones its markup from templates in index.html. It does not move the marker (the
+ * and returns the focus to the date button (PCK-007, DSP-001). The Now button puts the marker back
+ * at now and is `aria-disabled` while the marker follows the clock (PCK-013, DEC-037). It clones its markup from templates in index.html. It does not move the marker (the
  * controller does, through `deps.dispatch`) and does not lay out the weeks (`deps.monthWeeks` does).
  */
 import { formatDate, formatDateRange, formatMonth } from "../domain/format.js";
@@ -18,6 +19,7 @@ import { formatDate, formatDateRange, formatMonth } from "../domain/format.js";
  * @typedef {object} DaySelectorView The part of the page view the selector draws.
  * @property {CalendarDate} selectedDay The day the picker window starts on (PCK-006).
  * @property {WindowDates | null} windowDates The window's first and last date (PCK-009).
+ * @property {boolean} following Whether the marker follows the clock (PCK-012, DEC-037).
  */
 
 /**
@@ -31,6 +33,7 @@ import { formatDate, formatDateRange, formatMonth } from "../domain/format.js";
  * @property {HTMLElement | null} calendar The open calendar, if any.
  * @property {MonthRef} shown The month the calendar shows.
  * @property {CalendarDate} selected The selected day in the first place.
+ * @property {boolean} following Whether the marker follows the clock.
  */
 
 /**
@@ -204,9 +207,9 @@ function openCalendar(ctx) {
 
 /**
  * @param {SelectorContext} ctx
- * @returns {void} Wires the buttons, Escape and the focus leaving the selector.
+ * @returns {void} Wires the previous-day, next-day and Now buttons (PCK-007, PCK-013).
  */
-function bindControls(ctx) {
+function bindDayButtons(ctx) {
   const { root } = ctx;
   part(root, "previous").addEventListener("click", () => {
     void ctx.deps.dispatch({ type: "shiftMarkerDay", days: -1 });
@@ -214,6 +217,19 @@ function bindControls(ctx) {
   part(root, "next").addEventListener("click", () => {
     void ctx.deps.dispatch({ type: "shiftMarkerDay", days: 1 });
   });
+  part(root, "reset-marker").addEventListener("click", () => {
+    if (ctx.state.following) return;
+    void ctx.deps.dispatch({ type: "resetMarker" });
+  });
+}
+
+/**
+ * @param {SelectorContext} ctx
+ * @returns {void} Wires the date button, Escape and the focus leaving the selector.
+ */
+function bindControls(ctx) {
+  const { root } = ctx;
+  bindDayButtons(ctx);
   part(root, "date").addEventListener("click", () => {
     if (ctx.state.calendar === null) openCalendar(ctx);
     else closeCalendar(ctx, true);
@@ -241,12 +257,14 @@ export function createDaySelector(doc, slot, deps) {
   );
   const calendarTemplate = templateOf(doc, "calendar-template");
   const selected = { year: 0, month: 1, day: 1 };
-  const state = { calendar: null, shown: { year: 0, month: 1 }, selected };
+  const state = { calendar: null, shown: { year: 0, month: 1 }, selected, following: true };
   bindControls({ doc, root, calendarTemplate, deps, state });
   slot.append(root);
   return {
     render(view) {
       state.selected = view.selectedDay;
+      state.following = view.following;
+      part(root, "reset-marker").setAttribute("aria-disabled", String(view.following));
       const dates = view.windowDates;
       part(root, "date").textContent =
         dates === null ? "" : formatDateRange(dates.first, dates.last);

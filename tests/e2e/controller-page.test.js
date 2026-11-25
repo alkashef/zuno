@@ -1,5 +1,5 @@
 // @ts-check
-/** @module controller-page.test Page workflows through src/controller.js with fake api, storage and clock (PCK-004, PCK-006, PCK-007, PCK-009, EX-019, EX-020, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-007, PCK-012, EX-035). */
+/** @module controller-page.test Page workflows through src/controller.js with fake api, storage and clock (PCK-004, PCK-006, PCK-007, PCK-009, EX-019, EX-020, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-007, PCK-012, PCK-013, EX-035, EX-036). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -242,6 +242,59 @@ test("test_pck_012_a_settings_change_while_following_keeps_the_marker_at_now", a
   assert.equal(state.marker.instant, start);
   assert.deepEqual(state.selectedDay, { year: 2026, month: 11, day: 24 });
   assert.equal(state.following, true);
+});
+
+test("test_pck_013_reset_marker_puts_the_marker_at_now_and_selects_today_ex_036", async () => {
+  const start = utc(2026, 11, 24, 1) + 50 * minute;
+  const { controller } = setup(tokyoFirst(24), start);
+  await controller.dispatch({ type: "open" });
+  await controller.dispatch({ type: "shiftMarkerDay", days: 1 });
+  await controller.dispatch({ type: "shiftMarkerDay", days: 1 });
+  await controller.dispatch({
+    type: "setMarker",
+    instant: controller.getState().marker.instant + hour,
+  });
+  await controller.dispatch({ type: "resetMarker" });
+  const state = controller.getState();
+  assert.equal(state.marker.instant, start);
+  assert.deepEqual(state.selectedDay, { year: 2026, month: 11, day: 24 });
+});
+
+test("test_pck_013_reset_marker_makes_the_marker_follow_again_ex_036", async () => {
+  const start = utc(2026, 11, 24, 1) + 50 * minute;
+  const { controller, clock } = setup(tokyoFirst(24), start);
+  await controller.dispatch({ type: "open" });
+  await controller.dispatch({ type: "shiftMarkerDay", days: 2 });
+  assert.equal(controller.getState().following, false);
+  await controller.dispatch({ type: "resetMarker" });
+  assert.equal(controller.getState().following, true);
+  clock.time = start + minute;
+  await controller.dispatch({ type: "tick" });
+  assert.equal(controller.getState().marker.instant, start + minute);
+});
+
+test("test_pck_013_reset_marker_asks_for_the_holiday_year_the_window_needs", async () => {
+  const start = utc(2026, 12, 31, 14) + 59 * minute;
+  const { controller, calls, clock } = setup(tokyoFirst(24), start);
+  await controller.dispatch({ type: "open" });
+  await controller.dispatch({ type: "shiftMarkerDay", days: -1 });
+  clock.time = start + minute;
+  await controller.dispatch({ type: "resetMarker" });
+  assert.ok(calls.includes("JP-2027"));
+});
+
+test("test_ref_001_refresh_leaves_a_moved_marker_where_it_is", async () => {
+  const start = utc(2026, 11, 24, 1) + 45 * minute;
+  const { controller, clock } = setup(tokyoFirst(24), start);
+  await controller.dispatch({ type: "open" });
+  await controller.dispatch({ type: "shiftMarkerDay", days: 1 });
+  const moved = controller.getState();
+  clock.time = start + hour;
+  await controller.dispatch({ type: "refresh" });
+  const state = controller.getState();
+  assert.deepEqual(state.marker, moved.marker);
+  assert.deepEqual(state.selectedDay, moved.selectedDay);
+  assert.equal(state.following, false);
 });
 
 test("test_ref_001_refresh_clears_and_refetches_holidays", async () => {

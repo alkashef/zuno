@@ -1,5 +1,5 @@
 // @ts-check
-/** @module picker.test Headless-browser tests of the picker view and its day selector in Chromium (PCK-001 to PCK-007, PCK-009, PCK-012, LAY-001, DSP-001, DSP-002, EX-003, EX-019, EX-035). */
+/** @module picker.test Headless-browser tests of the picker view and its day selector in Chromium (PCK-001 to PCK-007, PCK-009, PCK-012, PCK-013, LAY-001, DSP-001, DSP-002, EX-003, EX-019, EX-035, EX-036). */
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
@@ -474,4 +474,49 @@ test("ui_pck_012_the_marker_stays_after_a_drag_when_the_minute_passes_ex_035", a
   assert.equal(await markerInstant(page), dragged);
   const [row] = await rowFacts(page);
   assert.equal(row.time, "3:00 PM");
+});
+
+/**
+ * @param {Page} page
+ * @returns {import("playwright").Locator} The Now button.
+ */
+function nowButton(page) {
+  return page.locator('[data-role="reset-marker"]');
+}
+
+test("ui_pck_013_the_now_button_returns_the_marker_to_now_ex_036", async () => {
+  const page = await openWith(["london"]);
+  await page.getByRole("button", { name: "Next day" }).click();
+  await dragMarkerTo(page, 15 / 24);
+  assert.notEqual(await markerInstant(page), startInstant.getTime());
+  await nowButton(page).click();
+  assert.equal(await markerInstant(page), startInstant.getTime());
+  await page.clock.setFixedTime(new Date(startInstant.getTime() + 60 * 1000));
+  await page.clock.runFor(config.clockTickMs);
+  assert.equal(await markerInstant(page), startInstant.getTime() + 60 * 1000);
+  const [row] = await rowFacts(page);
+  assert.deepEqual([row.date, row.time], ["16-Nov-26", "9:26 AM"]);
+});
+
+test("ui_pck_013_the_now_button_is_aria_disabled_while_the_marker_follows_the_clock", async () => {
+  const page = await openWith(["london"]);
+  const button = nowButton(page);
+  assert.equal((await button.textContent())?.trim(), "Now");
+  assert.equal(await button.getAttribute("title"), "Reset the marker to the current time");
+  assert.equal(await button.getAttribute("aria-disabled"), "true");
+  await button.click({ force: true });
+  assert.equal(await markerInstant(page), startInstant.getTime());
+  await page.getByRole("button", { name: "Next day" }).click();
+  assert.notEqual(await button.getAttribute("aria-disabled"), "true");
+  await button.click();
+  assert.equal(await button.getAttribute("aria-disabled"), "true");
+});
+
+test("ui_pck_013_the_now_button_works_from_the_keyboard", async () => {
+  const page = await openWith(["london"]);
+  await page.getByRole("button", { name: "Next day" }).click();
+  await nowButton(page).focus();
+  await page.keyboard.press("Enter");
+  assert.equal(await markerInstant(page), startInstant.getTime());
+  assert.equal(await nowButton(page).getAttribute("aria-disabled"), "true");
 });

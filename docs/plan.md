@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                       | Description                                           | Model  | Effort | Status   |
 | ------------------------------- | ----------------------------------------------------- | ------ | ------ | -------- |
-| **M57** Now button | A Now button in the day selector puts the marker at now and makes it follow the clock again | sonnet | medium | open |
 | **M58** Pin a place: logic | `pinPlace` moves a place to the top and keeps the order of the others; the first place changes nothing | sonnet | medium | open |
 | **M59** Pin buttons | A pin button on each picker card and settings card; the first picker row loses its own background | sonnet | high | open |
 | **M60** Tab icon | The page's tab icon is a black Z on a solid `#00BCD4` square | sonnet | medium | open |
@@ -19,27 +18,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M57 — Now button
-
-- **Refs:** PCK-013, PCK-007, PCK-012, REF-001, EX-036, DEC-037.
-- **Owner:** `src/controller.js` (`resetMarker`), `src/views/day-selector.js` and `#day-selector-template`
-  in `src/index.html` (the button), `src/picker.css` (its look), `src/main.js` (passes `following` to
-  the day selector).
-- **Tests first:**
-  - `tests/e2e/controller-page.test.js`:
-    `test_pck_013_reset_marker_puts_the_marker_at_now_and_selects_today_ex_036`,
-    `test_pck_013_reset_marker_makes_the_marker_follow_again_ex_036`,
-    `test_ref_001_refresh_leaves_a_moved_marker_where_it_is`.
-  - `tests/e2e/ui/picker.test.js`: `ui_pck_013_the_now_button_returns_the_marker_to_now_ex_036`,
-    `ui_pck_013_the_now_button_is_aria_disabled_while_the_marker_follows_the_clock`,
-    `ui_pck_013_the_now_button_works_from_the_keyboard`.
-- **Build:** DEC-037. The action `resetMarker` (no arguments) applies `followClock` with the current
-  instant, sets `following` true and asks for any holiday year the window needs. The Now button
-  follows the next-day button (`data-role="reset-marker"`, the text "Now", `title` "Reset the marker
-  to the current time"); a press dispatches `resetMarker`; while `following` is true it has
-  `aria-disabled="true"`, a muted look from existing tokens, and sends nothing.
-- **Gate:** the browser tests pass in the four browsers.
 
 ### M58 — Pin a place: logic
 
