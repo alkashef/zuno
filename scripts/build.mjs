@@ -4,7 +4,7 @@
  * Builds the one-file page dist/zuno.html (PKG-001, DEC-002, DEC-012). Bundles src/main.js and
  * src/styles.css with esbuild, inlines both into
  * src/index.html, puts the map's coastline (data/map-outline.svg, DEC-026) in place of the marker
- * <!--zuno:map-outline-->, the version (VER-001, DEC-025) in place of <!--zuno:version-->, and adds a Content-Security-Policy tag
+ * <!--zuno:map-outline-->, the version (VER-001, DEC-025) in place of <!--zuno:version-->, the tab icon (ICN-001, DEC-038) in place of <!--zuno:icon-->, and adds a Content-Security-Policy tag
  * that allows only the inline script and style, data-URI images and the holiday host. It does not run the page or
  * read any setting except through the command-line entry at the bottom.
  */
@@ -67,6 +67,36 @@ function cspTag(script, style, holidayServiceBaseUrl) {
 }
 
 /**
+ * @param {string} css The text of theme.css.
+ * @param {string} token The custom property to read, such as `--color-icon-letter`.
+ * @returns {string} Its value as a six-digit hex colour (a three-digit one is expanded, because Stylelint requires the short form).
+ */
+function iconColour(css, token) {
+  const value = css.match(new RegExp(String.raw`${token}:s*([^;]*);`))?.[1].trim();
+  if (value === undefined || !/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value)) {
+    throw new Error(
+      `theme.css: ${token} must be a 3- or 6-digit hex colour, found ${value ?? "nothing"}`,
+    );
+  }
+  const digits = value.slice(1).toLowerCase();
+  return digits.length === 3
+    ? `#${[...digits].map((digit) => digit + digit).join("")}`
+    : `#${digits}`;
+}
+
+/**
+ * @param {string} srcDir Folder with icon.svg and theme.css.
+ * @returns {Promise<string>} The `<link rel="icon">` tag, with the icon in a data URI (ICN-001, DEC-038).
+ */
+async function iconTag(srcDir) {
+  const css = await readFile(path.join(srcDir, "theme.css"), "utf8");
+  const svg = (await readFile(path.join(srcDir, "icon.svg"), "utf8"))
+    .replace("{{background}}", iconColour(css, "--color-icon-background"))
+    .replace("{{letter}}", iconColour(css, "--color-icon-letter"));
+  return `<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,${encodeURIComponent(svg.trim())}">`;
+}
+
+/**
  * @param {Date} builtAt
  * @returns {string} The version, `YYYY.MM.DD.HHmm` from the UTC parts of the time (VER-001).
  */
@@ -91,7 +121,9 @@ export async function buildPage({
   const script = rawScript.replaceAll("</script", "<\\/script");
   const template = await readFile(path.join(srcDir, "index.html"), "utf8");
   const outline = (await readFile(mapOutlineFile, "utf8")).trim();
+  const icon = await iconTag(srcDir);
   const html = template
+    .replace("<!--zuno:icon-->", () => icon)
     .replace("<!--zuno:map-outline-->", () => outline)
     .replace("<!--zuno:version-->", () => versionText(builtAt))
     .replace("<!--zuno:csp-->", () => cspTag(script, style, holidayServiceBaseUrl))

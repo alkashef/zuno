@@ -604,8 +604,8 @@ changes after `clockTickMs`, stays after a drag, and that a press of Now returns
 `<rect>` over the whole square (no rounded corners, because EX-037 reads the corners as the background colour) and
 a `<path>` for the Z that fills about half the width and 60% of the height, centred, with the placeholders
 `{{background}}` and `{{letter}}` in place of the two colours. `scripts/build.mjs` reads `--color-icon-background`
-and `--color-icon-letter` from `src/theme.css` by name (a missing token, or a value that is not a six-digit hex
-colour, fails the build and names the file and the token), fills the placeholders, applies `encodeURIComponent`,
+and `--color-icon-letter` from `src/theme.css` by name (a missing token, or a value that is not a hex
+colour, fails the build and names the file and the token; a three-digit value such as `#000` is expanded, because Stylelint requires the short form), fills the placeholders, applies `encodeURIComponent`,
 and writes `<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,…">` in place of the marker
 `<!--zuno:icon-->`, which `index.html` holds after `<title>`. The CSP of DEC-012 already allows `img-src data:`,
 and a `data:` URI makes no request (NFR-001). The colours stay in `theme.css`, as the HTML and CSS rule says. Black

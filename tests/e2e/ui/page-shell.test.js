@@ -5,7 +5,7 @@ import { after, before, test } from "node:test";
 
 import { createPlace } from "../../../src/domain/places.js";
 import { defaultSettings } from "../../../src/domain/settings.js";
-import { buildToScratch, launchBrowser, openPage } from "./page-fixture.js";
+import { browserNames, buildToScratch, launchBrowser, openPage } from "./page-fixture.js";
 
 /** @typedef {import("./page-fixture.js").PageBuild} PageBuild */
 /** @typedef {import("./page-fixture.js").Browser} Browser */
@@ -112,4 +112,54 @@ test("ui_shell_unexpected_error_shows_message_and_stack_on_screen", async () => 
   const alert = page.getByRole("alert");
   await alert.waitFor();
   assert.match((await alert.textContent()) ?? "", /invented failure/);
+});
+
+/**
+ * @param {import("./page-fixture.js").Page} page
+ * @returns {Promise<string[]>} The colour (`#rrggbb`) of the icon at each point of a 32 by 32 drawing.
+ */
+async function iconColoursAt(page) {
+  const points = [
+    [0, 0],
+    [31, 0],
+    [0, 31],
+    [31, 31],
+    [16, 9],
+    [16, 16],
+    [16, 23],
+    [8, 16],
+  ];
+  const link = page.locator('link[rel~="icon"]');
+  return link.evaluate(async (element, at) => {
+    const owner = element.ownerDocument;
+    const image = owner.createElement("img");
+    image.src = element.getAttribute("href") ?? "";
+    await image.decode();
+    const canvas = owner.createElement("canvas");
+    canvas.width = 32;
+    canvas.height = 32;
+    const context = canvas.getContext("2d");
+    context?.drawImage(image, 0, 0, 32, 32);
+    return at.map(([x, y]) => {
+      const [r, g, b] = context?.getImageData(x, y, 1, 1).data ?? [];
+      return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+    });
+  }, points);
+}
+
+test("ui_icn_001_the_tab_icon_has_cyan_corners_and_a_black_z_ex_037", async () => {
+  for (const name of browserNames) {
+    const own = await launchBrowser(name);
+    try {
+      const { page } = await openPage(own, built.url);
+      assert.equal(await page.title(), "Zuno");
+      assert.equal(await page.locator('link[rel~="icon"]').count(), 1);
+      const [c1, c2, c3, c4, top, middle, bottom, besideDiagonal] = await iconColoursAt(page);
+      assert.deepEqual([c1, c2, c3, c4], Array(4).fill("#00bcd4"), name);
+      assert.deepEqual([top, middle, bottom], Array(3).fill("#000000"), name);
+      assert.equal(besideDiagonal, "#00bcd4", name);
+    } finally {
+      await own.close();
+    }
+  }
 });
