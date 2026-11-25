@@ -1,5 +1,5 @@
 // @ts-check
-/** @module picker.test Unit tests for src/domain/picker.js (PCK-001 to PCK-003, PCK-005 to PCK-007, PCK-009, SET-005, EX-003, EX-008, EX-009, EX-019, EX-020). */
+/** @module picker.test Unit tests for src/domain/picker.js (PCK-001 to PCK-003, PCK-005 to PCK-007, PCK-009, PCK-012, SET-005, EX-003, EX-008, EX-009, EX-019, EX-020, EX-035). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -8,6 +8,7 @@ import {
   DayKind,
   buildPicker,
   chooseDay,
+  followClock,
   keepMarkerInWindow,
   markerInWindow,
   markerOnDate,
@@ -380,4 +381,40 @@ test("test_pck_005_a_vacation_day_is_a_day_off_in_the_picker_ex_029", () => {
   assert.equal(kindAt(buildPicker(settings, { instant: before }, {})[0], before), DayKind.working);
   const lastDay = utc(2026, 12, 31, 11);
   assert.equal(kindAt(buildPicker(settings, { instant: lastDay }, {})[0], lastDay), DayKind.dayOff);
+});
+
+test("test_pck_012_follow_clock_puts_the_marker_at_now_and_the_selected_day_at_today_in_the_first_place", () => {
+  const settings = settingsWith([createPlace("a", "tokyo"), createPlace("b", "london")]);
+  const now = utc(2026, 11, 24, 1, 45);
+  assert.deepEqual(followClock(settings, now), {
+    selectedDay: { year: 2026, month: 11, day: 24 },
+    marker: { instant: now },
+  });
+});
+
+test("test_pck_012_follow_clock_after_midnight_in_the_first_place_gives_the_new_day_ex_035", () => {
+  const settings = settingsWith([createPlace("a", "tokyo")]);
+  const now = utc(2026, 11, 24, 15, 0);
+  assert.deepEqual(followClock(settings, now), {
+    selectedDay: { year: 2026, month: 11, day: 25 },
+    marker: { instant: now },
+  });
+});
+
+test("test_pck_012_follow_clock_uses_the_utc_date_with_no_places", () => {
+  const now = utc(2026, 11, 24, 23, 30);
+  assert.deepEqual(followClock(settingsWith([]), now), {
+    selectedDay: { year: 2026, month: 11, day: 24 },
+    marker: { instant: now },
+  });
+});
+
+test("test_pck_012_follow_clock_on_a_day_with_a_clock_change_keeps_the_marker_in_the_window", () => {
+  const settings = settingsWith([createPlace("a", "london")]);
+  const now = utc(2026, 10, 25, 1, 30);
+  const { selectedDay, marker } = followClock(settings, now);
+  const range = pickerWindow(settings, selectedDay);
+  assert.deepEqual(selectedDay, { year: 2026, month: 10, day: 25 });
+  assert.equal(marker.instant, now);
+  assert.ok(range !== null && marker.instant >= range.from && marker.instant < range.to);
 });

@@ -3,9 +3,9 @@
  * @module controller
  * The page workflows: applies an action to the page state, asks the injected `holidayTable` or `api` for the holidays
  * the shown month and the marker's window need, and tells subscribers about every new state
- * (PCK-004, PCK-006, PCK-007, PCK-009, LAY-003, CAL-005, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-001, SET-002,
+ * (PCK-004, PCK-006, PCK-007, PCK-009, PCK-012, LAY-003, CAL-005, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-001, SET-002,
  * SET-004 to SET-014, SET-018, VAC-002, VAC-003, VAC-005, VAC-006, HIJ-002, HIJ-003, HOL-003, HOL-006 to HOL-013, HOL-017, HOL-018, DEC-007, DEC-016 to DEC-019, DEC-022,
- * DEC-029, DEC-030, DEC-032).
+ * DEC-029, DEC-030, DEC-032, DEC-037).
  * Pure apart from its injected `api`, `storage`, `holidayStorage`, `files` and `clock`. It touches no DOM (the
  * views do) and builds no picker, grid, notices or holiday-list logic itself (domain/* does). The
  * user's holiday actions, the holidays the page uses and the notices are in controller-holidays.js;
@@ -25,6 +25,7 @@ import { cityOf } from "./domain/cities.js";
 import {
   buildPicker,
   chooseDay,
+  followClock,
   keepMarkerInWindow,
   markerInWindow,
   pickerWindow,
@@ -94,6 +95,8 @@ import { localDateTime } from "./domain/zones.js";
  * @property {Marker} marker The picker's chosen instant (PCK-004); always inside the window.
  * @property {CalendarDate} selectedDay The day the picker window starts on, in the first place
  *   (PCK-006, DEC-019).
+ * @property {boolean} following Whether the marker moves with the clock: true after `open`, false
+ *   after the user moves the marker; never saved (PCK-012, DEC-037).
  * @property {MonthRef} month The month the grid shows (CAL-005).
  * @property {ResultsByCountryYear} holidayResults Every answer of the holiday service.
  * @property {UserHolidays} userHolidays The holidays the user added and hid (HOL-006 to HOL-008).
@@ -318,28 +321,48 @@ function open(ctx) {
   const userHolidays = loadUserHolidays(ctx.deps.holidayStorage);
   const now = ctx.deps.clock.now();
   const month = monthAt(now, settings);
-  const selectedDay = dayAt(now, settings);
-  ctx.update({ settings, userHolidays, now, marker: { instant: now }, selectedDay, month });
+  ctx.update({
+    settings,
+    userHolidays,
+    now,
+    following: true,
+    ...followClock(settings, now),
+    month,
+  });
   return requestMissing(ctx);
 }
 
 /**
- * Recomputes the times and fetches every needed country-year again (REF-001).
+ * @param {PageState} state
+ * @param {number} now UTC milliseconds.
+ * @returns {Partial<PageState>} The new current time and, while the marker follows the clock, the
+ *   marker at it and the selected day at today in the first place (PCK-012, DEC-037).
+ */
+function timeChanges(state, now) {
+  const { settings, following } = state;
+  return following && settings !== null ? { now, ...followClock(settings, now) } : { now };
+}
+
+/**
+ * Recomputes the times and fetches every needed country-year again (REF-001). A following marker
+ * moves to now; a marker the user moved stays (PCK-012).
  * @param {Context} ctx
  * @returns {Promise<void>}
  */
 function refresh(ctx) {
-  ctx.update({ now: ctx.deps.clock.now() });
+  ctx.update(timeChanges(ctx.read(), ctx.deps.clock.now()));
   return requestCountryYears(ctx, neededCountryYears(ctx.read()));
 }
 
 /**
- * Updates the current time; the marker stays (CLK-003).
+ * Updates the current time (CLK-003). A following marker moves to now, and any holiday year its
+ * window then needs is asked for; a marker the user moved stays (PCK-012).
  * @param {Context} ctx
- * @returns {void}
+ * @returns {Promise<void>}
  */
 function tick(ctx) {
-  ctx.update({ now: ctx.deps.clock.now() });
+  ctx.update(timeChanges(ctx.read(), ctx.deps.clock.now()));
+  return ctx.read().following ? requestMissing(ctx) : Promise.resolve();
 }
 
 /**
@@ -352,7 +375,7 @@ function tick(ctx) {
 function moveMarker(ctx, move) {
   const { settings, selectedDay, marker } = ctx.read();
   if (settings === null) return Promise.resolve();
-  ctx.update(move(settings, { selectedDay, marker }));
+  ctx.update({ ...move(settings, { selectedDay, marker }), following: false });
   return requestMissing(ctx);
 }
 
@@ -413,11 +436,13 @@ function keepUsedCountries(results, places) {
 /**
  * @param {PageState} state
  * @param {Settings} next
- * @returns {DayChoice} The selected day and the marker under the new settings: the marker stays
- *   inside the window (DEC-019); with no places before, the selected day is the marker's date in
- *   the new first place.
+ * @returns {DayChoice} The selected day and the marker under the new settings: a following marker
+ *   is at now and the selected day is today in the new first place (DEC-037); otherwise the marker
+ *   stays inside the window (DEC-019), and with no places before, the selected day is the marker's
+ *   date in the new first place.
  */
 function settleDay(state, next) {
+  if (state.following) return followClock(next, state.now);
   const hadPlaces = (state.settings?.places.length ?? 0) > 0;
   const selectedDay = hadPlaces ? state.selectedDay : dayAt(state.marker.instant, next);
   return { selectedDay, marker: keepMarkerInWindow(next, { selectedDay, marker: state.marker }) };
@@ -603,6 +628,7 @@ function initialState(now) {
     now,
     marker: { instant: now },
     selectedDay: dayAt(now, null),
+    following: true,
     month: monthAt(now, null),
     holidayResults: {},
     userHolidays: emptyUserHolidays(),

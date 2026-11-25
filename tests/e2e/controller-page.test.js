@@ -1,5 +1,5 @@
 // @ts-check
-/** @module controller-page.test Page workflows through src/controller.js with fake api, storage and clock (PCK-004, PCK-006, PCK-007, PCK-009, EX-019, EX-020, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-007). */
+/** @module controller-page.test Page workflows through src/controller.js with fake api, storage and clock (PCK-004, PCK-006, PCK-007, PCK-009, EX-019, EX-020, CAL-005, CAL-006, CLK-003, REF-001, REF-002, HOL-001, HOL-004, SET-007, PCK-012, EX-035). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -138,15 +138,110 @@ test("test_hol_001_marker_window_in_new_year_requests_that_year", async () => {
   assert.deepEqual(calls, ["JP-2026", "JP-2027"]);
 });
 
-test("test_clk_003_tick_updates_time_but_not_marker", async () => {
+test("test_clk_003_tick_updates_now", async () => {
   const start = utc(2026, 11, 17, 10);
   const { controller, clock } = setup(settingsWith([createPlace("a", "london")]), start);
   await controller.dispatch({ type: "open" });
   clock.time = start + minute;
   await controller.dispatch({ type: "tick" });
+  assert.equal(controller.getState().now, start + minute);
+});
+
+test("test_pck_004_open_starts_following_the_clock", async () => {
+  const { controller } = setup(tokyoFirst(24), utc(2026, 11, 24, 1));
+  await controller.dispatch({ type: "open" });
+  assert.equal(controller.getState().following, true);
+});
+
+test("test_pck_012_tick_moves_the_marker_while_following_ex_035", async () => {
+  const start = utc(2026, 11, 24, 1) + 45 * minute;
+  const { controller, clock } = setup(tokyoFirst(24), start);
+  await controller.dispatch({ type: "open" });
+  clock.time = start + minute;
+  await controller.dispatch({ type: "tick" });
   const state = controller.getState();
   assert.equal(state.now, start + minute);
+  assert.equal(state.marker.instant, start + minute);
+  assert.equal(state.following, true);
+});
+
+test("test_pck_012_tick_after_the_user_moved_the_marker_keeps_it_ex_035", async () => {
+  const start = utc(2026, 11, 24, 1) + 45 * minute;
+  const { controller, clock } = setup(tokyoFirst(24), start);
+  await controller.dispatch({ type: "open" });
+  const twoPm = utc(2026, 11, 24, 5);
+  await controller.dispatch({ type: "setMarker", instant: twoPm });
+  clock.time = start + 2 * minute;
+  await controller.dispatch({ type: "tick" });
+  const state = controller.getState();
+  assert.equal(state.now, start + 2 * minute);
+  assert.equal(state.marker.instant, twoPm);
+  assert.equal(state.following, false);
+});
+
+test("test_pck_012_tick_after_choosing_a_day_keeps_the_marker", async () => {
+  const start = utc(2026, 11, 24, 1) + 45 * minute;
+  const { controller, clock } = setup(tokyoFirst(24), start);
+  await controller.dispatch({ type: "open" });
+  await controller.dispatch({ type: "shiftMarkerDay", days: 1 });
+  const chosen = controller.getState();
+  clock.time = start + minute;
+  await controller.dispatch({ type: "tick" });
+  const state = controller.getState();
+  assert.equal(state.following, false);
+  assert.deepEqual(state.marker, chosen.marker);
+  assert.deepEqual(state.selectedDay, chosen.selectedDay);
+});
+
+test("test_pck_012_tick_past_midnight_in_the_first_place_selects_the_new_day_ex_035", async () => {
+  const start = utc(2026, 11, 24, 14) + 59 * minute;
+  const { controller, clock } = setup(tokyoFirst(24), start);
+  await controller.dispatch({ type: "open" });
+  clock.time = start + minute;
+  await controller.dispatch({ type: "tick" });
+  const state = controller.getState();
+  assert.deepEqual(state.selectedDay, { year: 2026, month: 11, day: 25 });
+  assert.equal(state.marker.instant, utc(2026, 11, 24, 15));
+  assert.equal(state.pickerWindow?.from, utc(2026, 11, 24, 15));
+  assert.deepEqual(state.windowDates?.first, { year: 2026, month: 11, day: 25 });
+});
+
+test("test_pck_012_tick_into_a_new_year_requests_that_years_holidays", async () => {
+  const start = utc(2026, 12, 31, 14) + 59 * minute;
+  const { controller, calls, clock } = setup(tokyoFirst(24), start);
+  await controller.dispatch({ type: "open" });
+  assert.deepEqual(
+    calls.filter((call) => call.startsWith("JP")),
+    ["JP-2026"],
+  );
+  clock.time = start + minute;
+  await controller.dispatch({ type: "tick" });
+  assert.deepEqual(
+    calls.filter((call) => call.startsWith("JP")),
+    ["JP-2026", "JP-2027"],
+  );
+});
+
+test("test_pck_012_refresh_while_following_moves_the_marker_and_keeps_following", async () => {
+  const start = utc(2026, 11, 24, 1) + 45 * minute;
+  const { controller, clock } = setup(tokyoFirst(24), start);
+  await controller.dispatch({ type: "open" });
+  clock.time = start + hour;
+  await controller.dispatch({ type: "refresh" });
+  const state = controller.getState();
+  assert.equal(state.marker.instant, start + hour);
+  assert.equal(state.following, true);
+});
+
+test("test_pck_012_a_settings_change_while_following_keeps_the_marker_at_now", async () => {
+  const start = utc(2026, 11, 24, 20);
+  const { controller } = setup(tokyoFirst(24), start);
+  await controller.dispatch({ type: "open" });
+  await controller.dispatch({ type: "movePlace", placeId: "b", offset: -1 });
+  const state = controller.getState();
   assert.equal(state.marker.instant, start);
+  assert.deepEqual(state.selectedDay, { year: 2026, month: 11, day: 24 });
+  assert.equal(state.following, true);
 });
 
 test("test_ref_001_refresh_clears_and_refetches_holidays", async () => {

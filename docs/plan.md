@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                       | Description                                           | Model  | Effort | Status   |
 | ------------------------------- | ----------------------------------------------------- | ------ | ------ | -------- |
-| **M56** Marker follows the clock | Until the user moves it, each tick, refresh and settings change puts the marker at now and selects today in the first place | sonnet | high | open |
 | **M57** Now button | A Now button in the day selector puts the marker at now and makes it follow the clock again | sonnet | medium | open |
 | **M58** Pin a place: logic | `pinPlace` moves a place to the top and keeps the order of the others; the first place changes nothing | sonnet | medium | open |
 | **M59** Pin buttons | A pin button on each picker card and settings card; the first picker row loses its own background | sonnet | high | open |
@@ -20,42 +19,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M56 — Marker follows the clock
-
-- **Refs:** PCK-012, PCK-004, CLK-003, REF-001, EX-035, DEC-037, DEC-019.
-- **Owner:** `src/domain/picker.js` (`followClock`), `src/controller.js` (`following` in `PageState`;
-  `open`, `tick`, `refresh`, `settleDay`, `setMarker`, `shiftMarkerDay`). `main.js` does not change:
-  its tick stays as it is.
-- **Tests first:**
-  - `tests/unit/picker.test.js`:
-    `test_pck_012_follow_clock_puts_the_marker_at_now_and_the_selected_day_at_today_in_the_first_place`,
-    `test_pck_012_follow_clock_after_midnight_in_the_first_place_gives_the_new_day_ex_035`,
-    `test_pck_012_follow_clock_uses_the_utc_date_with_no_places`,
-    `test_pck_012_follow_clock_on_a_day_with_a_clock_change_keeps_the_marker_in_the_window`.
-  - `tests/e2e/controller-page.test.js`: `test_pck_004_open_starts_following_the_clock`,
-    `test_pck_012_tick_moves_the_marker_while_following_ex_035`,
-    `test_pck_012_tick_after_the_user_moved_the_marker_keeps_it_ex_035`,
-    `test_pck_012_tick_after_choosing_a_day_keeps_the_marker`,
-    `test_pck_012_tick_past_midnight_in_the_first_place_selects_the_new_day_ex_035`,
-    `test_pck_012_tick_into_a_new_year_requests_that_years_holidays`,
-    `test_pck_012_refresh_while_following_moves_the_marker_and_keeps_following`,
-    `test_pck_012_a_settings_change_while_following_keeps_the_marker_at_now`.
-  - `tests/e2e/ui/picker.test.js`:
-    `ui_pck_012_the_marker_label_moves_each_minute_while_following_ex_035`,
-    `ui_pck_012_the_marker_stays_after_a_drag_when_the_minute_passes_ex_035`.
-  - Changed: `test_clk_003_tick_updates_time_but_not_marker` keeps its check that a tick updates `now`
-    and loses the check that the marker stays, because the tick now moves a following marker; rename
-    it `test_clk_003_tick_updates_now`.
-- **Build:** DEC-037. `followClock(settings, now)` returns the marker at `now` and the selected day at
-  today in the first place (UTC with no places). `following` is state of the controller and is not
-  saved: `open` sets it true; `setMarker` and `shiftMarkerDay` set it false; while it is true `tick`
-  and `refresh` set `now` and apply the rule in one `update` (the subscribers test hears one change
-  per action), and `settleDay` applies it instead of `keepMarkerInWindow`; a following tick or
-  refresh also asks for any holiday year the new window needs. `getState()` carries `following`.
-- **Gate:** every existing test that ticks or refreshes with an untouched marker is checked; one
-  changes only when its requirement changed, and the report says which; the browser tests pass in the
-  four browsers.
 
 ### M57 — Now button
 

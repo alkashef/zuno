@@ -1,11 +1,12 @@
 // @ts-check
 /**
  * @module domain/picker
- * The picker model (PCK-001 to PCK-003, PCK-005 to PCK-007, PCK-009, SET-005, DEC-019, DEC-030): the window of
+ * The picker model (PCK-001 to PCK-003, PCK-005 to PCK-007, PCK-009, PCK-012, SET-005, DEC-019, DEC-030, DEC-037): the window of
  * `pickerHours` hours from midnight of the selected day in the first place, one row of segments per
  * place that covers the window exactly, each place's local date and time at the marker, the first
- * and last date of the window, the marker kept inside the window, and the selected day and marker
- * after a day is chosen. It reads no clock (the caller passes the marker), makes no request, does
+ * and last date of the window, the marker kept inside the window, the selected day and marker
+ * after a day is chosen, and the marker and selected day of a marker that follows the clock. It
+ * reads no clock (the caller passes the marker), makes no request, does
  * not format text (domain/format.js does) and chooses no colours (the view does).
  */
 import { hijriDate } from "./hijri.js";
@@ -351,4 +352,16 @@ export function keepMarkerInWindow(settings, choice) {
   const { instant } = choice.marker;
   if (range === null || (instant >= range.from && instant < range.to)) return choice.marker;
   return markerOnDate(settings, choice.marker, choice.selectedDay);
+}
+
+/**
+ * The marker and the selected day of a marker that follows the clock: the marker at `now` and the
+ * selected day at today in the first place, or in UTC with no places (PCK-012, DEC-037).
+ * @param {Settings} settings The places, in display order.
+ * @param {number} now UTC milliseconds.
+ * @returns {DayChoice}
+ */
+export function followClock(settings, now) {
+  const marker = { instant: now };
+  return { selectedDay: markerDate(settings, marker), marker };
 }

@@ -1,5 +1,5 @@
 // @ts-check
-/** @module picker.test Headless-browser tests of the picker view and its day selector in Chromium (PCK-001 to PCK-007, PCK-009, LAY-001, DSP-001, DSP-002, EX-003, EX-019). */
+/** @module picker.test Headless-browser tests of the picker view and its day selector in Chromium (PCK-001 to PCK-007, PCK-009, PCK-012, LAY-001, DSP-001, DSP-002, EX-003, EX-019, EX-035). */
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 
@@ -454,4 +454,24 @@ test("ui_pck_011_label_background_is_see_through_in_both_themes_ex_033", async (
       await close();
     }
   }
+});
+
+test("ui_pck_012_the_marker_label_moves_each_minute_while_following_ex_035", async () => {
+  const page = await openWith(["london"]);
+  await page.clock.setFixedTime(new Date(startInstant.getTime() + 60 * 1000));
+  await page.clock.runFor(config.clockTickMs);
+  assert.equal(await markerInstant(page), startInstant.getTime() + 60 * 1000);
+  const [row] = await rowFacts(page);
+  assert.deepEqual([row.date, row.time], ["16-Nov-26", "9:26 AM"]);
+});
+
+test("ui_pck_012_the_marker_stays_after_a_drag_when_the_minute_passes_ex_035", async () => {
+  const page = await openWith(["london"]);
+  await dragMarkerTo(page, 15 / 24);
+  const dragged = await markerInstant(page);
+  await page.clock.setFixedTime(new Date(startInstant.getTime() + 60 * 1000));
+  await page.clock.runFor(config.clockTickMs);
+  assert.equal(await markerInstant(page), dragged);
+  const [row] = await rowFacts(page);
+  assert.equal(row.time, "3:00 PM");
 });
