@@ -5,12 +5,12 @@
  * which checks the name, the time zone and the country, makes a custom place with a free `place-N`
  * id; and the handlers of `addVacation`, `changeVacation` and `removeVacation`, which change one
  * place's vacations. Each hands the new place list to controller.js, which saves it and asks for its
- * country's holidays (SET-018, VAC-002, VAC-003, VAC-005, VAC-006, SET-004, DEC-022, DEC-029,
- * DEC-030). It keeps no state, saves nothing itself and asks the holiday
+ * country's holidays; the handler of `pinPlace` makes a place the first (SET-018, VAC-002, VAC-003,
+ * VAC-005, VAC-006, SET-004, PIN-003, PIN-004, DEC-022, DEC-029, DEC-030, DEC-039). It keeps no state, saves nothing itself and asks the holiday
  * service for nothing (controller.js does all three, through the `changePlaces` it passes in). The
  * existing place actions stay in controller.js. Only controller.js imports it.
  */
-import { addPlace, createCustomPlace, isCustomPlaceEntry } from "./domain/places.js";
+import { addPlace, createCustomPlace, isCustomPlaceEntry, moveToFirst } from "./domain/places.js";
 import { addVacation, changeVacation, removeVacation } from "./domain/vacations.js";
 
 /** @typedef {import("./domain/places.js").Place} Place */
@@ -19,10 +19,11 @@ import { addVacation, changeVacation, removeVacation } from "./domain/vacations.
 
 /**
  * @typedef {{ type: "addCustomPlace", name: string, zone: string, countryCode: string }
+ *   | { type: "pinPlace", placeId: string }
  *   | ({ type: "addVacation", placeId: string } & VacationFields)
  *   | { type: "changeVacation", placeId: string, original: Vacation, changes: VacationFields }
  *   | { type: "removeVacation", placeId: string, vacation: Vacation }} PlaceAction
- *   The actions this module handles (SET-018, VAC-002, VAC-005).
+ *   The actions this module handles (SET-018, VAC-002, VAC-005, PIN-003).
  */
 
 /**
@@ -59,6 +60,17 @@ function addCustomPlace(changePlaces) {
       addPlace(places, createCustomPlace(nextPlaceId(places), entry)),
     );
   };
+}
+
+/**
+ * @template Ctx
+ * @param {ChangePlaces<Ctx>} changePlaces
+ * @returns {(ctx: Ctx, action: Extract<PlaceAction, { type: "pinPlace" }>) => Promise<void>}
+ *   The handler that makes a place the first (PIN-003). An unknown place and the first place are
+ *   refused and nothing is saved (PIN-004).
+ */
+function pinPlace(changePlaces) {
+  return (ctx, { placeId }) => changePlaces(ctx, (places) => moveToFirst(places, placeId));
 }
 
 /**
@@ -111,6 +123,7 @@ function vacationHandlers(changePlaces) {
 export function placeHandlers(changePlaces) {
   return /** @type {Record<PlaceAction["type"], (ctx: Ctx, action: PlaceAction) => Promise<void>>} */ ({
     addCustomPlace: addCustomPlace(changePlaces),
+    pinPlace: pinPlace(changePlaces),
     ...vacationHandlers(changePlaces),
   });
 }

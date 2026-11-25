@@ -1,5 +1,5 @@
 // @ts-check
-/** @module places.test Unit tests for src/domain/places.js (SET-001, SET-008, SET-009, SET-010, SET-013, SET-015, SET-016, SET-018, MAP-001, MAP-002, HOL-006). */
+/** @module places.test Unit tests for src/domain/places.js (SET-001, SET-008, PIN-003, PIN-004, SET-009, SET-010, SET-013, SET-015, SET-016, SET-018, MAP-001, MAP-002, HOL-006). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -10,6 +10,7 @@ import {
   editPlace,
   isPlace,
   movePlace,
+  moveToFirst,
   placeName,
   placeFacts,
   holidayCountries,
@@ -303,4 +304,37 @@ test("test_hol_022_without_import_drops_the_vacations_only_that_import_listed", 
   assert.equal(after[1], london);
   assert.equal(withoutImport(after, "import-1")[0], after[0]);
   assert.deepEqual(places[0].vacations, [own, onlyOne, shared]);
+});
+
+/** @returns {ReturnType<typeof createPlace>[]} Four places a to d. */
+function fourPlaces() {
+  return ["a", "b", "c", "d"].map((id) => createPlace(id, "london"));
+}
+
+test("test_pin_003_move_to_first_puts_a_middle_place_first_and_keeps_the_order_of_the_others", () => {
+  const places = fourPlaces();
+  const moved = moveToFirst(places, "c");
+  assert.deepEqual(
+    moved?.map((place) => place.id),
+    ["c", "a", "b", "d"],
+  );
+  assert.deepEqual(
+    places.map((place) => place.id),
+    ["a", "b", "c", "d"],
+  );
+});
+
+test("test_pin_003_move_to_first_puts_the_last_place_first", () => {
+  assert.deepEqual(
+    moveToFirst(fourPlaces(), "d")?.map((place) => place.id),
+    ["d", "a", "b", "c"],
+  );
+});
+
+test("test_pin_004_move_to_first_of_the_first_place_gives_null", () => {
+  assert.equal(moveToFirst(fourPlaces(), "a"), null);
+});
+
+test("test_pin_003_move_to_first_of_an_unknown_id_gives_null", () => {
+  assert.equal(moveToFirst(fourPlaces(), "zz"), null);
 });

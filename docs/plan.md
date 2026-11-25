@@ -9,7 +9,6 @@ history is the record. Template: `docs/workflow.md`.
 
 | Milestone                       | Description                                           | Model  | Effort | Status   |
 | ------------------------------- | ----------------------------------------------------- | ------ | ------ | -------- |
-| **M58** Pin a place: logic | `pinPlace` moves a place to the top and keeps the order of the others; the first place changes nothing | sonnet | medium | open |
 | **M59** Pin buttons | A pin button on each picker card and settings card; the first picker row loses its own background | sonnet | high | open |
 | **M60** Tab icon | The page's tab icon is a black Z on a solid `#00BCD4` square | sonnet | medium | open |
 
@@ -18,29 +17,6 @@ history is the record. Template: `docs/workflow.md`.
 Every Gate below also requires: `npm test`, `npm run typecheck`, `npm run lint`,
 `npm run lint:css` and `npm run format:check` pass, and docs the change made inaccurate are updated
 (`docs/design.md` rows of the modules changed, `README.md`).
-
-### M58 — Pin a place: logic
-
-- **Refs:** PIN-003, PIN-004, SET-008, SET-004, EX-039, DEC-039, DEC-019, DEC-037.
-- **Owner:** `src/domain/places.js` (`moveToFirst`), `src/controller-places.js` (`pinPlace` in
-  `placeHandlers`), `src/controller.js` (the action type and the wiring).
-- **Tests first:**
-  - `tests/unit/places.test.js`:
-    `test_pin_003_move_to_first_puts_a_middle_place_first_and_keeps_the_order_of_the_others`,
-    `test_pin_003_move_to_first_puts_the_last_place_first`,
-    `test_pin_004_move_to_first_of_the_first_place_gives_null`,
-    `test_pin_003_move_to_first_of_an_unknown_id_gives_null`.
-  - `tests/e2e/controller-settings.test.js`:
-    `test_pin_003_pin_place_moves_it_first_in_the_picker_the_grid_and_the_places_ex_039`,
-    `test_pin_003_pin_place_saves_the_order_and_a_new_controller_reads_it_ex_039`,
-    `test_pin_004_pin_place_of_the_first_place_changes_and_saves_nothing_ex_039`,
-    `test_pin_003_pin_place_of_an_unknown_id_changes_and_saves_nothing`,
-    `test_pin_003_pin_place_keeps_a_following_marker_at_now`,
-    `test_pin_003_pin_place_keeps_a_moved_marker_inside_the_window`.
-- **Build:** DEC-039. `moveToFirst(places, placeId)` returns the list with that place first and the
-  others in their order, or `null` for an unknown place and for the first place. The action
-  `pinPlace` (`placeId`) commits it as `movePlace` is committed; a refused change saves nothing.
-- **Gate:** the tests and the checks pass.
 
 ### M59 — Pin buttons
 

@@ -4,8 +4,8 @@
  * The list of places: makes a place from a city or a custom place from a name, a time zone and a
  * country, restores a saved one, validates, adds, removes, moves, edits and names them, puts each on
  * the map and lists the countries of the Holidays section (SET-001, SET-002, SET-006, SET-008,
- * SET-009, SET-010, SET-013, SET-015, SET-016, SET-018, MAP-001, MAP-002, HOL-006, HOL-022, VAC-006, DEC-029,
- * DEC-030, DEC-035). Every
+ * PIN-003, PIN-004, SET-009, SET-010, SET-013, SET-015, SET-016, SET-018, MAP-001, MAP-002, HOL-006, HOL-022, VAC-006, DEC-029,
+ * DEC-030, DEC-035, DEC-039). Every
  * function returns a new list and leaves its input unchanged. The list order is the display order
  * (PCK-006). It does not hold the city list (domain/cities.js does) or the zone table
  * (domain/zone-table.js does).
@@ -257,6 +257,19 @@ export function movePlace(places, id, offset) {
   const [place] = moved.splice(from, 1);
   moved.splice(to, 0, place);
   return moved;
+}
+
+/**
+ * Makes a place the first place and keeps the order of the others (PIN-003, DEC-039).
+ * @param {Place[]} places
+ * @param {string} id
+ * @returns {Place[] | null} The new list, or `null` for an unknown place and for the first place
+ *   (PIN-004).
+ */
+export function moveToFirst(places, id) {
+  const from = places.findIndex((place) => place.id === id);
+  if (from <= 0) return null;
+  return [places[from], ...places.slice(0, from), ...places.slice(from + 1)];
 }
 
 /** @typedef {Partial<Omit<Place, "id" | "cityId" | "custom" | "countryCode" | "zone">>} PlaceChanges */

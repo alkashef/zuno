@@ -1,11 +1,12 @@
 // @ts-check
-/** @module controller-settings.test Settings workflows through src/controller.js with fake api, storage and clock (SET-001, SET-002, SET-004 to SET-006, SET-008 to SET-013, SET-015, SET-018, HIJ-002, HIJ-003, LAY-003, LAY-005, EX-019, EX-027). */
+/** @module controller-settings.test Settings workflows through src/controller.js with fake api, storage and clock (SET-001, SET-002, SET-004 to SET-006, SET-008 to SET-013, SET-015, SET-018, PIN-003, PIN-004, HIJ-002, HIJ-003, LAY-003, LAY-005, EX-019, EX-027). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { config } from "../../src/config.js";
 import { createController } from "../../src/controller.js";
 import { createPlace, placeName } from "../../src/domain/places.js";
+import { pickerWindow } from "../../src/domain/picker.js";
 import { defaultSettings, parseSettings } from "../../src/domain/settings.js";
 import { zoneOffset } from "../../src/domain/zones.js";
 import { emptyHolidayTable } from "../unit/holiday-fixtures.js";
@@ -593,4 +594,75 @@ test("test_vac_006_vacation_changes_are_saved_and_restored", async () => {
   await second.controller.dispatch({ type: "open" });
   assert.deepEqual(vacationsOfPlace(second.controller, "place-1"), [winter]);
   assert.deepEqual(vacationsOfPlace(second.controller, "place-2"), []);
+});
+
+/**
+ * @returns {Promise<ReturnType<typeof setup>>} A page with London, Washington and Tokyo, in this
+ *   order (place-1 to place-3).
+ */
+async function threePlaces() {
+  const world = setup();
+  await world.controller.dispatch({ type: "open" });
+  for (const cityId of ["london", "washington-dc", "tokyo"]) {
+    await world.controller.dispatch({ type: "addPlace", cityId });
+  }
+  return world;
+}
+
+test("test_pin_003_pin_place_moves_it_first_in_the_picker_the_grid_and_the_places_ex_039", async () => {
+  const { controller } = await threePlaces();
+  await controller.dispatch({ type: "pinPlace", placeId: "place-3" });
+  const state = controller.getState();
+  assert.deepEqual(placeIds(controller), ["place-3", "place-1", "place-2"]);
+  assert.deepEqual(
+    state.picker.map((row) => row.placeId),
+    ["place-3", "place-1", "place-2"],
+  );
+  assert.equal(state.grid.length, 3);
+});
+
+test("test_pin_003_pin_place_saves_the_order_and_a_new_controller_reads_it_ex_039", async () => {
+  const { controller, store, saves } = await threePlaces();
+  const before = saves.length;
+  await controller.dispatch({ type: "pinPlace", placeId: "place-2" });
+  assert.equal(saves.length, before + 1);
+  const reloaded = setup({ store });
+  await reloaded.controller.dispatch({ type: "open" });
+  assert.deepEqual(placeIds(reloaded.controller), ["place-2", "place-1", "place-3"]);
+});
+
+test("test_pin_004_pin_place_of_the_first_place_changes_and_saves_nothing_ex_039", async () => {
+  const { controller, saves } = await threePlaces();
+  const before = saves.length;
+  await controller.dispatch({ type: "pinPlace", placeId: "place-1" });
+  assert.equal(saves.length, before);
+  assert.deepEqual(placeIds(controller), ["place-1", "place-2", "place-3"]);
+});
+
+test("test_pin_003_pin_place_of_an_unknown_id_changes_and_saves_nothing", async () => {
+  const { controller, saves } = await threePlaces();
+  const before = saves.length;
+  await controller.dispatch({ type: "pinPlace", placeId: "nope" });
+  assert.equal(saves.length, before);
+  assert.deepEqual(placeIds(controller), ["place-1", "place-2", "place-3"]);
+});
+
+test("test_pin_003_pin_place_keeps_a_following_marker_at_now", async () => {
+  const { controller } = await threePlaces();
+  await controller.dispatch({ type: "pinPlace", placeId: "place-3" });
+  const state = controller.getState();
+  assert.equal(state.marker.instant, start);
+  assert.equal(state.following, true);
+});
+
+test("test_pin_003_pin_place_keeps_a_moved_marker_inside_the_window", async () => {
+  const { controller } = await threePlaces();
+  await controller.dispatch({ type: "setMarker", instant: start + 20 * 60 * 60 * 1000 });
+  await controller.dispatch({ type: "pinPlace", placeId: "place-3" });
+  const state = controller.getState();
+  assert.ok(state.settings);
+  const window = pickerWindow(state.settings, state.selectedDay);
+  assert.ok(window);
+  assert.ok(state.marker.instant >= window.from && state.marker.instant < window.to);
+  assert.equal(state.following, false);
 });
